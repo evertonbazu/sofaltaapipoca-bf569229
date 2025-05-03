@@ -20,7 +20,7 @@ const Index = () => {
     minute: '2-digit'
   });
   
-  const version = "1.0.4";
+  const version = "1.0.5";
   
   return (
     <div className="min-h-screen bg-gradient-indigo p-4">
