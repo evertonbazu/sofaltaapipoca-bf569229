@@ -1,4 +1,3 @@
-
 import React from "react";
 import SubscriptionCard from "@/components/SubscriptionCard";
 
@@ -34,20 +33,6 @@ const SubscriptionList: React.FC<SubscriptionListProps> = ({ subscriptionRefs })
           priceColor="text-blue-600"
           whatsappNumber="5565984450752"
           telegramUsername="euothiagoandrade"
-        />
-      </div>
-      
-      <div ref={el => subscriptionRefs.current["PARAMOUNT PREMIUM"] = el}>
-        <SubscriptionCard
-          title="PARAMOUNT PREMIUM"
-          price="R$ 10,00"
-          paymentMethod="PIX (Mensal)"
-          status="Assinado (3 vagas)"
-          access="LOGIN E SENHA"
-          headerColor="bg-blue-500"
-          priceColor="text-blue-600"
-          whatsappNumber="5562982292725"
-          telegramUsername="DonaMariaRosa"
         />
       </div>
       
