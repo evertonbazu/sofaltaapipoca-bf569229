@@ -1,13 +1,10 @@
+
 import React, { useState, useEffect, useRef } from "react";
 import SubscriptionCard from "@/components/SubscriptionCard";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
 import { Search } from "lucide-react";
 
 const Index = () => {
   const [currentDateTime, setCurrentDateTime] = useState(new Date());
-  const [searchTerm, setSearchTerm] = useState("");
-  const [isSearching, setIsSearching] = useState(false);
   const subscriptionRefs = useRef<{[key: string]: HTMLDivElement | null}>({});
   
   // Update date/time every minute
@@ -18,39 +15,13 @@ const Index = () => {
     return () => clearInterval(timer);
   }, []);
   
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!searchTerm.trim()) return;
-    
-    setIsSearching(true);
-    
-    const normalizedSearchTerm = searchTerm.toLowerCase();
-    const keys = Object.keys(subscriptionRefs.current);
-    
-    for (const key of keys) {
-      if (key.toLowerCase().includes(normalizedSearchTerm)) {
-        const element = subscriptionRefs.current[key];
-        if (element) {
-          element.scrollIntoView({ behavior: "smooth", block: "center" });
-          element.classList.add("search-highlight");
-          setTimeout(() => {
-            element.classList.remove("search-highlight");
-          }, 2000);
-          break;
-        }
-      }
-    }
-    
-    setIsSearching(false);
-  };
-  
   const formattedDate = currentDateTime.toLocaleDateString("pt-BR");
   const formattedTime = currentDateTime.toLocaleTimeString("pt-BR", {
     hour: '2-digit',
     minute: '2-digit'
   });
   
-  const version = "1.0.1";
+  const version = "1.0.2";
   
   return (
     <div className="min-h-screen bg-gradient-indigo p-4">
@@ -87,6 +58,7 @@ const Index = () => {
               priceColor="text-blue-600"
               whatsappNumber="5565984450752"
               telegramUsername="euothiagoandrade"
+              centerTitle={true}
             />
           </div>
           

@@ -25,7 +25,7 @@ const SubscriptionCard = ({
   priceColor,
   whatsappNumber,
   telegramUsername,
-  centerTitle = false
+  centerTitle = true
 }: SubscriptionCardProps) => {
   const handleWhatsappClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
     const whatsappUrl = `https://api.whatsapp.com/send?phone=${whatsappNumber}`;
