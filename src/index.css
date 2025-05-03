@@ -1,6 +1,9 @@
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
 
 @layer base {
   :root {
@@ -96,6 +99,27 @@
   }
 
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground font-['Poppins',sans-serif];
   }
+}
+
+.card {
+  transition: all 0.3s ease;
+}
+.card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 15px 30px rgba(0, 0, 0, 0.2);
+}
+.contact-btn {
+  transition: all 0.2s ease;
+}
+.contact-btn:hover {
+  transform: scale(1.05);
+}
+.contact-btn:active {
+  transform: scale(0.98);
+}
+
+.bg-gradient-indigo {
+  background: linear-gradient(135deg, #6366f1, #4f46e5);
 }
