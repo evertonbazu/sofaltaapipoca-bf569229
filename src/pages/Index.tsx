@@ -50,27 +50,12 @@ const Index = () => {
     minute: '2-digit'
   });
   
-  const version = "1.0.0";
+  const version = "1.0.1";
   
   return (
     <div className="min-h-screen bg-gradient-indigo p-4">
       <div className="max-w-md mx-auto my-8 relative">
-        <div className="absolute right-0 top-0 w-full md:w-auto">
-          <form onSubmit={handleSearch} className="flex gap-2">
-            <Input
-              type="text"
-              placeholder="Buscar assinatura..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full md:w-48"
-            />
-            <Button type="submit" size="sm" disabled={isSearching}>
-              <Search className="h-4 w-4" />
-            </Button>
-          </form>
-        </div>
-        
-        <header className="text-center mb-8 pt-12">
+        <header className="text-center mb-8">
           <h1 className="text-3xl font-bold text-white mb-2">🍿Só Falta a Pipoca</h1>
           <p className="text-indigo-100">Assinaturas premium com preços exclusivos</p>
         </header>
