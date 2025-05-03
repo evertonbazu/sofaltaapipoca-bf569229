@@ -1,56 +1,124 @@
-
-import React from "react";
+import React, { useState, useEffect, useRef } from "react";
 import SubscriptionCard from "@/components/SubscriptionCard";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Search } from "lucide-react";
 
 const Index = () => {
-  const currentDate = new Date().toLocaleDateString("pt-BR");
+  const [currentDateTime, setCurrentDateTime] = useState(new Date());
+  const [searchTerm, setSearchTerm] = useState("");
+  const [isSearching, setIsSearching] = useState(false);
+  const subscriptionRefs = useRef<{[key: string]: HTMLDivElement | null}>({});
+  
+  // Update date/time every minute
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentDateTime(new Date());
+    }, 60000);
+    return () => clearInterval(timer);
+  }, []);
+  
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!searchTerm.trim()) return;
+    
+    setIsSearching(true);
+    
+    const normalizedSearchTerm = searchTerm.toLowerCase();
+    const keys = Object.keys(subscriptionRefs.current);
+    
+    for (const key of keys) {
+      if (key.toLowerCase().includes(normalizedSearchTerm)) {
+        const element = subscriptionRefs.current[key];
+        if (element) {
+          element.scrollIntoView({ behavior: "smooth", block: "center" });
+          element.classList.add("search-highlight");
+          setTimeout(() => {
+            element.classList.remove("search-highlight");
+          }, 2000);
+          break;
+        }
+      }
+    }
+    
+    setIsSearching(false);
+  };
+  
+  const formattedDate = currentDateTime.toLocaleDateString("pt-BR");
+  const formattedTime = currentDateTime.toLocaleTimeString("pt-BR", {
+    hour: '2-digit',
+    minute: '2-digit'
+  });
+  
+  const version = "1.0.0";
   
   return (
     <div className="min-h-screen bg-gradient-indigo p-4">
-      <div className="max-w-md mx-auto my-8">
-        <header className="text-center mb-8">
+      <div className="max-w-md mx-auto my-8 relative">
+        <div className="absolute right-0 top-0 w-full md:w-auto">
+          <form onSubmit={handleSearch} className="flex gap-2">
+            <Input
+              type="text"
+              placeholder="Buscar assinatura..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full md:w-48"
+            />
+            <Button type="submit" size="sm" disabled={isSearching}>
+              <Search className="h-4 w-4" />
+            </Button>
+          </form>
+        </div>
+        
+        <header className="text-center mb-8 pt-12">
           <h1 className="text-3xl font-bold text-white mb-2">🍿Só Falta a Pipoca</h1>
           <p className="text-indigo-100">Assinaturas premium com preços exclusivos</p>
         </header>
 
         <div className="space-y-6">
-          <SubscriptionCard
-            title="SUPER DUOLINGO PLUS - ANUAL"
-            price="R$ 58,24"
-            paymentMethod="PIX (ANUAL)"
-            status="Assinado (1 vaga)"
-            access="CONVITE POR E-MAIL"
-            headerColor="bg-green-500"
-            priceColor="text-green-600"
-            whatsappNumber="5565984450752"
-            telegramUsername="euothiagoandrade"
-            centerTitle={true}
-          />
+          <div ref={el => subscriptionRefs.current["SUPER DUOLINGO PLUS - ANUAL"] = el}>
+            <SubscriptionCard
+              title="SUPER DUOLINGO PLUS - ANUAL"
+              price="R$ 58,24"
+              paymentMethod="PIX (ANUAL)"
+              status="Assinado (1 vaga)"
+              access="CONVITE POR E-MAIL"
+              headerColor="bg-green-500"
+              priceColor="text-green-600"
+              whatsappNumber="5565984450752"
+              telegramUsername="euothiagoandrade"
+              centerTitle={true}
+            />
+          </div>
 
-          <SubscriptionCard
-            title="GLOBOPLAY PADRÃO (SEM ANÚNCIOS)"
-            price="R$ 7,45"
-            paymentMethod="PIX (Mensal)"
-            status="Assinado (1 vaga)"
-            access="CONVITE POR E-MAIL"
-            headerColor="bg-blue-500"
-            priceColor="text-blue-600"
-            whatsappNumber="5565984450752"
-            telegramUsername="euothiagoandrade"
-          />
+          <div ref={el => subscriptionRefs.current["GLOBOPLAY PADRÃO (SEM ANÚNCIOS)"] = el}>
+            <SubscriptionCard
+              title="GLOBOPLAY PADRÃO (SEM ANÚNCIOS)"
+              price="R$ 7,45"
+              paymentMethod="PIX (Mensal)"
+              status="Assinado (1 vaga)"
+              access="CONVITE POR E-MAIL"
+              headerColor="bg-blue-500"
+              priceColor="text-blue-600"
+              whatsappNumber="5565984450752"
+              telegramUsername="euothiagoandrade"
+            />
+          </div>
           
-          <SubscriptionCard
-            title="PARAMOUNT PREMIUM"
-            price="R$ 10,00"
-            paymentMethod="PIX (Mensal)"
-            status="Assinado (3 vagas)"
-            access="LOGIN E SENHA"
-            headerColor="bg-blue-500"
-            priceColor="text-blue-600"
-            whatsappNumber="5562982292725"
-            telegramUsername="DonaMariaRosa"
-            centerTitle={true}
-          />
+          <div ref={el => subscriptionRefs.current["PARAMOUNT PREMIUM"] = el}>
+            <SubscriptionCard
+              title="PARAMOUNT PREMIUM"
+              price="R$ 10,00"
+              paymentMethod="PIX (Mensal)"
+              status="Assinado (3 vagas)"
+              access="LOGIN E SENHA"
+              headerColor="bg-blue-500"
+              priceColor="text-blue-600"
+              whatsappNumber="5562982292725"
+              telegramUsername="DonaMariaRosa"
+              centerTitle={true}
+            />
+          </div>
           
           <SubscriptionCard
             title="LOOKE"
@@ -471,7 +539,8 @@ const Index = () => {
 
         <footer className="mt-10 text-center text-indigo-100 text-sm">
           <p>Ofertas sujeitas a disponibilidade. Entre em contato para mais informações.</p>
-          <p className="mt-2">Atualizado em: {currentDate}</p>
+          <p className="mt-2">Atualizado em: {formattedDate} às {formattedTime}</p>
+          <p className="mt-1">Versão: {version}</p>
         </footer>
       </div>
     </div>
