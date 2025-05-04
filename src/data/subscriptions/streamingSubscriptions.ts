@@ -1,4 +1,3 @@
-
 import { SubscriptionData } from "@/types/subscriptionTypes";
 
 export const streamingSubscriptions: SubscriptionData[] = [
@@ -12,7 +11,8 @@ export const streamingSubscriptions: SubscriptionData[] = [
     priceColor: "text-blue-600",
     whatsappNumber: "5562982292725",
     telegramUsername: "DonaMariaRosa",
-    icon: "tv"
+    icon: "tv",
+    addedDate: "01/4/25"
   },
   {
     title: "LOOKE",
@@ -24,7 +24,8 @@ export const streamingSubscriptions: SubscriptionData[] = [
     priceColor: "text-indigo-600",
     whatsappNumber: "5562982292725",
     telegramUsername: "DonaMariaRosa",
-    icon: "tv"
+    icon: "tv",
+    addedDate: "01/4/25"
   },
   {
     title: "NETFLIX (Dispositivos móveis)",
@@ -36,7 +37,8 @@ export const streamingSubscriptions: SubscriptionData[] = [
     priceColor: "text-red-600",
     whatsappNumber: "5513992077804",
     telegramUsername: "evertonbazu",
-    icon: "tv"
+    icon: "tv",
+    addedDate: "01/4/25"
   },
   {
     title: "VIKI E KOCOWA +",
@@ -48,7 +50,8 @@ export const streamingSubscriptions: SubscriptionData[] = [
     priceColor: "text-green-600",
     whatsappNumber: "86995736762",
     telegramUsername: "Thamy78",
-    icon: "tv"
+    icon: "tv",
+    addedDate: "01/4/25"
   },
   {
     title: "PARAMOUNT PADRÃO (MELI+)",
@@ -60,7 +63,48 @@ export const streamingSubscriptions: SubscriptionData[] = [
     priceColor: "text-blue-600",
     whatsappNumber: "5575999997951",
     telegramUsername: "Eduardok10cds",
-    icon: "tv"
+    icon: "tv",
+    addedDate: "01/4/25"
+  },
+  // New subscriptions
+  {
+    title: "PERPLEXITY IA (Claude/ChatGpt/Gemini/Grok)",
+    price: "R$ 10,00 - PIX (Mensal)",
+    paymentMethod: "PIX",
+    status: "Assinado",
+    access: "ATIVAÇÃO",
+    headerColor: "bg-purple-600",
+    priceColor: "text-purple-600",
+    whatsappNumber: "5513992077804",
+    telegramUsername: "evertonbazu",
+    icon: "monitor",
+    addedDate: "04/5/25"
+  },
+  {
+    title: "NETFLIX (DISPOSITIVOS MÓVEIS)",
+    price: "R$ 13,90 - PIX (Mensal)",
+    paymentMethod: "PIX",
+    status: "Assinado (1 vaga)",
+    access: "LOGIN E SENHA",
+    headerColor: "bg-red-600",
+    priceColor: "text-red-600",
+    whatsappNumber: "5585992166014",
+    telegramUsername: "OLIVEIRABOB",
+    icon: "tv",
+    addedDate: "04/5/25"
+  },
+  {
+    title: "NETFLIX (DISPOSITIVOS MÓVEIS/TV)",
+    price: "R$ 27,00 - PIX (Mensal)",
+    paymentMethod: "PIX",
+    status: "Assinado (1 vaga)",
+    access: "CONVITE POR E-MAIL",
+    headerColor: "bg-red-600",
+    priceColor: "text-red-600",
+    whatsappNumber: "5531975374153",
+    telegramUsername: "EvandersonAraujo",
+    icon: "tv",
+    addedDate: "04/5/25"
   },
   {
     title: "AMAZON PRIME VÍDEO",
@@ -72,7 +116,8 @@ export const streamingSubscriptions: SubscriptionData[] = [
     priceColor: "text-indigo-600",
     whatsappNumber: "5513992077804",
     telegramUsername: "evertonbazu",
-    icon: "tv"
+    icon: "tv",
+    addedDate: "01/4/25"
   },
   {
     title: "NETFLIX (DISPOSITIVOS MÓVEIS/TV)",
@@ -84,7 +129,8 @@ export const streamingSubscriptions: SubscriptionData[] = [
     priceColor: "text-red-600",
     whatsappNumber: "5531975374153",
     telegramUsername: "EvandersonAraujo",
-    icon: "tv"
+    icon: "tv",
+    addedDate: "01/4/25"
   },
   {
     title: "APPLE TV+",
@@ -96,7 +142,8 @@ export const streamingSubscriptions: SubscriptionData[] = [
     priceColor: "text-gray-600",
     whatsappNumber: "5574981207317",
     telegramUsername: "ojuniormauricio",
-    icon: "apple"
+    icon: "apple",
+    addedDate: "01/4/25"
   },
   {
     title: "Netflix (Cel/PC)",
@@ -108,7 +155,8 @@ export const streamingSubscriptions: SubscriptionData[] = [
     priceColor: "text-red-600",
     whatsappNumber: "5587991988684",
     telegramUsername: "alessadinozzo",
-    icon: "tv"
+    icon: "tv",
+    addedDate: "01/4/25"
   },
   {
     title: "Apple TV",
@@ -120,7 +168,8 @@ export const streamingSubscriptions: SubscriptionData[] = [
     priceColor: "text-gray-600",
     whatsappNumber: "5587991988684",
     telegramUsername: "alessadinozzo",
-    icon: "apple"
+    icon: "apple",
+    addedDate: "01/4/25"
   },
   {
     title: "PLAYPLUS",
@@ -132,7 +181,8 @@ export const streamingSubscriptions: SubscriptionData[] = [
     priceColor: "text-red-600",
     whatsappNumber: "5598984045368",
     telegramUsername: "brenokennedyof",
-    icon: "tv"
+    icon: "tv",
+    addedDate: "01/4/25"
   },
   {
     title: "MUBI",
@@ -144,7 +194,8 @@ export const streamingSubscriptions: SubscriptionData[] = [
     priceColor: "text-gray-800",
     whatsappNumber: "5598984045368",
     telegramUsername: "brenokennedyof",
-    icon: "tv"
+    icon: "tv",
+    addedDate: "01/4/25"
   },
   {
     title: "MAX PLATINUM - ANUAL",
@@ -156,7 +207,8 @@ export const streamingSubscriptions: SubscriptionData[] = [
     priceColor: "text-purple-600",
     whatsappNumber: "5561998013373",
     telegramUsername: "andrefpc",
-    icon: "tv"
+    icon: "tv",
+    addedDate: "01/4/25"
   },
   {
     title: "MAX STANDARD",
@@ -168,7 +220,8 @@ export const streamingSubscriptions: SubscriptionData[] = [
     priceColor: "text-purple-600",
     whatsappNumber: "5575992630618",
     telegramUsername: "arnaldojhony",
-    icon: "tv"
+    icon: "tv",
+    addedDate: "01/4/25"
   },
   {
     title: "PARAMOUNT PREMIUM",
@@ -180,7 +233,8 @@ export const streamingSubscriptions: SubscriptionData[] = [
     priceColor: "text-blue-600",
     whatsappNumber: "5585992166014",
     telegramUsername: "OLIVEIRABOB",
-    icon: "tv"
+    icon: "tv",
+    addedDate: "01/4/25"
   },
   {
     title: "GLOBO PLAY PREMIUM + 27 CANAIS + APPLE TV+",
@@ -192,7 +246,8 @@ export const streamingSubscriptions: SubscriptionData[] = [
     priceColor: "text-blue-600",
     whatsappNumber: "5585992166014",
     telegramUsername: "OLIVEIRABOB",
-    icon: "tv"
+    icon: "tv",
+    addedDate: "01/4/25"
   },
   {
     title: "CRUNCHYROLL",
@@ -204,7 +259,8 @@ export const streamingSubscriptions: SubscriptionData[] = [
     priceColor: "text-orange-600",
     whatsappNumber: "5586995736762",
     telegramUsername: "Thamy78",
-    icon: "tv"
+    icon: "tv",
+    addedDate: "01/4/25"
   },
   {
     title: "CRUNCHYROLL",
@@ -216,7 +272,8 @@ export const streamingSubscriptions: SubscriptionData[] = [
     priceColor: "text-orange-600",
     whatsappNumber: "5511912659702",
     telegramUsername: "BrunnoSSantos",
-    icon: "tv"
+    icon: "tv",
+    addedDate: "01/4/25"
   },
   {
     title: "GLOBOPLAY PADRÃO (SEM ANÚNCIOS)",
@@ -228,7 +285,8 @@ export const streamingSubscriptions: SubscriptionData[] = [
     priceColor: "text-blue-600",
     whatsappNumber: "5565984450752",
     telegramUsername: "euothiagoandrade",
-    icon: "tv"
+    icon: "tv",
+    addedDate: "01/4/25"
   },
   {
     title: "NETFLIX 4K + APPLE TV + GLOBO PLAY PREMIUM SEM ANUNCIO + 27 CANAIS",
@@ -240,7 +298,8 @@ export const streamingSubscriptions: SubscriptionData[] = [
     priceColor: "text-red-600",
     whatsappNumber: "5585992166014",
     telegramUsername: "OliveiraBoB",
-    icon: "tv"
+    icon: "tv",
+    addedDate: "01/4/25"
   },
   {
     title: "NETFLIX (DISPOSITIVOS MÓVEIS/TV)",
@@ -252,7 +311,8 @@ export const streamingSubscriptions: SubscriptionData[] = [
     priceColor: "text-red-600",
     whatsappNumber: "5585992166014",
     telegramUsername: "OLIVEIRABOB",
-    icon: "tv"
+    icon: "tv",
+    addedDate: "01/4/25"
   },
   {
     title: "AMAZON PRIME VIDEO",
@@ -264,7 +324,8 @@ export const streamingSubscriptions: SubscriptionData[] = [
     priceColor: "text-blue-600",
     whatsappNumber: "5511912659702",
     telegramUsername: "BrunnoSSantos",
-    icon: "tv"
+    icon: "tv",
+    addedDate: "01/4/25"
   },
   {
     title: "DISNEY+ PADRÃO (COM ANÚNCIOS)",
@@ -276,6 +337,7 @@ export const streamingSubscriptions: SubscriptionData[] = [
     priceColor: "text-blue-600",
     whatsappNumber: "5583986510421",
     telegramUsername: "kiwi_docinho",
-    icon: "tv"
+    icon: "tv",
+    addedDate: "01/4/25"
   }
 ];

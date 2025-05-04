@@ -30,6 +30,7 @@ const FeaturedSubscriptions: React.FC<FeaturedSubscriptionsProps> = ({
         setHasResults(prevState => hasAnyResults || prevState);
       }
     } else {
+      // When search term is empty, show all featured subscriptions
       setVisibleSubscriptions(featuredSubscriptions);
       // Reset hasResults if no search term
       if (setHasResults) {
@@ -57,6 +58,7 @@ const FeaturedSubscriptions: React.FC<FeaturedSubscriptionsProps> = ({
           whatsappNumber={subscription.whatsappNumber}
           telegramUsername={subscription.telegramUsername}
           icon={subscription.icon}
+          addedDate={subscription.addedDate}
           subscriptionRefs={subscriptionRefs}
         />
       ))}

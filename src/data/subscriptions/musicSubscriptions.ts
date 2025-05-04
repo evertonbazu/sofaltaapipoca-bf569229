@@ -12,7 +12,8 @@ export const musicSubscriptions: SubscriptionData[] = [
     priceColor: "text-green-600",
     whatsappNumber: "5588992259940",
     telegramUsername: "pedro127",
-    icon: "monitor"
+    icon: "monitor",
+    addedDate: "01/4/25"
   },
   {
     title: "SPOTIFY",
@@ -24,6 +25,7 @@ export const musicSubscriptions: SubscriptionData[] = [
     priceColor: "text-green-600",
     whatsappNumber: "5511912659702",
     telegramUsername: "BrunnoSSantos",
-    icon: "monitor"
+    icon: "monitor",
+    addedDate: "01/4/25"
   }
 ];

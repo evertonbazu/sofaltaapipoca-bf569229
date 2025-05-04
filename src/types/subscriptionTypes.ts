@@ -10,4 +10,5 @@ export interface SubscriptionData {
   whatsappNumber: string;
   telegramUsername: string;
   icon?: string;
+  addedDate?: string;
 }

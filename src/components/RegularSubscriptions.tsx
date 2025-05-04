@@ -28,6 +28,7 @@ const RegularSubscriptions: React.FC<RegularSubscriptionsProps> = ({
         setHasResults(prevState => hasAnyResults);
       }
     } else {
+      // When search term is empty, show all regular subscriptions
       setVisibleSubscriptions(regularSubscriptions);
       // Reset hasResults if no search term
       if (setHasResults) {
@@ -55,6 +56,7 @@ const RegularSubscriptions: React.FC<RegularSubscriptionsProps> = ({
           whatsappNumber={subscription.whatsappNumber}
           telegramUsername={subscription.telegramUsername}
           icon={subscription.icon}
+          addedDate={subscription.addedDate}
         />
       ))}
     </div>

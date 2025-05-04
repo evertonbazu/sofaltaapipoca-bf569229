@@ -12,7 +12,8 @@ export const educationSubscriptions: SubscriptionData[] = [
     priceColor: "text-purple-600",
     whatsappNumber: "5513992077804",
     telegramUsername: "evertonbazu",
-    icon: "monitor"
+    icon: "monitor",
+    addedDate: "01/4/25"
   },
   {
     title: "ALURA PLUS",
@@ -24,7 +25,8 @@ export const educationSubscriptions: SubscriptionData[] = [
     priceColor: "text-blue-600",
     whatsappNumber: "5513992077804",
     telegramUsername: "evertonbazu",
-    icon: "monitor"
+    icon: "monitor",
+    addedDate: "01/4/25"
   },
   {
     title: "GRAN CURSOS ILIMITADO AMIGOS",
@@ -36,7 +38,8 @@ export const educationSubscriptions: SubscriptionData[] = [
     priceColor: "text-yellow-600",
     whatsappNumber: "5562982292725",
     telegramUsername: "DonaMariaRosa",
-    icon: "monitor"
+    icon: "monitor",
+    addedDate: "01/4/25"
   },
   {
     title: "SUPER DUOLINGO PLUS - ANUAL",
@@ -48,7 +51,8 @@ export const educationSubscriptions: SubscriptionData[] = [
     priceColor: "text-green-600",
     whatsappNumber: "5565984450752",
     telegramUsername: "euothiagoandrade",
-    icon: "monitor"
+    icon: "monitor",
+    addedDate: "01/4/25"
   },
   {
     title: "CANVA",
@@ -60,6 +64,7 @@ export const educationSubscriptions: SubscriptionData[] = [
     priceColor: "text-blue-600",
     whatsappNumber: "5513992077804",
     telegramUsername: "evertonbazu",
-    icon: "monitor"
+    icon: "monitor",
+    addedDate: "01/4/25"
   }
 ];

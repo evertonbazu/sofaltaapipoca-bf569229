@@ -16,6 +16,7 @@ interface SubscriptionCardProps {
   centerTitle?: boolean;
   icon?: string;
   isSearchResult?: boolean;
+  addedDate?: string;
 }
 
 const SubscriptionCard = ({
@@ -30,7 +31,8 @@ const SubscriptionCard = ({
   telegramUsername,
   centerTitle = true,
   icon = 'monitor',
-  isSearchResult = false
+  isSearchResult = false,
+  addedDate
 }: SubscriptionCardProps) => {
   const handleWhatsappClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
     const whatsappUrl = `https://api.whatsapp.com/send?phone=${whatsappNumber}`;
@@ -81,6 +83,12 @@ const SubscriptionCard = ({
           <span className="font-semibold text-gray-700">🔐 Acesso:</span>
           <span className="font-medium text-gray-900">{access}</span>
         </div>
+        {addedDate && (
+          <div className="flex justify-between items-center">
+            <span className="font-semibold text-gray-700">📅 Adicionado em:</span>
+            <span className="font-medium text-gray-900">{addedDate}</span>
+          </div>
+        )}
         <div className="pt-4 space-y-3">
           <a 
             onClick={handleTelegramClick}

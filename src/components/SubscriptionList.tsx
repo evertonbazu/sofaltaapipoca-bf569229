@@ -14,6 +14,12 @@ const SubscriptionList: React.FC<SubscriptionListProps> = ({
   searchTerm, 
   setHasResults 
 }) => {
+  // Reset hasResults to true when searchTerm is empty
+  useEffect(() => {
+    if (searchTerm === "") {
+      setHasResults(true);
+    }
+  }, [searchTerm, setHasResults]);
   
   return (
     <div className="space-y-6">

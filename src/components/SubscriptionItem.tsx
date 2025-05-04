@@ -13,6 +13,7 @@ interface SubscriptionItemProps {
   whatsappNumber: string;
   telegramUsername: string;
   icon?: string;
+  addedDate?: string;
   subscriptionRefs?: React.MutableRefObject<{[key: string]: HTMLDivElement | null}>;
   isSearchResult?: boolean;
 }
@@ -28,6 +29,7 @@ const SubscriptionItem: React.FC<SubscriptionItemProps> = ({
   whatsappNumber,
   telegramUsername,
   icon,
+  addedDate,
   subscriptionRefs,
   isSearchResult = false
 }) => {
@@ -46,6 +48,7 @@ const SubscriptionItem: React.FC<SubscriptionItemProps> = ({
           whatsappNumber={whatsappNumber}
           telegramUsername={telegramUsername}
           icon={icon}
+          addedDate={addedDate}
           isSearchResult={isSearchResult}
         />
       </div>
@@ -65,6 +68,7 @@ const SubscriptionItem: React.FC<SubscriptionItemProps> = ({
       whatsappNumber={whatsappNumber}
       telegramUsername={telegramUsername}
       icon={icon}
+      addedDate={addedDate}
       isSearchResult={isSearchResult}
     />
   );

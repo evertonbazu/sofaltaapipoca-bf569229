@@ -24,7 +24,7 @@ const Index = () => {
     minute: '2-digit'
   });
   
-  const version = "1.0.7";
+  const version = "1.0.8"; // Incrementado o versionamento após alterações
 
   const handleSearch = (term: string) => {
     setSearchTerm(term.toLowerCase());

@@ -12,7 +12,8 @@ export const youtubeSubscriptions: SubscriptionData[] = [
     priceColor: "text-red-600",
     whatsappNumber: "5527988292875",
     telegramUsername: "Rastelinho",
-    icon: "youtube"
+    icon: "youtube",
+    addedDate: "01/4/25"
   },
   {
     title: "YOUTUBE PREMIUM",
@@ -24,6 +25,7 @@ export const youtubeSubscriptions: SubscriptionData[] = [
     priceColor: "text-red-600",
     whatsappNumber: "5586998315604",
     telegramUsername: "itallo92",
-    icon: "youtube"
+    icon: "youtube",
+    addedDate: "01/4/25"
   }
 ];
