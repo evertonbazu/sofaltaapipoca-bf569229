@@ -12,10 +12,6 @@ const Index: React.FC = () => {
 
   const handleSearch = (term: string) => {
     setSearchTerm(term.toLowerCase());
-    // Make sure we show all results when search is cleared
-    if (!term) {
-      setHasResults(true);
-    }
   };
 
   return (
@@ -64,7 +60,7 @@ const Index: React.FC = () => {
       <footer className="bg-gray-800 text-white py-3 sm:py-4">
         <div className="container mx-auto px-3 sm:px-4 text-center">
           <p className="text-sm sm:text-base">&copy; 2025 Só Falta a Pipoca. Todos os direitos reservados.</p>
-          <p className="text-xs text-gray-400 mt-1">v1.1.2</p>
+          <p className="text-xs text-gray-400 mt-1">v1.1.1</p>
         </div>
       </footer>
     </div>

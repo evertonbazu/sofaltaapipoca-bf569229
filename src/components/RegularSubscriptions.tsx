@@ -17,21 +17,25 @@ const RegularSubscriptions: React.FC<RegularSubscriptionsProps> = ({
   const isMobile = useIsMobile();
 
   useEffect(() => {
-    const filtered = regularSubscriptions.filter(sub => {
-      // Incluir todos os campos relevantes na busca
-      const content = `${sub.title} ${sub.price} ${sub.paymentMethod} ${sub.status} ${sub.access}`.toLowerCase();
-      return content.includes(searchTerm.toLowerCase());
-    });
-    
-    setVisibleSubscriptions(filtered);
-    
-    // Atualizar hasResults se a prop estiver disponível e não tiver sido definida por FeaturedSubscriptions
-    if (setHasResults) {
-      if (filtered.length > 0) {
+    if (searchTerm) {
+      const filtered = regularSubscriptions.filter(sub => {
+        const content = `${sub.title} ${sub.price} ${sub.paymentMethod} ${sub.status} ${sub.access}`.toLowerCase();
+        return content.includes(searchTerm.toLowerCase());
+      });
+      
+      setVisibleSubscriptions(filtered);
+      
+      // Update hasResults if needed
+      if (setHasResults) {
+        setHasResults(filtered.length > 0);
+      }
+    } else {
+      // When search term is empty, show all regular subscriptions
+      setVisibleSubscriptions(regularSubscriptions);
+      // Reset hasResults if no search term
+      if (setHasResults) {
         setHasResults(true);
-      } 
-      // Não definimos hasResults como false aqui, pois isso é feito no SubscriptionList
-      // baseado na combinação de resultados de ambos os componentes
+      }
     }
   }, [searchTerm, setHasResults]);
 
