@@ -17,6 +17,7 @@ interface SubscriptionCardProps {
   icon?: string;
   isSearchResult?: boolean;
   addedDate?: string;
+  version?: string;
 }
 
 const SubscriptionCard = ({
@@ -32,7 +33,8 @@ const SubscriptionCard = ({
   centerTitle = true,
   icon = 'monitor',
   isSearchResult = false,
-  addedDate
+  addedDate,
+  version = '1.1.0'
 }: SubscriptionCardProps) => {
   const handleWhatsappClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
     const whatsappUrl = `https://api.whatsapp.com/send?phone=${whatsappNumber}`;
@@ -66,42 +68,45 @@ const SubscriptionCard = ({
           {renderIcon()} {title}
         </h2>
       </div>
-      <div className="p-5 space-y-4">
-        <div className="flex justify-between items-center">
-          <span className="font-semibold text-gray-700">🏦 Valor:</span>
-          <span className={`text-xl font-bold ${priceColor}`}>{price}</span>
+      <div className="p-3 sm:p-5 space-y-3 sm:space-y-4">
+        <div className="flex flex-wrap justify-between items-center">
+          <span className="font-semibold text-gray-700 text-sm sm:text-base">🏦 Valor:</span>
+          <span className={`text-lg sm:text-xl font-bold ${priceColor}`}>{price}</span>
         </div>
-        <div className="flex justify-between items-center">
-          <span className="font-semibold text-gray-700">💰 Forma de pagamento:</span>
-          <span className="font-medium text-gray-900">{paymentMethod}</span>
+        <div className="flex flex-wrap justify-between items-center">
+          <span className="font-semibold text-gray-700 text-sm sm:text-base">💰 Forma de pagamento:</span>
+          <span className="font-medium text-gray-900 text-sm sm:text-base">{paymentMethod}</span>
         </div>
-        <div className="flex justify-between items-center">
-          <span className="font-semibold text-gray-700">📌 Status:</span>
-          <span className="font-medium text-gray-900">{status}</span>
+        <div className="flex flex-wrap justify-between items-center">
+          <span className="font-semibold text-gray-700 text-sm sm:text-base">📌 Status:</span>
+          <span className="font-medium text-gray-900 text-sm sm:text-base">{status}</span>
         </div>
-        <div className="flex justify-between items-center">
-          <span className="font-semibold text-gray-700">🔐 Acesso:</span>
-          <span className="font-medium text-gray-900">{access}</span>
+        <div className="flex flex-wrap justify-between items-center">
+          <span className="font-semibold text-gray-700 text-sm sm:text-base">🔐 Acesso:</span>
+          <span className="font-medium text-gray-900 text-sm sm:text-base">{access}</span>
         </div>
         {addedDate && (
-          <div className="flex justify-between items-center">
-            <span className="font-semibold text-gray-700">📅 Adicionado em:</span>
-            <span className="font-medium text-gray-900">{addedDate}</span>
+          <div className="flex flex-wrap justify-between items-center">
+            <span className="font-semibold text-gray-700 text-sm sm:text-base">📅 Adicionado em:</span>
+            <span className="font-medium text-gray-900 text-sm sm:text-base">{addedDate}</span>
           </div>
         )}
-        <div className="pt-4 space-y-3">
+        <div className="pt-4 space-y-2 sm:space-y-3">
           <a 
             onClick={handleTelegramClick}
-            className="contact-btn w-full bg-blue-600 hover:bg-blue-700 text-white py-3 px-4 rounded-lg font-medium flex items-center justify-center cursor-pointer"
+            className="contact-btn w-full bg-blue-600 hover:bg-blue-700 text-white py-2 sm:py-3 px-4 rounded-lg font-medium flex items-center justify-center cursor-pointer text-sm sm:text-base"
           >
             <span className="mr-2">📩</span> Contato por Telegram
           </a>
           <a 
             onClick={handleWhatsappClick}
-            className="contact-btn w-full bg-green-600 hover:bg-green-700 text-white py-3 px-4 rounded-lg font-medium flex items-center justify-center cursor-pointer"
+            className="contact-btn w-full bg-green-600 hover:bg-green-700 text-white py-2 sm:py-3 px-4 rounded-lg font-medium flex items-center justify-center cursor-pointer text-sm sm:text-base"
           >
             <span className="mr-2">📱</span> Contato por WhatsApp
           </a>
+        </div>
+        <div className="text-right text-xs text-gray-500 pt-1">
+          v{version}
         </div>
       </div>
     </div>

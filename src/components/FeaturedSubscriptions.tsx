@@ -2,6 +2,7 @@
 import React, { useEffect, useState } from "react";
 import { featuredSubscriptions } from "@/data/subscriptions";
 import SubscriptionItem from "./SubscriptionItem";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 interface FeaturedSubscriptionsProps {
   subscriptionRefs: React.MutableRefObject<{[key: string]: HTMLDivElement | null}>;
@@ -15,27 +16,24 @@ const FeaturedSubscriptions: React.FC<FeaturedSubscriptionsProps> = ({
   setHasResults
 }) => {
   const [visibleSubscriptions, setVisibleSubscriptions] = useState(featuredSubscriptions);
+  const isMobile = useIsMobile();
 
   useEffect(() => {
     if (searchTerm) {
       const filtered = featuredSubscriptions.filter(sub => {
         const content = `${sub.title} ${sub.price} ${sub.paymentMethod} ${sub.status} ${sub.access}`.toLowerCase();
-        return content.includes(searchTerm);
+        return content.includes(searchTerm.toLowerCase());
       });
+      
       setVisibleSubscriptions(filtered);
       
-      // Update hasResults if needed
-      if (setHasResults) {
-        const hasAnyResults = filtered.length > 0;
-        setHasResults(prevState => hasAnyResults || prevState);
+      // Update hasResults based only on this component's results
+      if (setHasResults && filtered.length > 0) {
+        setHasResults(true);
       }
     } else {
       // When search term is empty, show all featured subscriptions
       setVisibleSubscriptions(featuredSubscriptions);
-      // Reset hasResults if no search term
-      if (setHasResults) {
-        setHasResults(true);
-      }
     }
   }, [searchTerm, setHasResults]);
 
@@ -44,10 +42,10 @@ const FeaturedSubscriptions: React.FC<FeaturedSubscriptionsProps> = ({
   }
 
   return (
-    <div className="space-y-6 mb-8">
-      {visibleSubscriptions.map((subscription) => (
+    <div className={`grid gap-6 mb-8 ${isMobile ? 'grid-cols-1' : 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3'}`}>
+      {visibleSubscriptions.map((subscription, index) => (
         <SubscriptionItem
-          key={subscription.title}
+          key={`${subscription.title}-${index}`}
           title={subscription.title}
           price={subscription.price}
           paymentMethod={subscription.paymentMethod}

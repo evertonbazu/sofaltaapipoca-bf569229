@@ -2,6 +2,7 @@
 import React, { useEffect, useState } from "react";
 import { regularSubscriptions } from "@/data/subscriptions";
 import SubscriptionItem from "./SubscriptionItem";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 interface RegularSubscriptionsProps {
   searchTerm?: string;
@@ -13,19 +14,20 @@ const RegularSubscriptions: React.FC<RegularSubscriptionsProps> = ({
   setHasResults 
 }) => {
   const [visibleSubscriptions, setVisibleSubscriptions] = useState(regularSubscriptions);
+  const isMobile = useIsMobile();
 
   useEffect(() => {
     if (searchTerm) {
       const filtered = regularSubscriptions.filter(sub => {
         const content = `${sub.title} ${sub.price} ${sub.paymentMethod} ${sub.status} ${sub.access}`.toLowerCase();
-        return content.includes(searchTerm);
+        return content.includes(searchTerm.toLowerCase());
       });
+      
       setVisibleSubscriptions(filtered);
       
       // Update hasResults if needed
       if (setHasResults) {
-        const hasAnyResults = filtered.length > 0;
-        setHasResults(prevState => hasAnyResults);
+        setHasResults(filtered.length > 0);
       }
     } else {
       // When search term is empty, show all regular subscriptions
@@ -42,10 +44,10 @@ const RegularSubscriptions: React.FC<RegularSubscriptionsProps> = ({
   }
 
   return (
-    <div className="space-y-6">
-      {visibleSubscriptions.map((subscription) => (
+    <div className={`grid gap-6 ${isMobile ? 'grid-cols-1' : 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3'}`}>
+      {visibleSubscriptions.map((subscription, index) => (
         <SubscriptionItem
-          key={subscription.title}
+          key={`${subscription.title}-${index}`}
           title={subscription.title}
           price={subscription.price}
           paymentMethod={subscription.paymentMethod}

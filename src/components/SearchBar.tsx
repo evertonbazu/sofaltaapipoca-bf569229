@@ -1,7 +1,8 @@
 
-import React, { useState } from "react";
+import React, { useState, useCallback } from "react";
 import { Input } from "@/components/ui/input";
 import { Search } from "lucide-react";
+import { useDebounced } from "@/hooks/useDebounced";
 
 interface SearchBarProps {
   onSearch: (searchTerm: string) => void;
@@ -9,15 +10,21 @@ interface SearchBarProps {
 
 const SearchBar: React.FC<SearchBarProps> = ({ onSearch }) => {
   const [searchTerm, setSearchTerm] = useState("");
+  
+  const debouncedSearch = useCallback((value: string) => {
+    onSearch(value);
+  }, [onSearch]);
+  
+  const debouncedHandler = useDebounced(debouncedSearch, 300);
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     setSearchTerm(value);
-    onSearch(value);
+    debouncedHandler(value);
   };
 
   return (
-    <div className="relative mb-6 w-full">
+    <div className="relative mb-6 w-full max-w-md mx-auto">
       <Search className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400" />
       <Input
         type="text"
