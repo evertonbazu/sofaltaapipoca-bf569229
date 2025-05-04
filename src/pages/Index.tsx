@@ -14,6 +14,19 @@ const Index: React.FC = () => {
     setSearchTerm(term.toLowerCase());
   };
 
+  // Get current date and time formatted for display
+  const getCurrentDateTime = () => {
+    const now = new Date();
+    const options: Intl.DateTimeFormatOptions = {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    };
+    return now.toLocaleDateString('pt-BR', options);
+  };
+
   return (
     <div className="min-h-screen bg-gray-100">
       <header className="bg-gradient-indigo text-white py-4 sm:py-6">
@@ -60,7 +73,7 @@ const Index: React.FC = () => {
       <footer className="bg-gray-800 text-white py-3 sm:py-4">
         <div className="container mx-auto px-3 sm:px-4 text-center">
           <p className="text-sm sm:text-base">&copy; 2025 Só Falta a Pipoca. Todos os direitos reservados.</p>
-          <p className="text-xs text-gray-400 mt-1">v1.1.1</p>
+          <p className="text-xs text-gray-400 mt-1">v1.1.1 • Atualizado em: {getCurrentDateTime()}</p>
         </div>
       </footer>
     </div>
