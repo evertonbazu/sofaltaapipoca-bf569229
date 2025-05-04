@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from "react";
 import SubscriptionList from "@/components/SubscriptionList";
 import SearchBar from "@/components/SearchBar";
@@ -22,7 +23,7 @@ const Index = () => {
     hour: '2-digit',
     minute: '2-digit'
   });
-  const version = "1.0.8"; // Incrementado o versionamento após alterações
+  const version = "1.0.9"; // Incrementado o versionamento após alterações
 
   const handleSearch = (term: string) => {
     setSearchTerm(term.toLowerCase());
