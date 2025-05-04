@@ -20,7 +20,7 @@ const Index = () => {
     minute: '2-digit'
   });
   
-  const version = "1.0.5";
+  const version = "1.0.6";
   
   return (
     <div className="min-h-screen bg-gradient-indigo p-4">
@@ -30,7 +30,11 @@ const Index = () => {
           <p className="text-indigo-100">Assinaturas premium com preços exclusivos</p>
         </header>
 
-        <SubscriptionList subscriptionRefs={subscriptionRefs} />
+        <div className="bg-white p-6 rounded-lg shadow-lg text-center">
+          <p className="text-lg text-gray-700">
+            Não há assinaturas disponíveis no momento.
+          </p>
+        </div>
 
         <footer className="mt-10 text-center text-indigo-100 text-sm">
           <p>Ofertas sujeitas a disponibilidade. Entre em contato para mais informações.</p>
