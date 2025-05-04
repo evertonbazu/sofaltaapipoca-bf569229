@@ -1,6 +1,6 @@
 
 import React from "react";
-import { regularSubscriptions } from "@/data/subscriptionData";
+import { regularSubscriptions } from "@/data/subscriptions";
 import SubscriptionItem from "./SubscriptionItem";
 
 const RegularSubscriptions: React.FC = () => {

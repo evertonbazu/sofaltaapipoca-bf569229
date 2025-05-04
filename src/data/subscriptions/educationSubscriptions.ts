@@ -1,0 +1,65 @@
+
+import { SubscriptionData } from "@/types/subscriptionTypes";
+
+export const educationSubscriptions: SubscriptionData[] = [
+  {
+    title: "BABBEL (Cursos de Idiomas)",
+    price: "R$ 10,00 - PIX (Mensal)",
+    paymentMethod: "PIX",
+    status: "Assinado (1 Vaga)",
+    access: "LOGIN E SENHA",
+    headerColor: "bg-purple-600",
+    priceColor: "text-purple-600",
+    whatsappNumber: "5513992077804",
+    telegramUsername: "evertonbazu",
+    icon: "monitor"
+  },
+  {
+    title: "ALURA PLUS",
+    price: "R$ 20,00 - PIX (Mensal)",
+    paymentMethod: "PIX",
+    status: "Assinado",
+    access: "LOGIN E SENHA",
+    headerColor: "bg-blue-600",
+    priceColor: "text-blue-600",
+    whatsappNumber: "5513992077804",
+    telegramUsername: "evertonbazu",
+    icon: "monitor"
+  },
+  {
+    title: "GRAN CURSOS ILIMITADO AMIGOS",
+    price: "R$ 34,00 - PIX (Mensal)",
+    paymentMethod: "PIX",
+    status: "Assinado (1 vaga)",
+    access: "CONVITE POR E-MAIL",
+    headerColor: "bg-yellow-600",
+    priceColor: "text-yellow-600",
+    whatsappNumber: "5562982292725",
+    telegramUsername: "DonaMariaRosa",
+    icon: "monitor"
+  },
+  {
+    title: "SUPER DUOLINGO PLUS - ANUAL",
+    price: "R$ 58,24 - PIX (ANUAL)",
+    paymentMethod: "PIX",
+    status: "Assinado (1 vaga)",
+    access: "CONVITE POR E-MAIL",
+    headerColor: "bg-green-600",
+    priceColor: "text-green-600",
+    whatsappNumber: "5565984450752",
+    telegramUsername: "euothiagoandrade",
+    icon: "monitor"
+  },
+  {
+    title: "CANVA",
+    price: "R$ 10,00 - PIX (Mensal)",
+    paymentMethod: "PIX",
+    status: "Assinado",
+    access: "CONVITE",
+    headerColor: "bg-blue-600",
+    priceColor: "text-blue-600",
+    whatsappNumber: "5513992077804",
+    telegramUsername: "evertonbazu",
+    icon: "monitor"
+  }
+];

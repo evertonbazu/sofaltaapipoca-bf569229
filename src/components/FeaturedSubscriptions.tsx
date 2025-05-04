@@ -1,6 +1,6 @@
 
 import React from "react";
-import { featuredSubscriptions } from "@/data/subscriptionData";
+import { featuredSubscriptions } from "@/data/subscriptions";
 import SubscriptionItem from "./SubscriptionItem";
 
 interface FeaturedSubscriptionsProps {
@@ -22,6 +22,7 @@ const FeaturedSubscriptions: React.FC<FeaturedSubscriptionsProps> = ({ subscript
           priceColor={subscription.priceColor}
           whatsappNumber={subscription.whatsappNumber}
           telegramUsername={subscription.telegramUsername}
+          icon={subscription.icon}
           subscriptionRefs={subscriptionRefs}
         />
       ))}
