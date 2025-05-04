@@ -1,5 +1,5 @@
 
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Search } from "lucide-react";
 import { useDebounced } from "@/hooks/useDebounced";
@@ -22,6 +22,14 @@ const SearchBar: React.FC<SearchBarProps> = ({ onSearch }) => {
     setSearchTerm(value);
     debouncedHandler(value);
   };
+
+  // Reset search when component mounts
+  useEffect(() => {
+    return () => {
+      // Clean up by resetting search when component unmounts
+      onSearch("");
+    };
+  }, [onSearch]);
 
   return (
     <div className="relative mb-6 w-full max-w-md mx-auto">

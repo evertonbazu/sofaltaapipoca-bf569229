@@ -19,6 +19,7 @@ const FeaturedSubscriptions: React.FC<FeaturedSubscriptionsProps> = ({
   const isMobile = useIsMobile();
 
   useEffect(() => {
+    // Always update based on search term, even if empty
     if (searchTerm) {
       const filtered = featuredSubscriptions.filter(sub => {
         const content = `${sub.title} ${sub.price} ${sub.paymentMethod} ${sub.status} ${sub.access}`.toLowerCase();
@@ -34,6 +35,9 @@ const FeaturedSubscriptions: React.FC<FeaturedSubscriptionsProps> = ({
     } else {
       // When search term is empty, show all featured subscriptions
       setVisibleSubscriptions(featuredSubscriptions);
+      if (setHasResults) {
+        setHasResults(true);
+      }
     }
   }, [searchTerm, setHasResults]);
 
