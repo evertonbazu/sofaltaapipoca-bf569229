@@ -20,21 +20,17 @@ const Index = () => {
     minute: '2-digit'
   });
   
-  const version = "1.0.6";
+  const version = "1.0.7";
   
   return (
-    <div className="min-h-screen bg-gradient-indigo p-4">
+    <div className="min-h-screen bg-gradient-to-b from-indigo-900 to-indigo-700 p-4">
       <div className="max-w-md mx-auto my-8 relative">
         <header className="text-center mb-8">
           <h1 className="text-3xl font-bold text-white mb-2">🍿Só Falta a Pipoca</h1>
           <p className="text-indigo-100">Assinaturas premium com preços exclusivos</p>
         </header>
 
-        <div className="bg-white p-6 rounded-lg shadow-lg text-center">
-          <p className="text-lg text-gray-700">
-            Não há assinaturas disponíveis no momento.
-          </p>
-        </div>
+        <SubscriptionList subscriptionRefs={subscriptionRefs} />
 
         <footer className="mt-10 text-center text-indigo-100 text-sm">
           <p>Ofertas sujeitas a disponibilidade. Entre em contato para mais informações.</p>
