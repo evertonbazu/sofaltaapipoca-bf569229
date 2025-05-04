@@ -9,6 +9,7 @@ interface SubscriptionData {
   priceColor: string;
   whatsappNumber: string;
   telegramUsername: string;
+  icon?: string; // Add optional icon property
 }
 
 export const subscriptions: SubscriptionData[] = [
@@ -21,7 +22,8 @@ export const subscriptions: SubscriptionData[] = [
     headerColor: "bg-blue-600",
     priceColor: "text-blue-600",
     whatsappNumber: "5562982292725",
-    telegramUsername: "DonaMariaRosa"
+    telegramUsername: "DonaMariaRosa",
+    icon: "tv"
   },
   {
     title: "LOOKE",
@@ -32,7 +34,8 @@ export const subscriptions: SubscriptionData[] = [
     headerColor: "bg-indigo-600",
     priceColor: "text-indigo-600",
     whatsappNumber: "5562982292725",
-    telegramUsername: "DonaMariaRosa"
+    telegramUsername: "DonaMariaRosa",
+    icon: "tv"
   },
   {
     title: "NETFLIX (Dispositivos móveis)",
@@ -43,7 +46,8 @@ export const subscriptions: SubscriptionData[] = [
     headerColor: "bg-red-600",
     priceColor: "text-red-600",
     whatsappNumber: "5513992077804",
-    telegramUsername: "evertonbazu"
+    telegramUsername: "evertonbazu",
+    icon: "tv"
   },
   {
     title: "VIKI E KOCOWA +",
@@ -54,7 +58,8 @@ export const subscriptions: SubscriptionData[] = [
     headerColor: "bg-green-600",
     priceColor: "text-green-600",
     whatsappNumber: "86995736762",
-    telegramUsername: "Thamy78"
+    telegramUsername: "Thamy78",
+    icon: "tv"
   },
   {
     title: "PARAMOUNT PADRÃO (MELI+)",
@@ -65,7 +70,8 @@ export const subscriptions: SubscriptionData[] = [
     headerColor: "bg-blue-600",
     priceColor: "text-blue-600",
     whatsappNumber: "5575999997951",
-    telegramUsername: "Eduardok10cds"
+    telegramUsername: "Eduardok10cds",
+    icon: "tv"
   },
   {
     title: "BABBEL (Cursos de Idiomas)",
@@ -76,7 +82,8 @@ export const subscriptions: SubscriptionData[] = [
     headerColor: "bg-purple-600",
     priceColor: "text-purple-600",
     whatsappNumber: "5513992077804",
-    telegramUsername: "evertonbazu"
+    telegramUsername: "evertonbazu",
+    icon: "monitor"
   },
   {
     title: "AMAZON PRIME VÍDEO",
@@ -87,7 +94,8 @@ export const subscriptions: SubscriptionData[] = [
     headerColor: "bg-indigo-600",
     priceColor: "text-indigo-600",
     whatsappNumber: "5513992077804",
-    telegramUsername: "evertonbazu"
+    telegramUsername: "evertonbazu",
+    icon: "tv"
   },
   {
     title: "YOUTUBE PREMIUM",
@@ -98,7 +106,8 @@ export const subscriptions: SubscriptionData[] = [
     headerColor: "bg-red-600",
     priceColor: "text-red-600",
     whatsappNumber: "5527988292875",
-    telegramUsername: "Rastelinho"
+    telegramUsername: "Rastelinho",
+    icon: "youtube"
   },
   {
     title: "NETFLIX (DISPOSITIVOS MÓVEIS/TV)",
@@ -109,7 +118,8 @@ export const subscriptions: SubscriptionData[] = [
     headerColor: "bg-red-600",
     priceColor: "text-red-600",
     whatsappNumber: "5531975374153",
-    telegramUsername: "EvandersonAraujo"
+    telegramUsername: "EvandersonAraujo",
+    icon: "tv"
   },
   {
     title: "GOOGLE ONE IA PREMIUM 2TB COM GEMINI ADVANCED 2.5",
@@ -120,7 +130,8 @@ export const subscriptions: SubscriptionData[] = [
     headerColor: "bg-blue-600",
     priceColor: "text-blue-600",
     whatsappNumber: "5598984045368",
-    telegramUsername: "brenokennedyof"
+    telegramUsername: "brenokennedyof",
+    icon: "monitor"
   },
   {
     title: "ALURA PLUS",
@@ -131,7 +142,8 @@ export const subscriptions: SubscriptionData[] = [
     headerColor: "bg-blue-600",
     priceColor: "text-blue-600",
     whatsappNumber: "5513992077804",
-    telegramUsername: "evertonbazu"
+    telegramUsername: "evertonbazu",
+    icon: "monitor"
   },
   {
     title: "GRAN CURSOS ILIMITADO AMIGOS",
@@ -142,7 +154,8 @@ export const subscriptions: SubscriptionData[] = [
     headerColor: "bg-yellow-600",
     priceColor: "text-yellow-600",
     whatsappNumber: "5562982292725",
-    telegramUsername: "DonaMariaRosa"
+    telegramUsername: "DonaMariaRosa",
+    icon: "monitor"
   },
   {
     title: "SPOTIFY",
@@ -153,7 +166,8 @@ export const subscriptions: SubscriptionData[] = [
     headerColor: "bg-green-600",
     priceColor: "text-green-600",
     whatsappNumber: "5588992259940",
-    telegramUsername: "pedro127"
+    telegramUsername: "pedro127",
+    icon: "monitor"
   },
   {
     title: "NETFLIX 4K + APPLE TV + GLOBO PLAY PREMIUM SEM ANUNCIO + 27 CANAIS",
@@ -164,7 +178,8 @@ export const subscriptions: SubscriptionData[] = [
     headerColor: "bg-red-600",
     priceColor: "text-red-600",
     whatsappNumber: "5585992166014",
-    telegramUsername: "OliveiraBoB"
+    telegramUsername: "OliveiraBoB",
+    icon: "tv"
   },
   {
     title: "AMAZON PRIME VIDEO",
@@ -175,7 +190,8 @@ export const subscriptions: SubscriptionData[] = [
     headerColor: "bg-blue-600",
     priceColor: "text-blue-600",
     whatsappNumber: "5511912659702",
-    telegramUsername: "BrunnoSSantos"
+    telegramUsername: "BrunnoSSantos",
+    icon: "tv"
   },
   {
     title: "CRUNCHYROLL",
@@ -186,7 +202,8 @@ export const subscriptions: SubscriptionData[] = [
     headerColor: "bg-orange-600",
     priceColor: "text-orange-600",
     whatsappNumber: "5511912659702",
-    telegramUsername: "BrunnoSSantos"
+    telegramUsername: "BrunnoSSantos",
+    icon: "tv"
   },
   {
     title: "SPOTIFY",
@@ -197,7 +214,8 @@ export const subscriptions: SubscriptionData[] = [
     headerColor: "bg-green-600",
     priceColor: "text-green-600",
     whatsappNumber: "5511912659702",
-    telegramUsername: "BrunnoSSantos"
+    telegramUsername: "BrunnoSSantos",
+    icon: "monitor"
   },
   {
     title: "DISNEY+ PADRÃO (COM ANÚNCIOS)",
@@ -208,7 +226,8 @@ export const subscriptions: SubscriptionData[] = [
     headerColor: "bg-blue-600",
     priceColor: "text-blue-600",
     whatsappNumber: "5583986510421",
-    telegramUsername: "kiwi_docinho"
+    telegramUsername: "kiwi_docinho",
+    icon: "tv"
   },
   {
     title: "CANVA",
@@ -219,7 +238,8 @@ export const subscriptions: SubscriptionData[] = [
     headerColor: "bg-blue-600",
     priceColor: "text-blue-600",
     whatsappNumber: "5513992077804",
-    telegramUsername: "evertonbazu"
+    telegramUsername: "evertonbazu",
+    icon: "monitor"
   },
   {
     title: "NETFLIX (DISPOSITIVOS MÓVEIS/TV)",
@@ -230,7 +250,8 @@ export const subscriptions: SubscriptionData[] = [
     headerColor: "bg-red-600",
     priceColor: "text-red-600",
     whatsappNumber: "5585992166014",
-    telegramUsername: "OLIVEIRABOB"
+    telegramUsername: "OLIVEIRABOB",
+    icon: "tv"
   },
   {
     title: "APPLE TV+",
@@ -241,7 +262,8 @@ export const subscriptions: SubscriptionData[] = [
     headerColor: "bg-gray-600",
     priceColor: "text-gray-600",
     whatsappNumber: "5574981207317",
-    telegramUsername: "ojuniormauricio"
+    telegramUsername: "ojuniormauricio",
+    icon: "apple"
   },
   {
     title: "Netflix (Cel/PC)",
@@ -252,7 +274,8 @@ export const subscriptions: SubscriptionData[] = [
     headerColor: "bg-red-600",
     priceColor: "text-red-600",
     whatsappNumber: "5587991988684",
-    telegramUsername: "alessadinozzo"
+    telegramUsername: "alessadinozzo",
+    icon: "tv"
   },
   {
     title: "Apple TV",
@@ -263,7 +286,8 @@ export const subscriptions: SubscriptionData[] = [
     headerColor: "bg-gray-600",
     priceColor: "text-gray-600",
     whatsappNumber: "5587991988684",
-    telegramUsername: "alessadinozzo"
+    telegramUsername: "alessadinozzo",
+    icon: "apple"
   },
   {
     title: "MCAFEE TOTAL PROTECTION",
@@ -274,7 +298,8 @@ export const subscriptions: SubscriptionData[] = [
     headerColor: "bg-red-600",
     priceColor: "text-red-600",
     whatsappNumber: "5527997692531",
-    telegramUsername: "otaviodw"
+    telegramUsername: "otaviodw",
+    icon: "monitor"
   },
   {
     title: "PLAYPLUS",
@@ -285,7 +310,8 @@ export const subscriptions: SubscriptionData[] = [
     headerColor: "bg-red-600",
     priceColor: "text-red-600",
     whatsappNumber: "5598984045368",
-    telegramUsername: "brenokennedyof"
+    telegramUsername: "brenokennedyof",
+    icon: "tv"
   },
   {
     title: "MUBI",
@@ -296,7 +322,8 @@ export const subscriptions: SubscriptionData[] = [
     headerColor: "bg-black",
     priceColor: "text-gray-800",
     whatsappNumber: "5598984045368",
-    telegramUsername: "brenokennedyof"
+    telegramUsername: "brenokennedyof",
+    icon: "tv"
   },
   {
     title: "MAX PLATINUM - ANUAL",
@@ -307,7 +334,8 @@ export const subscriptions: SubscriptionData[] = [
     headerColor: "bg-purple-600",
     priceColor: "text-purple-600",
     whatsappNumber: "5561998013373",
-    telegramUsername: "andrefpc"
+    telegramUsername: "andrefpc",
+    icon: "tv"
   },
   {
     title: "MAX STANDARD",
@@ -318,7 +346,8 @@ export const subscriptions: SubscriptionData[] = [
     headerColor: "bg-purple-600",
     priceColor: "text-purple-600",
     whatsappNumber: "5575992630618",
-    telegramUsername: "arnaldojhony"
+    telegramUsername: "arnaldojhony",
+    icon: "tv"
   },
   {
     title: "PARAMOUNT PREMIUM",
@@ -329,7 +358,8 @@ export const subscriptions: SubscriptionData[] = [
     headerColor: "bg-blue-600",
     priceColor: "text-blue-600",
     whatsappNumber: "5585992166014",
-    telegramUsername: "OLIVEIRABOB"
+    telegramUsername: "OLIVEIRABOB",
+    icon: "tv"
   },
   {
     title: "APPLE ONE (2TB)",
@@ -340,7 +370,8 @@ export const subscriptions: SubscriptionData[] = [
     headerColor: "bg-gray-600",
     priceColor: "text-gray-600",
     whatsappNumber: "5598984045368",
-    telegramUsername: "brenokennedyof"
+    telegramUsername: "brenokennedyof",
+    icon: "apple"
   },
   {
     title: "GLOBO PLAY PREMIUM + 27 CANAIS + APPLE TV+",
@@ -351,7 +382,8 @@ export const subscriptions: SubscriptionData[] = [
     headerColor: "bg-blue-600",
     priceColor: "text-blue-600",
     whatsappNumber: "5585992166014",
-    telegramUsername: "OLIVEIRABOB"
+    telegramUsername: "OLIVEIRABOB",
+    icon: "tv"
   },
   {
     title: "CRUNCHYROLL",
@@ -362,7 +394,8 @@ export const subscriptions: SubscriptionData[] = [
     headerColor: "bg-orange-600",
     priceColor: "text-orange-600",
     whatsappNumber: "5586995736762",
-    telegramUsername: "Thamy78"
+    telegramUsername: "Thamy78",
+    icon: "tv"
   },
   {
     title: "YOUTUBE PREMIUM",
@@ -373,7 +406,8 @@ export const subscriptions: SubscriptionData[] = [
     headerColor: "bg-red-600",
     priceColor: "text-red-600",
     whatsappNumber: "5586998315604",
-    telegramUsername: "itallo92"
+    telegramUsername: "itallo92",
+    icon: "youtube"
   },
   {
     title: "SUPER DUOLINGO PLUS - ANUAL",
@@ -384,7 +418,8 @@ export const subscriptions: SubscriptionData[] = [
     headerColor: "bg-green-600",
     priceColor: "text-green-600",
     whatsappNumber: "5565984450752",
-    telegramUsername: "euothiagoandrade"
+    telegramUsername: "euothiagoandrade",
+    icon: "monitor"
   },
   {
     title: "GLOBOPLAY PADRÃO (SEM ANÚNCIOS)",
@@ -395,7 +430,8 @@ export const subscriptions: SubscriptionData[] = [
     headerColor: "bg-blue-600",
     priceColor: "text-blue-600",
     whatsappNumber: "5565984450752",
-    telegramUsername: "euothiagoandrade"
+    telegramUsername: "euothiagoandrade",
+    icon: "tv"
   },
   {
     title: "Microsoft 365 Família 1T",
@@ -406,7 +442,8 @@ export const subscriptions: SubscriptionData[] = [
     headerColor: "bg-blue-600",
     priceColor: "text-blue-600",
     whatsappNumber: "5587991988684",
-    telegramUsername: "alessadinozzo"
+    telegramUsername: "alessadinozzo",
+    icon: "monitor"
   }
 ];
 

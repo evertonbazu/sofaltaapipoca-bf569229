@@ -18,6 +18,7 @@ const RegularSubscriptions: React.FC = () => {
           priceColor={subscription.priceColor}
           whatsappNumber={subscription.whatsappNumber}
           telegramUsername={subscription.telegramUsername}
+          icon={subscription.icon}
         />
       ))}
     </div>

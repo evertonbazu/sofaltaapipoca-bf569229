@@ -1,3 +1,4 @@
+
 import React from "react";
 import SubscriptionCard from "@/components/SubscriptionCard";
 
@@ -11,6 +12,7 @@ interface SubscriptionItemProps {
   priceColor: string;
   whatsappNumber: string;
   telegramUsername: string;
+  icon?: string;
   subscriptionRefs?: React.MutableRefObject<{[key: string]: HTMLDivElement | null}>;
 }
 
@@ -24,6 +26,7 @@ const SubscriptionItem: React.FC<SubscriptionItemProps> = ({
   priceColor,
   whatsappNumber,
   telegramUsername,
+  icon,
   subscriptionRefs
 }) => {
   // If the subscription needs to be referenced (for featured items), use a ref
@@ -40,6 +43,7 @@ const SubscriptionItem: React.FC<SubscriptionItemProps> = ({
           priceColor={priceColor}
           whatsappNumber={whatsappNumber}
           telegramUsername={telegramUsername}
+          icon={icon}
         />
       </div>
     );
@@ -57,6 +61,7 @@ const SubscriptionItem: React.FC<SubscriptionItemProps> = ({
       priceColor={priceColor}
       whatsappNumber={whatsappNumber}
       telegramUsername={telegramUsername}
+      icon={icon}
     />
   );
 };

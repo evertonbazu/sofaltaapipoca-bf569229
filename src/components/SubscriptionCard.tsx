@@ -1,6 +1,7 @@
 
 import React from 'react';
 import { Button } from "@/components/ui/button";
+import { Tv, Youtube, Apple, Monitor } from 'lucide-react';
 
 interface SubscriptionCardProps {
   title: string;
@@ -13,6 +14,7 @@ interface SubscriptionCardProps {
   whatsappNumber: string;
   telegramUsername: string;
   centerTitle?: boolean;
+  icon?: string;
 }
 
 const SubscriptionCard = ({
@@ -25,7 +27,8 @@ const SubscriptionCard = ({
   priceColor,
   whatsappNumber,
   telegramUsername,
-  centerTitle = true
+  centerTitle = true,
+  icon = 'monitor'
 }: SubscriptionCardProps) => {
   const handleWhatsappClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
     const whatsappUrl = `https://api.whatsapp.com/send?phone=${whatsappNumber}`;
@@ -37,11 +40,26 @@ const SubscriptionCard = ({
     window.open(telegramUrl, '_blank');
   };
 
+  // Function to render the appropriate icon based on the subscription type
+  const renderIcon = () => {
+    switch (icon) {
+      case 'tv':
+        return <Tv size={20} className="mr-2" />;
+      case 'youtube':
+        return <Youtube size={20} className="mr-2" />;
+      case 'apple':
+        return <Apple size={20} className="mr-2" />;
+      case 'monitor':
+      default:
+        return <Monitor size={20} className="mr-2" />;
+    }
+  };
+
   return (
     <div className="card bg-white rounded-xl overflow-hidden shadow-lg">
       <div className={`${headerColor} p-4`}>
         <h2 className={`text-xl font-bold text-white flex items-center ${centerTitle ? 'justify-center' : ''}`}>
-          <span className="mr-2">🖥</span> {title}
+          {renderIcon()} {title}
         </h2>
       </div>
       <div className="p-5 space-y-4">
