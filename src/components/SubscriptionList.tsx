@@ -17,7 +17,7 @@ const SubscriptionList: React.FC<SubscriptionListProps> = ({
 }) => {
   const isMobile = useIsMobile();
   
-  // Reset hasResults to true when searchTerm is empty
+  // Reset para true quando o termo de busca estiver vazio
   useEffect(() => {
     if (searchTerm === "") {
       setHasResults(true);

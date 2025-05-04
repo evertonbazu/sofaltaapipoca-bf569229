@@ -20,24 +20,20 @@ const FeaturedSubscriptions: React.FC<FeaturedSubscriptionsProps> = ({
 
   useEffect(() => {
     const filtered = featuredSubscriptions.filter(sub => {
-      // Incluindo todos os campos em que queremos buscar
+      // Incluir todos os campos relevantes na busca
       const content = `${sub.title} ${sub.price} ${sub.paymentMethod} ${sub.status} ${sub.access}`.toLowerCase();
       return content.includes(searchTerm.toLowerCase());
     });
     
     setVisibleSubscriptions(filtered);
     
-    // Update hasResults if needed and this component has the setHasResults prop
+    // Atualizar hasResults se a prop estiver disponível
     if (setHasResults) {
-      // Se há algum resultado em visibleSubscriptions, atualize o estado
       if (filtered.length > 0) {
         setHasResults(true);
       } else if (searchTerm !== "") {
-        // Só define como false se houver um termo de busca e nenhum resultado
+        // Só definimos como false se houver um termo de busca e nenhum resultado
         setHasResults(false);
-      } else {
-        // Se o termo de busca estiver vazio, sempre mostramos todos os resultados
-        setHasResults(true);
       }
     }
   }, [searchTerm, setHasResults]);
