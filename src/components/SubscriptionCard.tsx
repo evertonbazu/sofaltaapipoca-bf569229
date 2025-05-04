@@ -15,6 +15,7 @@ interface SubscriptionCardProps {
   telegramUsername: string;
   centerTitle?: boolean;
   icon?: string;
+  isSearchResult?: boolean;
 }
 
 const SubscriptionCard = ({
@@ -28,7 +29,8 @@ const SubscriptionCard = ({
   whatsappNumber,
   telegramUsername,
   centerTitle = true,
-  icon = 'monitor'
+  icon = 'monitor',
+  isSearchResult = false
 }: SubscriptionCardProps) => {
   const handleWhatsappClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
     const whatsappUrl = `https://api.whatsapp.com/send?phone=${whatsappNumber}`;
@@ -56,7 +58,7 @@ const SubscriptionCard = ({
   };
 
   return (
-    <div className="card bg-white rounded-xl overflow-hidden shadow-lg">
+    <div className={`card bg-white rounded-xl overflow-hidden shadow-lg ${isSearchResult ? 'search-highlight' : ''}`}>
       <div className={`${headerColor} p-4`}>
         <h2 className={`text-xl font-bold text-white flex items-center ${centerTitle ? 'justify-center' : ''}`}>
           {renderIcon()} {title}

@@ -1,12 +1,48 @@
 
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { regularSubscriptions } from "@/data/subscriptions";
 import SubscriptionItem from "./SubscriptionItem";
 
-const RegularSubscriptions: React.FC = () => {
+interface RegularSubscriptionsProps {
+  searchTerm?: string;
+  setHasResults?: React.Dispatch<React.SetStateAction<boolean>>;
+}
+
+const RegularSubscriptions: React.FC<RegularSubscriptionsProps> = ({ 
+  searchTerm = "", 
+  setHasResults 
+}) => {
+  const [visibleSubscriptions, setVisibleSubscriptions] = useState(regularSubscriptions);
+
+  useEffect(() => {
+    if (searchTerm) {
+      const filtered = regularSubscriptions.filter(sub => {
+        const content = `${sub.title} ${sub.price} ${sub.paymentMethod} ${sub.status} ${sub.access}`.toLowerCase();
+        return content.includes(searchTerm);
+      });
+      setVisibleSubscriptions(filtered);
+      
+      // Update hasResults if needed
+      if (setHasResults) {
+        const hasAnyResults = filtered.length > 0;
+        setHasResults(prevState => hasAnyResults);
+      }
+    } else {
+      setVisibleSubscriptions(regularSubscriptions);
+      // Reset hasResults if no search term
+      if (setHasResults) {
+        setHasResults(true);
+      }
+    }
+  }, [searchTerm, setHasResults]);
+
+  if (visibleSubscriptions.length === 0) {
+    return null;
+  }
+
   return (
     <div className="space-y-6">
-      {regularSubscriptions.map((subscription) => (
+      {visibleSubscriptions.map((subscription) => (
         <SubscriptionItem
           key={subscription.title}
           title={subscription.title}

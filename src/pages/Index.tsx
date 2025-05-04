@@ -1,9 +1,13 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import SubscriptionList from "@/components/SubscriptionList";
+import SearchBar from "@/components/SearchBar";
+import NoResults from "@/components/NoResults";
 
 const Index = () => {
   const [currentDateTime, setCurrentDateTime] = useState(new Date());
+  const [searchTerm, setSearchTerm] = useState("");
+  const [hasResults, setHasResults] = useState(true);
   const subscriptionRefs = useRef<{[key: string]: HTMLDivElement | null}>({});
   
   // Update date/time every minute
@@ -21,6 +25,10 @@ const Index = () => {
   });
   
   const version = "1.0.7";
+
+  const handleSearch = (term: string) => {
+    setSearchTerm(term.toLowerCase());
+  };
   
   return (
     <div className="min-h-screen bg-gradient-to-b from-indigo-900 to-indigo-700 p-4">
@@ -28,9 +36,20 @@ const Index = () => {
         <header className="text-center mb-8">
           <h1 className="text-3xl font-bold text-white mb-2">🍿Só Falta a Pipoca</h1>
           <p className="text-indigo-100">Assinaturas premium com preços exclusivos</p>
+          <div className="mt-6">
+            <SearchBar onSearch={handleSearch} />
+          </div>
         </header>
 
-        <SubscriptionList subscriptionRefs={subscriptionRefs} />
+        {hasResults ? (
+          <SubscriptionList 
+            subscriptionRefs={subscriptionRefs} 
+            searchTerm={searchTerm}
+            setHasResults={setHasResults}
+          />
+        ) : (
+          <NoResults />
+        )}
 
         <footer className="mt-10 text-center text-indigo-100 text-sm">
           <p>Ofertas sujeitas a disponibilidade. Entre em contato para mais informações.</p>

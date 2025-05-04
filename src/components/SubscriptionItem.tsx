@@ -14,6 +14,7 @@ interface SubscriptionItemProps {
   telegramUsername: string;
   icon?: string;
   subscriptionRefs?: React.MutableRefObject<{[key: string]: HTMLDivElement | null}>;
+  isSearchResult?: boolean;
 }
 
 const SubscriptionItem: React.FC<SubscriptionItemProps> = ({
@@ -27,7 +28,8 @@ const SubscriptionItem: React.FC<SubscriptionItemProps> = ({
   whatsappNumber,
   telegramUsername,
   icon,
-  subscriptionRefs
+  subscriptionRefs,
+  isSearchResult = false
 }) => {
   // If the subscription needs to be referenced (for featured items), use a ref
   if (subscriptionRefs) {
@@ -44,6 +46,7 @@ const SubscriptionItem: React.FC<SubscriptionItemProps> = ({
           whatsappNumber={whatsappNumber}
           telegramUsername={telegramUsername}
           icon={icon}
+          isSearchResult={isSearchResult}
         />
       </div>
     );
@@ -62,6 +65,7 @@ const SubscriptionItem: React.FC<SubscriptionItemProps> = ({
       whatsappNumber={whatsappNumber}
       telegramUsername={telegramUsername}
       icon={icon}
+      isSearchResult={isSearchResult}
     />
   );
 };
