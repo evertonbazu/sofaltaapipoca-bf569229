@@ -23,10 +23,13 @@ const SearchBar: React.FC<SearchBarProps> = ({ onSearch }) => {
     debouncedHandler(value);
   };
 
-  // Reset search when component mounts
+  // Limpa o campo de busca quando o componente é montado/desmontado
   useEffect(() => {
+    // Iniciar com busca limpa
+    onSearch("");
+    
     return () => {
-      // Clean up by resetting search when component unmounts
+      // Clean up por segurança quando componente é desmontado
       onSearch("");
     };
   }, [onSearch]);

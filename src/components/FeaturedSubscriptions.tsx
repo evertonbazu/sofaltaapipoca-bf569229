@@ -19,23 +19,24 @@ const FeaturedSubscriptions: React.FC<FeaturedSubscriptionsProps> = ({
   const isMobile = useIsMobile();
 
   useEffect(() => {
-    // Always update based on search term, even if empty
-    if (searchTerm) {
-      const filtered = featuredSubscriptions.filter(sub => {
-        const content = `${sub.title} ${sub.price} ${sub.paymentMethod} ${sub.status} ${sub.access}`.toLowerCase();
-        return content.includes(searchTerm.toLowerCase());
-      });
-      
-      setVisibleSubscriptions(filtered);
-      
-      // Update hasResults based only on this component's results
-      if (setHasResults && filtered.length > 0) {
+    const filtered = featuredSubscriptions.filter(sub => {
+      // Incluindo todos os campos em que queremos buscar
+      const content = `${sub.title} ${sub.price} ${sub.paymentMethod} ${sub.status} ${sub.access}`.toLowerCase();
+      return content.includes(searchTerm.toLowerCase());
+    });
+    
+    setVisibleSubscriptions(filtered);
+    
+    // Update hasResults if needed and this component has the setHasResults prop
+    if (setHasResults) {
+      // Se há algum resultado em visibleSubscriptions, atualize o estado
+      if (filtered.length > 0) {
         setHasResults(true);
-      }
-    } else {
-      // When search term is empty, show all featured subscriptions
-      setVisibleSubscriptions(featuredSubscriptions);
-      if (setHasResults) {
+      } else if (searchTerm !== "") {
+        // Só define como false se houver um termo de busca e nenhum resultado
+        setHasResults(false);
+      } else {
+        // Se o termo de busca estiver vazio, sempre mostramos todos os resultados
         setHasResults(true);
       }
     }

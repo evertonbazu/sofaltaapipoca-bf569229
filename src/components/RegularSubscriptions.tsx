@@ -17,27 +17,25 @@ const RegularSubscriptions: React.FC<RegularSubscriptionsProps> = ({
   const isMobile = useIsMobile();
 
   useEffect(() => {
-    if (searchTerm) {
-      const filtered = regularSubscriptions.filter(sub => {
-        const content = `${sub.title} ${sub.price} ${sub.paymentMethod} ${sub.status} ${sub.access}`.toLowerCase();
-        return content.includes(searchTerm.toLowerCase());
-      });
-      
-      setVisibleSubscriptions(filtered);
-      
-      // Update hasResults if needed
-      if (setHasResults) {
-        setHasResults(filtered.length > 0);
-      }
-    } else {
-      // When search term is empty, show all regular subscriptions
-      setVisibleSubscriptions(regularSubscriptions);
-      // Reset hasResults if no search term
-      if (setHasResults) {
+    const filtered = regularSubscriptions.filter(sub => {
+      // Incluindo todos os campos em que queremos buscar
+      const content = `${sub.title} ${sub.price} ${sub.paymentMethod} ${sub.status} ${sub.access}`.toLowerCase();
+      return content.includes(searchTerm.toLowerCase());
+    });
+    
+    setVisibleSubscriptions(filtered);
+    
+    // Update hasResults if needed
+    if (setHasResults) {
+      // Só atualizamos hasResults para true se houver resultados
+      if (filtered.length > 0) {
         setHasResults(true);
+      } else if (searchTerm !== "" && visibleSubscriptions.length === 0) {
+        // Só definimos como false se não houver resultados e o termo não for vazio
+        setHasResults(false);
       }
     }
-  }, [searchTerm, setHasResults]);
+  }, [searchTerm, setHasResults, visibleSubscriptions.length]);
 
   if (visibleSubscriptions.length === 0) {
     return null;
