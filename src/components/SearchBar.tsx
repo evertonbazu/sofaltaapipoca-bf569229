@@ -1,5 +1,5 @@
 
-import React, { useState, useCallback } from "react";
+import React, { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Search } from "lucide-react";
 import { useDebounced } from "@/hooks/useDebounced";
@@ -11,11 +11,10 @@ interface SearchBarProps {
 const SearchBar: React.FC<SearchBarProps> = ({ onSearch }) => {
   const [searchTerm, setSearchTerm] = useState("");
   
-  const debouncedSearch = useCallback((value: string) => {
+  // Use debounced hook for search
+  const debouncedHandler = useDebounced((value: string) => {
     onSearch(value);
-  }, [onSearch]);
-  
-  const debouncedHandler = useDebounced(debouncedSearch, 300);
+  }, 300);
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;

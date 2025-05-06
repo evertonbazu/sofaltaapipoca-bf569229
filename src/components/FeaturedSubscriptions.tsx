@@ -14,7 +14,7 @@ interface FeaturedSubscriptionsProps {
 const FeaturedSubscriptions: React.FC<FeaturedSubscriptionsProps> = ({ 
   subscriptionRefs, 
   searchTerm = "", 
-  setHasResults
+  setHasResults 
 }) => {
   const [allSubscriptions, setAllSubscriptions] = useState<SubscriptionData[]>([]);
   const [visibleSubscriptions, setVisibleSubscriptions] = useState<SubscriptionData[]>([]);
@@ -74,12 +74,15 @@ const FeaturedSubscriptions: React.FC<FeaturedSubscriptionsProps> = ({
       setVisibleSubscriptions(filtered);
       
       // Update hasResults based only on this component's results
-      if (setHasResults && filtered.length > 0) {
-        setHasResults(true);
+      if (setHasResults && allSubscriptions.length > 0) {
+        setHasResults(filtered.length > 0);
       }
     } else {
       // When search term is empty, show all featured subscriptions
       setVisibleSubscriptions(allSubscriptions);
+      if (setHasResults) {
+        setHasResults(true);
+      }
     }
   }, [searchTerm, allSubscriptions, setHasResults]);
 

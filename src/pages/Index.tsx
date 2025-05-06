@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import SearchBar from '@/components/SearchBar';
@@ -17,6 +17,9 @@ const Index = () => {
   const debouncedSearchTerm = useDebounced(searchTerm, 300);
   const [showResults, setShowResults] = useState(true);
   const [showNoResults, setShowNoResults] = useState(false);
+  
+  // Create a ref for subscription items
+  const subscriptionRefs = useRef<{[key: string]: HTMLDivElement | null}>({});
 
   const navigateToAuth = () => {
     navigate('/auth');
@@ -50,11 +53,8 @@ const Index = () => {
             </p>
             
             {/* Search bar */}
-            <div className="w-full max-w-lg mt-6">
-              <SearchBar 
-                searchTerm={searchTerm} 
-                setSearchTerm={handleSearchChange} 
-              />
+            <div className="w-full max-w-lg mx-auto mt-6">
+              <SearchBar onSearch={handleSearchChange} />
             </div>
           </div>
         </div>
@@ -99,7 +99,11 @@ const Index = () => {
         {/* Featured subscriptions */}
         <div className="mb-12">
           <h2 className="text-2xl font-bold mb-6">Destaques</h2>
-          <FeaturedSubscriptions searchTerm={debouncedSearchTerm} />
+          <FeaturedSubscriptions 
+            subscriptionRefs={subscriptionRefs} 
+            searchTerm={debouncedSearchTerm}
+            setHasResults={handleNoResults}
+          />
         </div>
         
         {/* Show no results message if search returns nothing */}
@@ -107,10 +111,13 @@ const Index = () => {
           <NoResults searchTerm={debouncedSearchTerm} />
         ) : (
           <>
-            <SubscriptionList 
-              searchTerm={debouncedSearchTerm} 
-              onResultsChange={handleNoResults}
-            />
+            <div className="mb-12">
+              <h2 className="text-2xl font-bold mb-6">Todas as Assinaturas</h2>
+              <RegularSubscriptions 
+                searchTerm={debouncedSearchTerm}
+                setHasResults={handleNoResults}
+              />
+            </div>
           </>
         )}
       </div>
@@ -119,4 +126,3 @@ const Index = () => {
 };
 
 export default Index;
-
