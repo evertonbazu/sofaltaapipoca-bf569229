@@ -107,18 +107,18 @@ const Index = () => {
         </div>
         
         {/* Show no results message if search returns nothing */}
-        {showNoResults ? (
+        {showNoResults && (
           <NoResults searchTerm={debouncedSearchTerm} />
-        ) : (
-          <>
-            <div className="mb-12">
-              <h2 className="text-2xl font-bold mb-6">Todas as Assinaturas</h2>
-              <RegularSubscriptions 
-                searchTerm={debouncedSearchTerm}
-                setHasResults={handleNoResults}
-              />
-            </div>
-          </>
+        )}
+
+        {showResults && (
+          <div className="mb-12">
+            <h2 className="text-2xl font-bold mb-6">Todas as Assinaturas</h2>
+            <RegularSubscriptions 
+              searchTerm={debouncedSearchTerm}
+              setHasResults={handleNoResults}
+            />
+          </div>
         )}
       </div>
     </div>
