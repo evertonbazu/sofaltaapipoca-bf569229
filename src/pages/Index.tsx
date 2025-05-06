@@ -2,10 +2,10 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
-import { SearchBar } from '@/components/SearchBar';
-import { FeaturedSubscriptions } from '@/components/FeaturedSubscriptions';
-import { RegularSubscriptions } from '@/components/RegularSubscriptions';
-import { NoResults } from '@/components/NoResults';
+import SearchBar from '@/components/SearchBar';
+import FeaturedSubscriptions from '@/components/FeaturedSubscriptions';
+import RegularSubscriptions from '@/components/RegularSubscriptions';
+import NoResults from '@/components/NoResults';
 import { useDebounced } from '@/hooks/useDebounced';
 import { useAuth } from '@/hooks/use-auth';
 import { Home, MessageCircle } from 'lucide-react';
