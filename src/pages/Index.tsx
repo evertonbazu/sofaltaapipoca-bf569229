@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import SearchBar from '@/components/SearchBar';
@@ -16,6 +16,7 @@ const Index: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const debouncedSearchTerm = useDebounced(searchTerm, 300);
   const [showNoResults, setShowNoResults] = useState(false);
+  const subscriptionRefs = useRef<{[key: string]: HTMLDivElement | null}>({});
 
   // Handle search logic
   useEffect(() => {
@@ -116,7 +117,9 @@ const Index: React.FC = () => {
         ) : (
           <>
             {/* Featured Subscriptions */}
-            <FeaturedSubscriptions />
+            <FeaturedSubscriptions 
+              subscriptionRefs={subscriptionRefs} 
+            />
             
             {/* Regular Subscriptions */}
             <RegularSubscriptions />
