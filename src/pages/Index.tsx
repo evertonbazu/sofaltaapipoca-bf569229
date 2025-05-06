@@ -108,7 +108,9 @@ const Index = () => {
         
         {/* Show no results message if search returns nothing */}
         {showNoResults && (
-          <NoResults searchTerm={debouncedSearchTerm} />
+          <div className="my-8">
+            <NoResults searchTerm={debouncedSearchTerm} />
+          </div>
         )}
 
         {showResults && (
