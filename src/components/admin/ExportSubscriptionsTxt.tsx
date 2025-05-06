@@ -27,6 +27,7 @@ interface Subscription {
   access: string;
   whatsapp_number: string;
   telegram_username: string;
+  pix_qr_code?: string;
 }
 
 const ExportSubscriptionsTxt: React.FC = () => {
@@ -108,6 +109,9 @@ const ExportSubscriptionsTxt: React.FC = () => {
       content += `Acesso: ${sub.access}\n`;
       content += `WhatsApp: ${sub.whatsapp_number}\n`;
       content += `Telegram: ${sub.telegram_username}\n`;
+      if (sub.pix_qr_code) {
+        content += `QR Code PIX: ${sub.pix_qr_code}\n`;
+      }
       content += '\n';
     });
     
