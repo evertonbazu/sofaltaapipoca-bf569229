@@ -10,7 +10,7 @@ import { useAuth } from "@/hooks/use-auth";
 
 const Index = () => {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { authState } = useAuth();
   
   const [searchTerm, setSearchTerm] = useState('');
   const debouncedSearchTerm = useDebounced(searchTerm, 300);
@@ -58,8 +58,8 @@ const Index = () => {
             {/* Search bar */}
             <div className="w-full max-w-lg mt-6">
               <SearchBar 
-                searchTerm={searchTerm} 
-                setSearchTerm={setSearchTerm} 
+                value={searchTerm} 
+                onChange={setSearchTerm} 
               />
             </div>
           </div>
@@ -71,9 +71,9 @@ const Index = () => {
         <div className="flex justify-between items-center mb-8">
           {/* User greeting */}
           <div>
-            {user ? (
+            {authState.user ? (
               <h2 className="text-xl font-semibold">
-                Olá, {user.email}!
+                Olá, {authState.user.email}!
               </h2>
             ) : (
               <h2 className="text-xl font-semibold">
@@ -84,7 +84,7 @@ const Index = () => {
           
           {/* Action buttons */}
           <div className="flex gap-3">
-            {user ? (
+            {authState.user ? (
               <Button
                 onClick={navigateToAdmin}
                 className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 sm:w-40"
@@ -110,7 +110,7 @@ const Index = () => {
         
         {/* Show no results message if search returns nothing */}
         {showNoResults ? (
-          <NoResults searchTerm={debouncedSearchTerm} />
+          <NoResults query={debouncedSearchTerm} />
         ) : (
           <>
             <SubscriptionList 
