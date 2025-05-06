@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -49,6 +48,10 @@ interface PendingSubscription {
   rejection_reason?: string;
   user_id: string;
   username?: string;
+  header_color?: string;
+  price_color?: string;
+  icon?: string;
+  pix_qr_code?: string;
 }
 
 const PendingSubscriptions: React.FC = () => {
@@ -179,6 +182,7 @@ const PendingSubscriptions: React.FC = () => {
           header_color: selectedSubscription.header_color || 'bg-blue-600',
           price_color: selectedSubscription.price_color || 'text-blue-600',
           icon: selectedSubscription.icon || 'monitor',
+          pix_qr_code: selectedSubscription.pix_qr_code
         });
 
       if (insertError) throw insertError;

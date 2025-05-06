@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import SearchBar from '@/components/SearchBar';
@@ -494,13 +493,14 @@ const SubmissionForm: React.FC = () => {
       </div>
       
       <div>
-        <label className="block text-sm font-medium">QR Code PIX (opcional)</label>
+        <label className="block text-sm font-medium">QR Code PIX (obrigatório)</label>
         <input 
           type="file" 
           name="pixQrCode"
           accept="image/*"
           onChange={handleFileChange}
           className="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+          required
         />
         <p className="text-xs text-gray-500 mt-1">Envie o QR Code do seu PIX para facilitar o pagamento.</p>
       </div>
