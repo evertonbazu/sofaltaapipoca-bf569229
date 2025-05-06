@@ -52,31 +52,40 @@ const UserManagement: React.FC = () => {
     try {
       setIsLoading(true);
       setError(null);
-
-      // First get auth users
-      const { data: authUsers, error: authError } = await supabase.auth.admin.listUsers();
       
-      if (authError) throw authError;
-      
-      // Then get profiles
+      // Get profiles
       const { data: profiles, error: profilesError } = await supabase
         .from('profiles')
         .select('*');
       
       if (profilesError) throw profilesError;
       
-      // Combine the data
-      const combinedUsers = profiles.map(profile => {
-        const authUser = authUsers.users.find(u => u.id === profile.id);
-        return {
+      // Then get auth users
+      const { data: authData, error: authError } = await supabase
+        .auth.admin.listUsers();
+      
+      if (authError) {
+        // If admin access fails, just use the profiles data
+        setUsers(profiles.map(profile => ({
           id: profile.id,
           username: profile.username,
           role: profile.role,
-          email: authUser?.email
-        };
-      });
-      
-      setUsers(combinedUsers);
+        })));
+      } else {
+        // Combine the data if we have access to both
+        const authUsers = authData?.users || [];
+        const combinedUsers = profiles.map(profile => {
+          const authUser = authUsers.find(u => u.id === profile.id);
+          return {
+            id: profile.id,
+            username: profile.username,
+            role: profile.role,
+            email: authUser?.email
+          };
+        });
+        
+        setUsers(combinedUsers);
+      }
     } catch (err: any) {
       setError(err.message);
       toast({
@@ -99,12 +108,25 @@ const UserManagement: React.FC = () => {
     try {
       setIsDeleting(true);
       
-      // Delete the user from auth
-      const { error: authError } = await supabase.auth.admin.deleteUser(deleteId);
+      try {
+        // Try to delete the user from auth
+        const { error: authError } = await supabase.auth.admin.deleteUser(deleteId);
+        
+        if (authError) {
+          // If auth admin fails, inform but continue with profile deletion
+          console.error("Could not delete user from auth:", authError);
+        }
+      } catch (error) {
+        console.error("Error with admin deletion:", error);
+      }
       
-      if (authError) throw authError;
+      // Delete the profile
+      const { error } = await supabase
+        .from('profiles')
+        .delete()
+        .eq('id', deleteId);
       
-      // Profile will be deleted via cascade
+      if (error) throw error;
       
       setUsers(users.filter(user => user.id !== deleteId));
       

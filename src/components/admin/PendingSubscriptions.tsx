@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -49,6 +48,9 @@ interface PendingSubscription {
   rejection_reason?: string;
   user_id: string;
   username?: string;
+  header_color: string;
+  price_color: string;
+  icon: string | null;
 }
 
 const PendingSubscriptions: React.FC = () => {
