@@ -1,12 +1,13 @@
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Button } from "@/components/ui/button";
+import { useAuth } from '@/context/AuthContext';
 import SearchBar from '@/components/SearchBar';
 import NoResults from '@/components/NoResults';
-import SubscriptionList from '@/components/SubscriptionList';
-import { useDebounced } from "@/hooks/useDebounced";
-import { useAuth } from "@/hooks/use-auth";
+import FeaturedSubscriptions from '@/components/FeaturedSubscriptions';
+import RegularSubscriptions from '@/components/RegularSubscriptions';
+import { Button } from '@/components/ui/button';
+import { useDebounced } from '@/hooks/useDebounced';
 
 const Index = () => {
   const navigate = useNavigate();
@@ -14,70 +15,63 @@ const Index = () => {
   
   const [searchTerm, setSearchTerm] = useState('');
   const debouncedSearchTerm = useDebounced(searchTerm, 300);
+  const [showResults, setShowResults] = useState(true);
   const [showNoResults, setShowNoResults] = useState(false);
-  const [hasResults, setHasResults] = useState(true);
-  const subscriptionRefs = useRef<{[key: string]: HTMLDivElement | null}>({});
 
-  // Handle search logic
-  useEffect(() => {
-    if (debouncedSearchTerm) {
-      setShowNoResults(!hasResults);
-    } else {
-      setShowNoResults(false);
-    }
-  }, [debouncedSearchTerm, hasResults]);
-  
-  // Handle navigation to admin panel
-  const navigateToAdmin = () => {
-    navigate('/admin');
-  };
-  
-  // Handle navigation to auth page for login/registration
   const navigateToAuth = () => {
     navigate('/auth');
   };
   
-  // Handle navigation to contact
-  const navigateToContact = () => {
-    navigate('/contact');
+  const navigateToAdmin = () => {
+    navigate('/admin');
+  };
+
+  const handleNoResults = (hasResults: boolean) => {
+    setShowNoResults(!hasResults);
+    setShowResults(hasResults);
+  };
+
+  const handleSearchChange = (value: string) => {
+    setSearchTerm(value);
   };
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header Section */}
-      <header className="bg-gradient-to-r from-blue-600 to-purple-600 text-white py-6 sm:py-10">
+      {/* Hero section */}
+      <div className="bg-gradient-to-r from-purple-500 to-indigo-500 text-white py-12">
         <div className="container mx-auto px-4">
-          <div className="flex flex-col items-center">
-            <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold text-center mb-2 sm:mb-4">
-              Plataforma de Assinaturas
+          <div className="max-w-3xl mx-auto text-center">
+            <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-6">
+              Só Falta a Pipoca
             </h1>
-            <p className="text-lg sm:text-xl text-center">
-              🍿 Só Falta a Pipoca
+            <p className="text-lg sm:text-xl mb-8">
+              Encontre e compartilhe serviços de assinatura para qualquer ocasião.
+              Todos os seus streamings favoritos em um só lugar.
             </p>
             
             {/* Search bar */}
             <div className="w-full max-w-lg mt-6">
               <SearchBar 
-                value={searchTerm} 
-                onChange={setSearchTerm} 
+                searchTerm={searchTerm} 
+                setSearchTerm={handleSearchChange} 
               />
             </div>
           </div>
         </div>
-      </header>
+      </div>
       
       {/* Main content */}
-      <main className="container mx-auto px-4 py-8">
+      <div className="container mx-auto px-4 py-8">
         <div className="flex justify-between items-center mb-8">
           {/* User greeting */}
           <div>
             {authState.user ? (
               <h2 className="text-xl font-semibold">
-                Olá, {authState.user.email}!
+                Olá, {authState.user.username || authState.user.id}!
               </h2>
             ) : (
               <h2 className="text-xl font-semibold">
-                Confira nossas assinaturas
+                Bem-vindo à Só Falta a Pipoca
               </h2>
             )}
           </div>
@@ -96,56 +90,33 @@ const Index = () => {
                 onClick={navigateToAuth}
                 className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 sm:w-40"
               >
-                Cadastrar Anúncio
+                Entrar
               </Button>
             )}
-            <Button
-              onClick={navigateToContact}
-              className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 sm:w-40"
-            >
-              Fale Conosco
-            </Button>
           </div>
+        </div>
+        
+        {/* Featured subscriptions */}
+        <div className="mb-12">
+          <h2 className="text-2xl font-bold mb-6">Destaques</h2>
+          <FeaturedSubscriptions searchTerm={debouncedSearchTerm} />
         </div>
         
         {/* Show no results message if search returns nothing */}
         {showNoResults ? (
-          <NoResults query={debouncedSearchTerm} />
+          <NoResults searchTerm={debouncedSearchTerm} />
         ) : (
           <>
             <SubscriptionList 
-              subscriptionRefs={subscriptionRefs} 
-              searchTerm={searchTerm}
-              setHasResults={setHasResults}
+              searchTerm={debouncedSearchTerm} 
+              onResultsChange={handleNoResults}
             />
           </>
         )}
-      </main>
-      
-      {/* Footer */}
-      <footer className="bg-gray-800 text-white py-8">
-        <div className="container mx-auto px-4">
-          <div className="flex flex-col md:flex-row justify-between">
-            <div className="mb-6 md:mb-0">
-              <h3 className="text-xl font-semibold mb-2">Plataforma de Assinaturas</h3>
-              <p>🍿 Só Falta a Pipoca - Todas as assinaturas em um só lugar.</p>
-            </div>
-            <div>
-              <h4 className="text-lg font-medium mb-2">Links Úteis</h4>
-              <ul>
-                <li className="mb-1"><a href="#" className="hover:text-blue-300">Termos de Uso</a></li>
-                <li className="mb-1"><a href="#" className="hover:text-blue-300">Política de Privacidade</a></li>
-                <li><a href="#" className="hover:text-blue-300">Perguntas Frequentes</a></li>
-              </ul>
-            </div>
-          </div>
-          <div className="border-t border-gray-700 mt-8 pt-6 text-center text-gray-400">
-            <p>&copy; {new Date().getFullYear()} Plataforma de Assinaturas. Todos os direitos reservados.</p>
-          </div>
-        </div>
-      </footer>
+      </div>
     </div>
   );
 };
 
 export default Index;
+
