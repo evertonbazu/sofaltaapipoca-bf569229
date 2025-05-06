@@ -5,13 +5,14 @@ import { useAuth } from '@/hooks/use-auth';
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { SidebarProvider, Sidebar, SidebarMenu, SidebarMenuItem, SidebarMenuButton } from "@/components/ui/sidebar";
-import { Home, ListPlus, Edit, LogOut, Users, Bell, FileSpreadsheet, User } from 'lucide-react';
+import { Home, ListPlus, Edit, LogOut, Users, Bell, FileSpreadsheet, User, FileText } from 'lucide-react';
 import AdminDashboard from '@/components/admin/AdminDashboard';
 import SubscriptionForm from '@/components/admin/SubscriptionForm';
 import SubscriptionList from '@/components/admin/SubscriptionList';
 import UserManagement from '@/components/admin/UserManagement';
 import PendingSubscriptions from '@/components/admin/PendingSubscriptions';
 import ImportExcel from '@/components/admin/ImportExcel';
+import ExportSubscriptionsTxt from '@/components/admin/ExportSubscriptionsTxt';
 
 const Admin: React.FC = () => {
   const { authState, isAdmin, signOut } = useAuth();
@@ -53,8 +54,8 @@ const Admin: React.FC = () => {
       <div className="flex h-screen overflow-hidden">
         <Sidebar>
           <div className="p-4">
-            <h1 className="text-2xl font-bold">🍿 Só Falta a Pipoca</h1>
-            <p className="text-sm text-muted-foreground">Painel Administrativo</p>
+            <h1 className="text-2xl font-bold text-center">🍿 Só Falta a Pipoca</h1>
+            <p className="text-sm text-muted-foreground text-center">Painel Administrativo</p>
           </div>
           <Separator />
           <div className="flex-1 overflow-y-auto py-4">
@@ -106,6 +107,15 @@ const Admin: React.FC = () => {
               </SidebarMenuItem>
               <SidebarMenuItem>
                 <SidebarMenuButton 
+                  onClick={() => navigate('/admin/subscriptions/export-txt')}
+                  isActive={isActive('/admin/subscriptions/export-txt')}
+                >
+                  <FileText className="mr-2 h-5 w-5" />
+                  Exportar TXT
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              <SidebarMenuItem>
+                <SidebarMenuButton 
                   onClick={() => navigate('/admin/users')}
                   isActive={isActive('/admin/users')}
                 >
@@ -148,6 +158,7 @@ const Admin: React.FC = () => {
               <Route path="/subscriptions/edit/:id" element={<SubscriptionForm />} />
               <Route path="/subscriptions/pending" element={<PendingSubscriptions />} />
               <Route path="/subscriptions/import-excel" element={<ImportExcel />} />
+              <Route path="/subscriptions/export-txt" element={<ExportSubscriptionsTxt />} />
               <Route path="/users" element={<UserManagement />} />
             </Routes>
           </div>

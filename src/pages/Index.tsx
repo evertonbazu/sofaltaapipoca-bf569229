@@ -166,8 +166,8 @@ const Index: React.FC = () => {
 
       <header className="bg-gradient-indigo text-white py-4 sm:py-6">
         <div className="container mx-auto px-3 sm:px-4">
-          <div className="flex justify-between items-center mb-4">
-            <h1 className="text-2xl sm:text-3xl font-bold">🍿 Só Falta a Pipoca</h1>
+          <div className="flex justify-center items-center mb-4">
+            <h1 className="text-2xl sm:text-3xl font-bold text-center">🍿 Só Falta a Pipoca</h1>
           </div>
           <p className="text-center text-base sm:text-lg mt-1">Assinaturas premium com preços exclusivos</p>
           
@@ -177,7 +177,7 @@ const Index: React.FC = () => {
               <Sheet>
                 <SheetTrigger asChild>
                   <Button 
-                    className="flex-1 flex flex-col items-center justify-center bg-yellow-500 hover:bg-yellow-600 text-white rounded-lg font-medium py-2 px-3 transition-all duration-200 hover:-translate-y-1"
+                    className="flex-1 flex flex-col items-center justify-center h-16 bg-yellow-500 hover:bg-yellow-600 text-white rounded-lg font-medium py-2 px-3 transition-all duration-200 hover:-translate-y-1"
                   >
                     <Plus className="h-5 w-5 mb-1" />
                     <span className="text-xs sm:text-sm">Cadastrar Anúncio</span>
@@ -198,7 +198,7 @@ const Index: React.FC = () => {
             ) : (
               <a 
                 href="/auth" 
-                className="flex-1 flex flex-col items-center justify-center bg-yellow-500 hover:bg-yellow-600 text-white rounded-lg font-medium py-2 px-3 transition-all duration-200 hover:-translate-y-1"
+                className="flex-1 flex flex-col items-center justify-center h-16 bg-yellow-500 hover:bg-yellow-600 text-white rounded-lg font-medium py-2 px-3 transition-all duration-200 hover:-translate-y-1"
               >
                 <Megaphone className="h-5 w-5 mb-1" />
                 <span className="text-xs sm:text-sm">Cadastre-se para Anunciar</span>
@@ -207,7 +207,7 @@ const Index: React.FC = () => {
             <a 
               href="https://wa.me/5513992077804" 
               target="_blank"
-              className="flex-1 flex flex-col items-center justify-center bg-green-500 hover:bg-green-600 text-white rounded-lg font-medium py-2 px-3 transition-all duration-200 hover:-translate-y-1"
+              className="flex-1 flex flex-col items-center justify-center h-16 bg-green-500 hover:bg-green-600 text-white rounded-lg font-medium py-2 px-3 transition-all duration-200 hover:-translate-y-1"
             >
               <MessageSquare className="h-5 w-5 mb-1" />
               <span className="text-xs sm:text-sm">Fale Conosco</span>
@@ -263,6 +263,7 @@ interface FormData {
   access: string;
   whatsappNumber: string;
   telegramUsername: string;
+  pixQrCode?: File | null;
 }
 
 const SubmissionForm: React.FC = () => {
@@ -276,8 +277,10 @@ const SubmissionForm: React.FC = () => {
     status: '',
     access: '',
     whatsappNumber: '',
-    telegramUsername: ''
+    telegramUsername: '',
+    pixQrCode: null
   });
+  const [priceValue, setPriceValue] = useState('');
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -285,6 +288,45 @@ const SubmissionForm: React.FC = () => {
       ...prev,
       [name]: value
     }));
+  };
+
+  const handlePriceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    let value = e.target.value;
+    
+    // Remove non-numeric characters except decimal point
+    value = value.replace(/[^\d,]/g, '');
+    
+    // Format as currency
+    if (value) {
+      // Convert comma to dot for calculation
+      const numericValue = value.replace(',', '.');
+      // Parse as float and format
+      const numberValue = parseFloat(numericValue);
+      
+      if (!isNaN(numberValue)) {
+        // Format with 2 decimal places and replace dot with comma
+        value = `R$ ${numberValue.toFixed(2).replace('.', ',')}`;
+      } else {
+        value = 'R$ ';
+      }
+    } else {
+      value = 'R$ ';
+    }
+    
+    setPriceValue(value);
+    setFormData(prev => ({
+      ...prev,
+      price: value
+    }));
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
+      setFormData(prev => ({
+        ...prev,
+        pixQrCode: e.target.files![0]
+      }));
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -307,6 +349,33 @@ const SubmissionForm: React.FC = () => {
       const formattedDate = `${String(today.getDate()).padStart(2, '0')}/${
         String(today.getMonth() + 1).padStart(2, '0')}/${today.getFullYear()}`;
       
+      // Upload PIX QR code if provided
+      let pixQrCodeUrl = null;
+      if (formData.pixQrCode) {
+        // First, check if storage bucket exists and create if not
+        const { data: buckets } = await supabase.storage.listBuckets();
+        if (!buckets?.some(bucket => bucket.name === 'pix-qrcodes')) {
+          await supabase.storage.createBucket('pix-qrcodes', {
+            public: false
+          });
+        }
+        
+        // Upload the file
+        const fileName = `${authState.user.id}_${Date.now()}_${formData.pixQrCode.name}`;
+        const { data, error: uploadError } = await supabase.storage
+          .from('pix-qrcodes')
+          .upload(fileName, formData.pixQrCode);
+          
+        if (uploadError) throw uploadError;
+        
+        // Get the URL
+        const { data: { publicUrl } } = supabase.storage
+          .from('pix-qrcodes')
+          .getPublicUrl(fileName);
+          
+        pixQrCodeUrl = publicUrl;
+      }
+      
       const { error } = await supabase
         .from('pending_subscriptions')
         .insert({
@@ -318,6 +387,7 @@ const SubmissionForm: React.FC = () => {
           access: formData.access,
           whatsapp_number: formData.whatsappNumber,
           telegram_username: formData.telegramUsername,
+          pix_qr_code: pixQrCodeUrl,
           added_date: formattedDate
         });
       
@@ -336,8 +406,10 @@ const SubmissionForm: React.FC = () => {
         status: '',
         access: '',
         whatsappNumber: '',
-        telegramUsername: ''
+        telegramUsername: '',
+        pixQrCode: null
       });
+      setPriceValue('');
       
     } catch (err: any) {
       toast({
@@ -353,7 +425,7 @@ const SubmissionForm: React.FC = () => {
   return (
     <form onSubmit={handleSubmit} className="space-y-4 p-2">
       <div>
-        <label className="block text-sm font-medium">Título</label>
+        <label className="block text-sm font-medium">Título *</label>
         <input 
           type="text" 
           name="title"
@@ -366,20 +438,20 @@ const SubmissionForm: React.FC = () => {
       </div>
       
       <div>
-        <label className="block text-sm font-medium">Preço</label>
+        <label className="block text-sm font-medium">Preço *</label>
         <input 
           type="text" 
           name="price"
-          value={formData.price}
-          onChange={handleChange}
+          value={priceValue}
+          onChange={handlePriceChange}
           className="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-          placeholder="Ex: R$ 10,00 - PIX (Mensal)"
+          placeholder="R$ 0,00"
           required
         />
       </div>
       
       <div>
-        <label className="block text-sm font-medium">Forma de Pagamento</label>
+        <label className="block text-sm font-medium">Forma de Pagamento *</label>
         <input 
           type="text" 
           name="paymentMethod"
@@ -392,7 +464,7 @@ const SubmissionForm: React.FC = () => {
       </div>
       
       <div>
-        <label className="block text-sm font-medium">Status</label>
+        <label className="block text-sm font-medium">Status *</label>
         <input 
           type="text" 
           name="status"
@@ -405,7 +477,7 @@ const SubmissionForm: React.FC = () => {
       </div>
       
       <div>
-        <label className="block text-sm font-medium">Tipo de Acesso</label>
+        <label className="block text-sm font-medium">Tipo de Acesso *</label>
         <select 
           name="access"
           value={formData.access}
@@ -422,7 +494,19 @@ const SubmissionForm: React.FC = () => {
       </div>
       
       <div>
-        <label className="block text-sm font-medium">Número WhatsApp</label>
+        <label className="block text-sm font-medium">QR Code PIX (opcional)</label>
+        <input 
+          type="file" 
+          name="pixQrCode"
+          accept="image/*"
+          onChange={handleFileChange}
+          className="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+        />
+        <p className="text-xs text-gray-500 mt-1">Envie o QR Code do seu PIX para facilitar o pagamento.</p>
+      </div>
+      
+      <div>
+        <label className="block text-sm font-medium">Número WhatsApp *</label>
         <input 
           type="text" 
           name="whatsappNumber"
@@ -435,7 +519,7 @@ const SubmissionForm: React.FC = () => {
       </div>
       
       <div>
-        <label className="block text-sm font-medium">Username Telegram</label>
+        <label className="block text-sm font-medium">Username Telegram *</label>
         <input 
           type="text" 
           name="telegramUsername"

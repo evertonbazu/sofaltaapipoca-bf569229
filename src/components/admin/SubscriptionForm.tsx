@@ -32,6 +32,9 @@ const SubscriptionForm: React.FC = () => {
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [isFetching, setIsFetching] = useState<boolean>(!!id);
   const [error, setError] = useState<string | null>(null);
+  const [pixQrCode, setPixQrCode] = useState<File | null>(null);
+  const [priceValue, setPriceValue] = useState('');
+  const [existingPixQrCodeUrl, setExistingPixQrCodeUrl] = useState<string | null>(null);
 
   useEffect(() => {
     if (id) {
@@ -60,6 +63,13 @@ const SubscriptionForm: React.FC = () => {
               icon: data.icon || 'monitor',
               addedDate: data.added_date || format(new Date(), 'dd/MM/yyyy')
             });
+
+            setPriceValue(data.price || '');
+            
+            // Check if there's a pix QR code
+            if (data.pix_qr_code) {
+              setExistingPixQrCodeUrl(data.pix_qr_code);
+            }
           }
         } catch (err: any) {
           setError(err.message);
@@ -84,6 +94,42 @@ const SubscriptionForm: React.FC = () => {
     });
   };
 
+  const handlePriceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    let value = e.target.value;
+    
+    // Remove non-numeric characters except decimal point
+    value = value.replace(/[^\d,]/g, '');
+    
+    // Format as currency
+    if (value) {
+      // Convert comma to dot for calculation
+      const numericValue = value.replace(',', '.');
+      // Parse as float and format
+      const numberValue = parseFloat(numericValue);
+      
+      if (!isNaN(numberValue)) {
+        // Format with 2 decimal places and replace dot with comma
+        value = `R$ ${numberValue.toFixed(2).replace('.', ',')}`;
+      } else {
+        value = 'R$ ';
+      }
+    } else {
+      value = 'R$ ';
+    }
+    
+    setPriceValue(value);
+    setFormData(prev => ({
+      ...prev,
+      price: value
+    }));
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
+      setPixQrCode(e.target.files[0]);
+    }
+  };
+
   const handleSelectChange = (name: string, value: string) => {
     setFormData({
       ...formData,
@@ -97,6 +143,33 @@ const SubscriptionForm: React.FC = () => {
     setIsLoading(true);
 
     try {
+      // Upload PIX QR code if provided
+      let pixQrCodeUrl = existingPixQrCodeUrl;
+      if (pixQrCode) {
+        // First, check if storage bucket exists and create if not
+        const { data: buckets } = await supabase.storage.listBuckets();
+        if (!buckets?.some(bucket => bucket.name === 'pix-qrcodes')) {
+          await supabase.storage.createBucket('pix-qrcodes', {
+            public: false
+          });
+        }
+        
+        // Upload the file
+        const fileName = `admin_${Date.now()}_${pixQrCode.name}`;
+        const { data, error: uploadError } = await supabase.storage
+          .from('pix-qrcodes')
+          .upload(fileName, pixQrCode);
+          
+        if (uploadError) throw uploadError;
+        
+        // Get the URL
+        const { data: { publicUrl } } = supabase.storage
+          .from('pix-qrcodes')
+          .getPublicUrl(fileName);
+          
+        pixQrCodeUrl = publicUrl;
+      }
+
       const subscriptionData = {
         title: formData.title,
         price: formData.price,
@@ -108,7 +181,8 @@ const SubscriptionForm: React.FC = () => {
         whatsapp_number: formData.whatsappNumber,
         telegram_username: formData.telegramUsername,
         icon: formData.icon,
-        added_date: formData.addedDate
+        added_date: formData.addedDate,
+        pix_qr_code: pixQrCodeUrl
       };
 
       if (id) {
@@ -195,9 +269,9 @@ const SubscriptionForm: React.FC = () => {
                 <Input
                   id="price"
                   name="price"
-                  placeholder="Ex: R$ 10,00 - PIX (Mensal)"
-                  value={formData.price}
-                  onChange={handleChange}
+                  placeholder="Ex: R$ 10,00"
+                  value={priceValue}
+                  onChange={handlePriceChange}
                   required
                 />
               </div>
@@ -346,6 +420,30 @@ const SubscriptionForm: React.FC = () => {
                   required
                 />
               </div>
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="pixQrCode">QR Code PIX (opcional)</Label>
+              <Input
+                id="pixQrCode"
+                name="pixQrCode"
+                type="file"
+                accept="image/*"
+                onChange={handleFileChange}
+              />
+              {existingPixQrCodeUrl && !pixQrCode && (
+                <div className="mt-2">
+                  <p className="text-sm mb-2">QR Code atual:</p>
+                  <img 
+                    src={existingPixQrCodeUrl} 
+                    alt="QR Code PIX" 
+                    className="max-h-32 border rounded-md"
+                  />
+                </div>
+              )}
+              <p className="text-xs text-gray-500 mt-1">
+                {existingPixQrCodeUrl ? "Envie um novo arquivo para substituir o QR Code atual." : "Envie o QR Code do PIX para facilitar o pagamento."}
+              </p>
             </div>
             
             <div className="space-y-2">

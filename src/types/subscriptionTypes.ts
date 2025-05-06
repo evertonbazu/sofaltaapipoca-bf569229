@@ -12,4 +12,5 @@ export interface SubscriptionData {
   telegramUsername: string;
   icon?: string;
   addedDate?: string;
+  pixQrCode?: string;
 }
