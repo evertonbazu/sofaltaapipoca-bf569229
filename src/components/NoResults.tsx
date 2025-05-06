@@ -1,20 +1,11 @@
 
-import React from 'react';
+import React from "react";
 
-interface NoResultsProps {
-  searchTerm: string;
-}
-
-const NoResults: React.FC<NoResultsProps> = ({ searchTerm }) => {
+const NoResults: React.FC = () => {
   return (
-    <div className="text-center py-8">
-      <div className="mb-4">
-        <span className="text-5xl">🔎</span>
-      </div>
-      <h3 className="text-xl font-semibold mb-2">Nenhum resultado encontrado</h3>
-      <p className="text-gray-600">
-        Não encontramos nenhum serviço que corresponde à sua busca por "{searchTerm}"
-      </p>
+    <div className="p-8 bg-white rounded-xl shadow-lg text-center">
+      <p className="text-lg font-medium text-gray-700">Nenhum resultado encontrado</p>
+      <p className="text-gray-500 mt-2">Tente buscar por outro termo</p>
     </div>
   );
 };

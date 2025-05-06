@@ -10,7 +10,6 @@ export interface SubscriptionData {
   priceColor: string;
   whatsappNumber: string;
   telegramUsername: string;
-  icon: string;
-  addedDate: string;
-  pixImage?: File | null;
+  icon?: string;
+  addedDate?: string;
 }

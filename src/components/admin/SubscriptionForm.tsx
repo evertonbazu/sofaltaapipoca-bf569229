@@ -6,23 +6,19 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { AlertTriangle, Loader2, Upload } from 'lucide-react';
+import { AlertTriangle, Loader2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { SubscriptionData } from '@/types/subscriptionTypes';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
-import { useAuth } from '@/hooks/use-auth';
 
 const SubscriptionForm: React.FC = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { authState } = useAuth();
-  const isAdmin = authState.user?.role === 'admin';
-  
   const [formData, setFormData] = useState<SubscriptionData>({
     title: '',
-    price: 'R$ ',
+    price: '',
     paymentMethod: '',
     status: 'Assinado',
     access: 'LOGIN E SENHA',
@@ -31,13 +27,11 @@ const SubscriptionForm: React.FC = () => {
     whatsappNumber: '',
     telegramUsername: '',
     icon: 'monitor',
-    addedDate: format(new Date(), 'dd/MM/yyyy'),
-    pixImage: null
+    addedDate: format(new Date(), 'dd/MM/yyyy')
   });
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [isFetching, setIsFetching] = useState<boolean>(!!id);
   const [error, setError] = useState<string | null>(null);
-  const [pixImage, setPixImage] = useState<File | null>(null);
 
   useEffect(() => {
     if (id) {
@@ -55,7 +49,7 @@ const SubscriptionForm: React.FC = () => {
           if (data) {
             setFormData({
               title: data.title || '',
-              price: data.price || 'R$ ',
+              price: data.price || '',
               paymentMethod: data.payment_method || '',
               status: data.status || 'Assinado',
               access: data.access || 'LOGIN E SENHA',
@@ -64,8 +58,7 @@ const SubscriptionForm: React.FC = () => {
               whatsappNumber: data.whatsapp_number || '',
               telegramUsername: data.telegram_username || '',
               icon: data.icon || 'monitor',
-              addedDate: data.added_date || format(new Date(), 'dd/MM/yyyy'),
-              pixImage: null
+              addedDate: data.added_date || format(new Date(), 'dd/MM/yyyy')
             });
           }
         } catch (err: any) {
@@ -81,33 +74,14 @@ const SubscriptionForm: React.FC = () => {
       };
       
       fetchSubscription();
-    } else if (!formData.price.startsWith('R$ ')) {
-      setFormData(prev => ({...prev, price: `R$ ${prev.price}`}));
     }
   }, [id, toast]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    
-    if (name === 'price') {
-      // Ensure price always starts with R$ 
-      if (!value.startsWith('R$ ')) {
-        setFormData({
-          ...formData,
-          [name]: `R$ ${value.replace('R$ ', '')}`
-        });
-      } else {
-        setFormData({
-          ...formData,
-          [name]: value
-        });
-      }
-    } else {
-      setFormData({
-        ...formData,
-        [name]: value
-      });
-    }
+    setFormData({
+      ...formData,
+      [e.target.name]: e.target.value
+    });
   };
 
   const handleSelectChange = (name: string, value: string) => {
@@ -115,12 +89,6 @@ const SubscriptionForm: React.FC = () => {
       ...formData,
       [name]: value
     });
-  };
-
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      setPixImage(e.target.files[0]);
-    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -143,57 +111,35 @@ const SubscriptionForm: React.FC = () => {
         added_date: formData.addedDate
       };
 
-      if (isAdmin) {
-        if (id) {
-          // Update existing subscription
-          const { error } = await supabase
-            .from('subscriptions')
-            .update(subscriptionData)
-            .eq('id', id);
-          
-          if (error) throw error;
-          
-          toast({
-            title: "Anúncio atualizado",
-            description: "O anúncio foi atualizado com sucesso."
-          });
-        } else {
-          // Create new subscription
-          const { error } = await supabase
-            .from('subscriptions')
-            .insert(subscriptionData);
-          
-          if (error) throw error;
-          
-          toast({
-            title: "Anúncio criado",
-            description: "O anúncio foi criado com sucesso."
-          });
-        }
-        
-        // Redirect to subscription list
-        navigate('/admin/subscriptions');
-      } else {
-        // If user is not admin, submit as pending subscription
-        const pendingData = {
-          ...subscriptionData,
-          user_id: authState.user?.id
-        };
-
+      if (id) {
+        // Update existing subscription
         const { error } = await supabase
-          .from('pending_subscriptions')
-          .insert(pendingData);
+          .from('subscriptions')
+          .update(subscriptionData)
+          .eq('id', id);
         
         if (error) throw error;
         
         toast({
-          title: "Anúncio enviado para aprovação",
-          description: "Seu anúncio foi enviado e está aguardando aprovação de um administrador."
+          title: "Anúncio atualizado",
+          description: "O anúncio foi atualizado com sucesso."
         });
+      } else {
+        // Create new subscription
+        const { error } = await supabase
+          .from('subscriptions')
+          .insert(subscriptionData);
         
-        // Redirect to home page for non-admin users
-        navigate('/');
+        if (error) throw error;
+        
+        toast({
+          title: "Anúncio criado",
+          description: "O anúncio foi criado com sucesso."
+        });
       }
+      
+      // Redirect to subscription list
+      navigate('/admin/subscriptions');
     } catch (err: any) {
       setError(err.message);
       toast({
@@ -234,7 +180,7 @@ const SubscriptionForm: React.FC = () => {
           <CardContent className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
-                <Label htmlFor="title">Título*</Label>
+                <Label htmlFor="title">Título</Label>
                 <Input
                   id="title"
                   name="title"
@@ -245,7 +191,7 @@ const SubscriptionForm: React.FC = () => {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="price">Preço*</Label>
+                <Label htmlFor="price">Preço</Label>
                 <Input
                   id="price"
                   name="price"
@@ -259,7 +205,7 @@ const SubscriptionForm: React.FC = () => {
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
-                <Label htmlFor="paymentMethod">Método de Pagamento*</Label>
+                <Label htmlFor="paymentMethod">Método de Pagamento</Label>
                 <Input
                   id="paymentMethod"
                   name="paymentMethod"
@@ -270,11 +216,10 @@ const SubscriptionForm: React.FC = () => {
                 />
               </div>
               <div className="space-y-2">
-                <Label>Status*</Label>
+                <Label>Status</Label>
                 <Select 
                   value={formData.status} 
                   onValueChange={(value) => handleSelectChange('status', value)}
-                  required
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Selecione o status" />
@@ -296,11 +241,10 @@ const SubscriptionForm: React.FC = () => {
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
-                <Label>Acesso*</Label>
+                <Label>Acesso</Label>
                 <Select 
                   value={formData.access} 
                   onValueChange={(value) => handleSelectChange('access', value)}
-                  required
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Selecione o tipo de acesso" />
@@ -316,11 +260,10 @@ const SubscriptionForm: React.FC = () => {
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label>Ícone*</Label>
+                <Label>Ícone</Label>
                 <Select 
                   value={formData.icon} 
                   onValueChange={(value) => handleSelectChange('icon', value)}
-                  required
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Selecione o ícone" />
@@ -337,11 +280,10 @@ const SubscriptionForm: React.FC = () => {
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
-                <Label>Cor do Cabeçalho*</Label>
+                <Label>Cor do Cabeçalho</Label>
                 <Select 
                   value={formData.headerColor} 
                   onValueChange={(value) => handleSelectChange('headerColor', value)}
-                  required
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Selecione a cor do cabeçalho" />
@@ -359,11 +301,10 @@ const SubscriptionForm: React.FC = () => {
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label>Cor do Preço*</Label>
+                <Label>Cor do Preço</Label>
                 <Select 
                   value={formData.priceColor} 
                   onValueChange={(value) => handleSelectChange('priceColor', value)}
-                  required
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Selecione a cor do preço" />
@@ -384,7 +325,7 @@ const SubscriptionForm: React.FC = () => {
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
-                <Label htmlFor="telegramUsername">Usuário do Telegram*</Label>
+                <Label htmlFor="telegramUsername">Usuário do Telegram</Label>
                 <Input
                   id="telegramUsername"
                   name="telegramUsername"
@@ -395,7 +336,7 @@ const SubscriptionForm: React.FC = () => {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="whatsappNumber">Número do WhatsApp*</Label>
+                <Label htmlFor="whatsappNumber">Número do WhatsApp</Label>
                 <Input
                   id="whatsappNumber"
                   name="whatsappNumber"
@@ -408,7 +349,7 @@ const SubscriptionForm: React.FC = () => {
             </div>
             
             <div className="space-y-2">
-              <Label htmlFor="addedDate">Data de Adição*</Label>
+              <Label htmlFor="addedDate">Data de Adição</Label>
               <Input
                 id="addedDate"
                 name="addedDate"
@@ -418,35 +359,12 @@ const SubscriptionForm: React.FC = () => {
                 required
               />
             </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="pixImage">Imagem do PIX</Label>
-              <div className="flex items-center gap-4">
-                <Input
-                  id="pixImage"
-                  type="file"
-                  accept="image/*"
-                  onChange={handleFileChange}
-                  className="flex-1"
-                />
-                <Button 
-                  type="button" 
-                  variant="outline" 
-                  className="flex items-center gap-2"
-                  disabled={!pixImage}
-                >
-                  <Upload className="h-4 w-4" />
-                  Enviar
-                </Button>
-              </div>
-              {pixImage && <p className="text-sm text-muted-foreground mt-2">Arquivo selecionado: {pixImage.name}</p>}
-            </div>
           </CardContent>
           <CardFooter className="flex justify-between">
             <Button 
               type="button" 
               variant="outline" 
-              onClick={() => navigate(isAdmin ? '/admin/subscriptions' : '/')}
+              onClick={() => navigate('/admin/subscriptions')}
               disabled={isLoading}
             >
               Cancelar
@@ -458,7 +376,7 @@ const SubscriptionForm: React.FC = () => {
                   Salvando...
                 </>
               ) : (
-                isAdmin ? (id ? 'Atualizar Anúncio' : 'Criar Anúncio') : 'Enviar para Aprovação'
+                id ? 'Atualizar Anúncio' : 'Criar Anúncio'
               )}
             </Button>
           </CardFooter>

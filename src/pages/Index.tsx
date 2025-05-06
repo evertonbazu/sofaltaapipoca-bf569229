@@ -1,129 +1,462 @@
 
-import React, { useState, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useAuth } from '@/context/AuthContext';
+import React, { useState, useRef, useEffect } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import SearchBar from '@/components/SearchBar';
+import SubscriptionList from '@/components/SubscriptionList';
 import NoResults from '@/components/NoResults';
-import FeaturedSubscriptions from '@/components/FeaturedSubscriptions';
-import RegularSubscriptions from '@/components/RegularSubscriptions';
+import { MessageSquare, Megaphone, User, Settings, Home, Plus } from 'lucide-react';
+import { useAuth } from '@/hooks/use-auth';
 import { Button } from '@/components/ui/button';
-import { useDebounced } from '@/hooks/useDebounced';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
 
-const Index = () => {
+const Index: React.FC = () => {
+  const { authState, isAdmin, signOut } = useAuth();
   const navigate = useNavigate();
-  const { authState } = useAuth();
-  
-  const [searchTerm, setSearchTerm] = useState('');
-  const debouncedSearchTerm = useDebounced(searchTerm, 300);
-  const [showResults, setShowResults] = useState(true);
-  const [showNoResults, setShowNoResults] = useState(false);
-  
-  // Create a ref for subscription items
-  const subscriptionRefs = useRef<{[key: string]: HTMLDivElement | null}>({});
+  const { toast } = useToast();
+  const [searchTerm, setSearchTerm] = useState("");
+  const [hasResults, setHasResults] = useState(true);
+  const [isImporting, setIsImporting] = useState(false);
+  const subscriptionRefs = useRef<{ [key: string]: HTMLDivElement | null }>({});
 
-  const navigateToAuth = () => {
-    navigate('/auth');
-  };
-  
-  const navigateToAdmin = () => {
-    navigate('/admin');
+  const handleSearch = (term: string) => {
+    setSearchTerm(term.toLowerCase());
   };
 
-  const handleNoResults = (hasResults: boolean) => {
-    setShowNoResults(!hasResults);
-    setShowResults(hasResults);
+  const handleSignOut = async () => {
+    try {
+      await signOut();
+    } catch (error) {
+      console.error('Error signing out:', error);
+    }
   };
 
-  const handleSearchChange = (value: string) => {
-    setSearchTerm(value);
+  const importSubscriptions = async () => {
+    if (!authState.user || !isAdmin()) return;
+    
+    try {
+      setIsImporting(true);
+      
+      // Get existing subscriptions to avoid importing duplicates
+      const { data: existingSubs } = await supabase
+        .from('subscriptions')
+        .select('title, telegram_username');
+        
+      const existingMap = new Map();
+      if (existingSubs) {
+        existingSubs.forEach((sub: any) => {
+          const key = `${sub.title}-${sub.telegram_username}`.toLowerCase();
+          existingMap.set(key, true);
+        });
+      }
+      
+      const { data, error } = await supabase.functions.invoke('import-subscriptions');
+      
+      if (error) throw error;
+      
+      // Filter out subscriptions that already exist
+      const newSubs = (data || []).filter((sub: any) => {
+        const key = `${sub.title}-${sub.telegram_username}`.toLowerCase();
+        return !existingMap.has(key);
+      });
+      
+      if (newSubs.length === 0) {
+        toast({
+          title: "Nenhum anúncio novo",
+          description: "Todos os anúncios já estão importados."
+        });
+        return;
+      }
+      
+      // Insert new subscriptions
+      const { error: insertError } = await supabase
+        .from('subscriptions')
+        .insert(newSubs);
+      
+      if (insertError) throw insertError;
+      
+      toast({
+        title: "Anúncios importados",
+        description: `${newSubs.length} novos anúncios foram importados com sucesso!`
+      });
+
+      // Force page reload to show new data
+      window.location.reload();
+    } catch (err: any) {
+      toast({
+        variant: "destructive",
+        title: "Erro ao importar anúncios",
+        description: err.message || "Ocorreu um erro ao importar os anúncios."
+      });
+    } finally {
+      setIsImporting(false);
+    }
+  };
+
+  // Get current date and time formatted for display
+  const getCurrentDateTime = () => {
+    const now = new Date();
+    const options: Intl.DateTimeFormatOptions = {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    };
+    return now.toLocaleDateString('pt-BR', options);
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Hero section */}
-      <div className="bg-gradient-to-r from-purple-500 to-indigo-500 text-white py-12">
-        <div className="container mx-auto px-4">
-          <div className="max-w-3xl mx-auto text-center">
-            <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-6">
-              Só Falta a Pipoca
-            </h1>
-            <p className="text-lg sm:text-xl mb-8">
-              Encontre e compartilhe serviços de assinatura para qualquer ocasião.
-              Todos os seus streamings favoritos em um só lugar.
-            </p>
-            
-            {/* Search bar */}
-            <div className="w-full max-w-lg mx-auto mt-6">
-              <SearchBar onSearch={handleSearchChange} />
+    <div className="min-h-screen bg-gray-100">
+      <div className="bg-white shadow-sm">
+        <div className="container mx-auto px-3 sm:px-4 py-2">
+          <div className="flex justify-between items-center">
+            <Button 
+              variant="ghost" 
+              className="font-medium px-3"
+              onClick={() => navigate('/')}
+            >
+              <Home className="h-4 w-4 mr-2" /> 
+              Início
+            </Button>
+            <div className="flex gap-2">
+              {authState.user ? (
+                <>
+                  {isAdmin() && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => navigate('/admin')}
+                    >
+                      <Settings className="h-4 w-4 mr-1" />
+                      Admin
+                    </Button>
+                  )}
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={handleSignOut}
+                  >
+                    <User className="h-4 w-4 mr-1" />
+                    Sair
+                  </Button>
+                </>
+              ) : (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => navigate('/auth')}
+                >
+                  <User className="h-4 w-4 mr-1" />
+                  Entrar
+                </Button>
+              )}
             </div>
           </div>
         </div>
       </div>
-      
-      {/* Main content */}
-      <div className="container mx-auto px-4 py-8">
-        <div className="flex justify-between items-center mb-8">
-          {/* User greeting */}
-          <div>
+
+      <header className="bg-gradient-indigo text-white py-4 sm:py-6">
+        <div className="container mx-auto px-3 sm:px-4">
+          <div className="flex justify-between items-center mb-4">
+            <h1 className="text-2xl sm:text-3xl font-bold">🍿 Só Falta a Pipoca</h1>
+          </div>
+          <p className="text-center text-base sm:text-lg mt-1">Assinaturas premium com preços exclusivos</p>
+          
+          {/* Botões de Anunciar e Fale Conosco */}
+          <div className="flex gap-2 sm:gap-3 mx-auto max-w-xs sm:max-w-sm mt-4">
             {authState.user ? (
-              <h2 className="text-xl font-semibold">
-                Olá, {authState.user.username || authState.user.id}!
-              </h2>
+              <Sheet>
+                <SheetTrigger asChild>
+                  <Button 
+                    className="flex-1 flex flex-col items-center justify-center bg-yellow-500 hover:bg-yellow-600 text-white rounded-lg font-medium py-2 px-3 transition-all duration-200 hover:-translate-y-1"
+                  >
+                    <Plus className="h-5 w-5 mb-1" />
+                    <span className="text-xs sm:text-sm">Cadastrar Anúncio</span>
+                  </Button>
+                </SheetTrigger>
+                <SheetContent className="w-full sm:max-w-lg">
+                  <SheetHeader>
+                    <SheetTitle>Cadastrar Anúncio</SheetTitle>
+                    <SheetDescription>
+                      Cadastre seu anúncio para aprovação de um administrador.
+                    </SheetDescription>
+                  </SheetHeader>
+                  <div className="mt-4">
+                    <SubmissionForm />
+                  </div>
+                </SheetContent>
+              </Sheet>
             ) : (
-              <h2 className="text-xl font-semibold">
-                Bem-vindo à Só Falta a Pipoca
-              </h2>
+              <a 
+                href="/auth" 
+                className="flex-1 flex flex-col items-center justify-center bg-yellow-500 hover:bg-yellow-600 text-white rounded-lg font-medium py-2 px-3 transition-all duration-200 hover:-translate-y-1"
+              >
+                <Megaphone className="h-5 w-5 mb-1" />
+                <span className="text-xs sm:text-sm">Cadastre-se para Anunciar</span>
+              </a>
             )}
+            <a 
+              href="https://wa.me/5513992077804" 
+              target="_blank"
+              className="flex-1 flex flex-col items-center justify-center bg-green-500 hover:bg-green-600 text-white rounded-lg font-medium py-2 px-3 transition-all duration-200 hover:-translate-y-1"
+            >
+              <MessageSquare className="h-5 w-5 mb-1" />
+              <span className="text-xs sm:text-sm">Fale Conosco</span>
+            </a>
           </div>
           
-          {/* Action buttons */}
-          <div className="flex gap-3">
-            {authState.user ? (
+          {authState.user && isAdmin() && (
+            <div className="mt-4 flex justify-center">
               <Button
-                onClick={navigateToAdmin}
-                className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 sm:w-40"
+                size="sm"
+                variant="outline"
+                className="bg-white/20 text-white border-white/40 hover:bg-white/30"
+                onClick={importSubscriptions}
+                disabled={isImporting}
               >
-                Painel Admin
+                {isImporting ? 'Importando...' : 'Importar Anúncios'}
               </Button>
-            ) : (
-              <Button
-                onClick={navigateToAuth}
-                className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 sm:w-40"
-              >
-                Entrar
-              </Button>
-            )}
-          </div>
+            </div>
+          )}
         </div>
-        
-        {/* Featured subscriptions */}
-        <div className="mb-12">
-          <h2 className="text-2xl font-bold mb-6">Destaques</h2>
-          <FeaturedSubscriptions 
-            subscriptionRefs={subscriptionRefs} 
-            searchTerm={debouncedSearchTerm}
-            setHasResults={handleNoResults}
-          />
-        </div>
-        
-        {/* Show no results message if search returns nothing */}
-        {showNoResults && (
-          <div className="my-8">
-            <NoResults searchTerm={debouncedSearchTerm} />
-          </div>
-        )}
+      </header>
 
-        {showResults && (
-          <div className="mb-12">
-            <h2 className="text-2xl font-bold mb-6">Todas as Assinaturas</h2>
-            <RegularSubscriptions 
-              searchTerm={debouncedSearchTerm}
-              setHasResults={handleNoResults}
-            />
-          </div>
+      <main className="container mx-auto px-3 sm:px-4 py-5 sm:py-8">
+        <SearchBar onSearch={handleSearch} />
+        
+        {hasResults ? (
+          <SubscriptionList 
+            subscriptionRefs={subscriptionRefs} 
+            searchTerm={searchTerm}
+            setHasResults={setHasResults}
+          />
+        ) : (
+          <NoResults />
         )}
-      </div>
+      </main>
+
+      <footer className="bg-gray-800 text-white py-3 sm:py-4">
+        <div className="container mx-auto px-3 sm:px-4 text-center">
+          <p className="text-sm sm:text-base">&copy; 2025 Só Falta a Pipoca. Todos os direitos reservados.</p>
+          <p className="text-xs text-gray-400 mt-1">v1.2.0 • Atualizado em: {getCurrentDateTime()}</p>
+        </div>
+      </footer>
     </div>
+  );
+};
+
+// Submission form component for users to submit announcements
+interface FormData {
+  title: string;
+  price: string;
+  paymentMethod: string;
+  status: string;
+  access: string;
+  whatsappNumber: string;
+  telegramUsername: string;
+}
+
+const SubmissionForm: React.FC = () => {
+  const { authState } = useAuth();
+  const { toast } = useToast();
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [formData, setFormData] = useState<FormData>({
+    title: '',
+    price: '',
+    paymentMethod: '',
+    status: '',
+    access: '',
+    whatsappNumber: '',
+    telegramUsername: ''
+  });
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!authState.user) {
+      toast({
+        variant: "destructive",
+        title: "Erro de autenticação",
+        description: "Você precisa estar logado para enviar anúncios."
+      });
+      return;
+    }
+    
+    try {
+      setIsSubmitting(true);
+      
+      // Format todays date as DD/MM/YYYY
+      const today = new Date();
+      const formattedDate = `${String(today.getDate()).padStart(2, '0')}/${
+        String(today.getMonth() + 1).padStart(2, '0')}/${today.getFullYear()}`;
+      
+      const { error } = await supabase
+        .from('pending_subscriptions')
+        .insert({
+          user_id: authState.user.id,
+          title: formData.title,
+          price: formData.price,
+          payment_method: formData.paymentMethod,
+          status: formData.status,
+          access: formData.access,
+          whatsapp_number: formData.whatsappNumber,
+          telegram_username: formData.telegramUsername,
+          added_date: formattedDate
+        });
+      
+      if (error) throw error;
+      
+      toast({
+        title: "Anúncio enviado",
+        description: "Seu anúncio foi enviado para aprovação."
+      });
+      
+      // Reset form
+      setFormData({
+        title: '',
+        price: '',
+        paymentMethod: '',
+        status: '',
+        access: '',
+        whatsappNumber: '',
+        telegramUsername: ''
+      });
+      
+    } catch (err: any) {
+      toast({
+        variant: "destructive",
+        title: "Erro ao enviar anúncio",
+        description: err.message
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-4 p-2">
+      <div>
+        <label className="block text-sm font-medium">Título</label>
+        <input 
+          type="text" 
+          name="title"
+          value={formData.title}
+          onChange={handleChange}
+          className="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+          placeholder="Ex: NETFLIX PREMIUM"
+          required
+        />
+      </div>
+      
+      <div>
+        <label className="block text-sm font-medium">Preço</label>
+        <input 
+          type="text" 
+          name="price"
+          value={formData.price}
+          onChange={handleChange}
+          className="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+          placeholder="Ex: R$ 10,00 - PIX (Mensal)"
+          required
+        />
+      </div>
+      
+      <div>
+        <label className="block text-sm font-medium">Forma de Pagamento</label>
+        <input 
+          type="text" 
+          name="paymentMethod"
+          value={formData.paymentMethod}
+          onChange={handleChange}
+          className="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+          placeholder="Ex: PIX"
+          required
+        />
+      </div>
+      
+      <div>
+        <label className="block text-sm font-medium">Status</label>
+        <input 
+          type="text" 
+          name="status"
+          value={formData.status}
+          onChange={handleChange}
+          className="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+          placeholder="Ex: Assinado (3 vagas)"
+          required
+        />
+      </div>
+      
+      <div>
+        <label className="block text-sm font-medium">Tipo de Acesso</label>
+        <select 
+          name="access"
+          value={formData.access}
+          onChange={handleChange}
+          className="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+          required
+        >
+          <option value="">Selecione o tipo de acesso</option>
+          <option value="CONVITE POR E-MAIL">CONVITE POR E-MAIL</option>
+          <option value="LOGIN E SENHA">LOGIN E SENHA</option>
+          <option value="ATIVAÇÃO">ATIVAÇÃO</option>
+          <option value="CONVITE">CONVITE</option>
+        </select>
+      </div>
+      
+      <div>
+        <label className="block text-sm font-medium">Número WhatsApp</label>
+        <input 
+          type="text" 
+          name="whatsappNumber"
+          value={formData.whatsappNumber}
+          onChange={handleChange}
+          className="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+          placeholder="Ex: 5511999999999"
+          required
+        />
+      </div>
+      
+      <div>
+        <label className="block text-sm font-medium">Username Telegram</label>
+        <input 
+          type="text" 
+          name="telegramUsername"
+          value={formData.telegramUsername}
+          onChange={handleChange}
+          className="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+          placeholder="Ex: usuariotelegram"
+          required
+        />
+      </div>
+      
+      <div className="pt-4">
+        <Button 
+          type="submit"
+          className="w-full"
+          disabled={isSubmitting}
+        >
+          {isSubmitting ? 'Enviando...' : 'Enviar Anúncio para Aprovação'}
+        </Button>
+      </div>
+    </form>
   );
 };
 
