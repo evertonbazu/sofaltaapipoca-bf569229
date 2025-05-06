@@ -4,8 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Download } from "lucide-react";
 import { supabase } from '@/integrations/supabase/client';
-import { saveAs } from 'file-saver';
 import { useToast } from "@/hooks/use-toast";
+import { exportSubscriptionsAsTxt } from '@/utils/exportHelpers';
 import {
   Table,
   TableBody,
@@ -97,27 +97,6 @@ const ExportSubscriptionsTxt: React.FC = () => {
     }));
   };
 
-  const generateTxtContent = (selectedSubs: Subscription[]) => {
-    let content = '';
-    
-    selectedSubs.forEach((sub, index) => {
-      content += `=== ASSINATURA ${index + 1} ===\n`;
-      content += `Título: ${sub.title}\n`;
-      content += `Preço: ${sub.price}\n`;
-      content += `Forma de Pagamento: ${sub.payment_method}\n`;
-      content += `Status: ${sub.status}\n`;
-      content += `Acesso: ${sub.access}\n`;
-      content += `WhatsApp: ${sub.whatsapp_number}\n`;
-      content += `Telegram: ${sub.telegram_username}\n`;
-      if (sub.pix_qr_code) {
-        content += `QR Code PIX: ${sub.pix_qr_code}\n`;
-      }
-      content += '\n';
-    });
-    
-    return content;
-  };
-
   const handleExport = async () => {
     try {
       setIsLoading(true);
@@ -125,27 +104,8 @@ const ExportSubscriptionsTxt: React.FC = () => {
       // Get selected subscriptions
       const selectedSubs = subscriptions.filter(sub => selectedSubscriptions[sub.id]);
       
-      if (selectedSubs.length === 0) {
-        toast({
-          title: "Nenhum anúncio selecionado",
-          description: "Selecione pelo menos um anúncio para exportar.",
-          variant: "destructive"
-        });
-        return;
-      }
-      
-      // Generate TXT content
-      const txtContent = generateTxtContent(selectedSubs);
-      
-      // Create blob and save file
-      const blob = new Blob([txtContent], { type: 'text/plain;charset=utf-8' });
-      saveAs(blob, `assinaturas_${new Date().toISOString().split('T')[0]}.txt`);
-      
-      toast({
-        title: "Exportação concluída",
-        description: `${selectedSubs.length} anúncios exportados com sucesso.`,
-        variant: "default"
-      });
+      // Use the utility function to export subscriptions
+      exportSubscriptionsAsTxt(selectedSubs);
     } catch (err: any) {
       console.error('Error exporting subscriptions:', err);
       toast({
