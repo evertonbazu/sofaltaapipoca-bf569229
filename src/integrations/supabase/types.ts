@@ -36,6 +36,75 @@ export type Database = {
         }
         Relationships: []
       }
+      profiles: {
+        Row: {
+          id: string
+          role: string
+          username: string | null
+        }
+        Insert: {
+          id: string
+          role?: string
+          username?: string | null
+        }
+        Update: {
+          id?: string
+          role?: string
+          username?: string | null
+        }
+        Relationships: []
+      }
+      subscriptions: {
+        Row: {
+          access: string
+          added_date: string
+          created_at: string | null
+          header_color: string
+          icon: string | null
+          id: string
+          payment_method: string
+          price: string
+          price_color: string
+          status: string
+          telegram_username: string
+          title: string
+          updated_at: string | null
+          whatsapp_number: string
+        }
+        Insert: {
+          access: string
+          added_date: string
+          created_at?: string | null
+          header_color?: string
+          icon?: string | null
+          id?: string
+          payment_method: string
+          price: string
+          price_color?: string
+          status: string
+          telegram_username: string
+          title: string
+          updated_at?: string | null
+          whatsapp_number: string
+        }
+        Update: {
+          access?: string
+          added_date?: string
+          created_at?: string | null
+          header_color?: string
+          icon?: string | null
+          id?: string
+          payment_method?: string
+          price?: string
+          price_color?: string
+          status?: string
+          telegram_username?: string
+          title?: string
+          updated_at?: string | null
+          whatsapp_number?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

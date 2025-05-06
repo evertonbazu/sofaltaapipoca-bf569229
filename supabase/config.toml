@@ -1,1 +1,5 @@
+
 project_id = "ljemdnvihzzjwnwweoaq"
+
+[functions.import-subscriptions]
+verify_jwt = true

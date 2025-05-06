@@ -1,5 +1,6 @@
 
 export interface SubscriptionData {
+  id?: string;
   title: string;
   price: string;
   paymentMethod: string;

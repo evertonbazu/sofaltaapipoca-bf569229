@@ -1,8 +1,9 @@
 
 import React, { useEffect, useState } from "react";
-import { featuredSubscriptions } from "@/data/subscriptions";
 import SubscriptionItem from "./SubscriptionItem";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { supabase } from '@/integrations/supabase/client';
+import { SubscriptionData } from "@/types/subscriptionTypes";
 
 interface FeaturedSubscriptionsProps {
   subscriptionRefs: React.MutableRefObject<{[key: string]: HTMLDivElement | null}>;
@@ -15,12 +16,57 @@ const FeaturedSubscriptions: React.FC<FeaturedSubscriptionsProps> = ({
   searchTerm = "", 
   setHasResults
 }) => {
-  const [visibleSubscriptions, setVisibleSubscriptions] = useState(featuredSubscriptions);
+  const [allSubscriptions, setAllSubscriptions] = useState<SubscriptionData[]>([]);
+  const [visibleSubscriptions, setVisibleSubscriptions] = useState<SubscriptionData[]>([]);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
   const isMobile = useIsMobile();
 
   useEffect(() => {
+    const fetchSubscriptions = async () => {
+      try {
+        setIsLoading(true);
+        
+        // Get the latest 6 subscriptions for featured display
+        const { data, error } = await supabase
+          .from('subscriptions')
+          .select('*')
+          .order('added_date', { ascending: false })
+          .limit(6);
+        
+        if (error) throw error;
+        
+        if (data) {
+          const formattedSubscriptions: SubscriptionData[] = data.map(item => ({
+            id: item.id,
+            title: item.title,
+            price: item.price,
+            paymentMethod: item.payment_method,
+            status: item.status,
+            access: item.access,
+            headerColor: item.header_color,
+            priceColor: item.price_color,
+            whatsappNumber: item.whatsapp_number,
+            telegramUsername: item.telegram_username,
+            icon: item.icon,
+            addedDate: item.added_date
+          }));
+          
+          setAllSubscriptions(formattedSubscriptions);
+          setVisibleSubscriptions(formattedSubscriptions);
+        }
+      } catch (error) {
+        console.error('Error fetching featured subscriptions:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    fetchSubscriptions();
+  }, []);
+
+  useEffect(() => {
     if (searchTerm) {
-      const filtered = featuredSubscriptions.filter(sub => {
+      const filtered = allSubscriptions.filter(sub => {
         const content = `${sub.title} ${sub.price} ${sub.paymentMethod} ${sub.status} ${sub.access}`.toLowerCase();
         return content.includes(searchTerm.toLowerCase());
       });
@@ -33,9 +79,29 @@ const FeaturedSubscriptions: React.FC<FeaturedSubscriptionsProps> = ({
       }
     } else {
       // When search term is empty, show all featured subscriptions
-      setVisibleSubscriptions(featuredSubscriptions);
+      setVisibleSubscriptions(allSubscriptions);
     }
-  }, [searchTerm, setHasResults]);
+  }, [searchTerm, allSubscriptions, setHasResults]);
+
+  if (isLoading) {
+    return (
+      <div className="grid gap-6 mb-8 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
+        {[...Array(6)].map((_, index) => (
+          <div key={index} className="animate-pulse bg-white rounded-xl shadow-lg h-80">
+            <div className="bg-gray-300 h-16 rounded-t-xl"></div>
+            <div className="p-4 space-y-4">
+              <div className="h-6 bg-gray-200 rounded"></div>
+              <div className="h-6 bg-gray-200 rounded"></div>
+              <div className="h-6 bg-gray-200 rounded"></div>
+              <div className="h-6 bg-gray-200 rounded"></div>
+              <div className="h-10 bg-gray-200 rounded mt-6"></div>
+              <div className="h-10 bg-gray-200 rounded"></div>
+            </div>
+          </div>
+        ))}
+      </div>
+    );
+  }
 
   if (visibleSubscriptions.length === 0) {
     return null;
@@ -43,9 +109,9 @@ const FeaturedSubscriptions: React.FC<FeaturedSubscriptionsProps> = ({
 
   return (
     <div className={`grid gap-6 mb-8 ${isMobile ? 'grid-cols-1' : 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3'}`}>
-      {visibleSubscriptions.map((subscription, index) => (
+      {visibleSubscriptions.map((subscription) => (
         <SubscriptionItem
-          key={`${subscription.title}-${index}`}
+          key={subscription.id}
           title={subscription.title}
           price={subscription.price}
           paymentMethod={subscription.paymentMethod}
