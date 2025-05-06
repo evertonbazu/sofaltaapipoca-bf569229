@@ -36,6 +36,66 @@ export type Database = {
         }
         Relationships: []
       }
+      pending_subscriptions: {
+        Row: {
+          access: string
+          added_date: string
+          created_at: string | null
+          header_color: string
+          icon: string | null
+          id: string
+          payment_method: string
+          price: string
+          price_color: string
+          rejection_reason: string | null
+          reviewed_at: string | null
+          status: string
+          status_approval: string | null
+          telegram_username: string
+          title: string
+          user_id: string
+          whatsapp_number: string
+        }
+        Insert: {
+          access: string
+          added_date: string
+          created_at?: string | null
+          header_color?: string
+          icon?: string | null
+          id?: string
+          payment_method: string
+          price: string
+          price_color?: string
+          rejection_reason?: string | null
+          reviewed_at?: string | null
+          status: string
+          status_approval?: string | null
+          telegram_username: string
+          title: string
+          user_id: string
+          whatsapp_number: string
+        }
+        Update: {
+          access?: string
+          added_date?: string
+          created_at?: string | null
+          header_color?: string
+          icon?: string | null
+          id?: string
+          payment_method?: string
+          price?: string
+          price_color?: string
+          rejection_reason?: string | null
+          reviewed_at?: string | null
+          status?: string
+          status_approval?: string | null
+          telegram_username?: string
+          title?: string
+          user_id?: string
+          whatsapp_number?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           id: string

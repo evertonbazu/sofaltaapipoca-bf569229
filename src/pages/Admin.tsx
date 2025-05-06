@@ -1,18 +1,22 @@
 
 import React, { useEffect } from 'react';
-import { Navigate, Route, Routes, useNavigate } from 'react-router-dom';
-import { useAuth } from '@/context/AuthContext';
+import { Navigate, Route, Routes, useNavigate, useLocation } from 'react-router-dom';
+import { useAuth } from '@/hooks/use-auth';
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { SidebarProvider, Sidebar, SidebarMenu, SidebarMenuItem, SidebarMenuButton } from "@/components/ui/sidebar";
-import { Home, ListPlus, Edit, LogOut } from 'lucide-react';
+import { Home, ListPlus, Edit, LogOut, Users, Bell, FileSpreadsheet, User } from 'lucide-react';
 import AdminDashboard from '@/components/admin/AdminDashboard';
 import SubscriptionForm from '@/components/admin/SubscriptionForm';
 import SubscriptionList from '@/components/admin/SubscriptionList';
+import UserManagement from '@/components/admin/UserManagement';
+import PendingSubscriptions from '@/components/admin/PendingSubscriptions';
+import ImportExcel from '@/components/admin/ImportExcel';
 
 const Admin: React.FC = () => {
   const { authState, isAdmin, signOut } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
 
   useEffect(() => {
     document.title = 'Painel Administrativo | Só Falta a Pipoca';
@@ -40,6 +44,10 @@ const Admin: React.FC = () => {
     navigate('/');
   };
 
+  const isActive = (path: string) => {
+    return location.pathname === path;
+  };
+
   return (
     <SidebarProvider>
       <div className="flex h-screen overflow-hidden">
@@ -54,7 +62,7 @@ const Admin: React.FC = () => {
               <SidebarMenuItem>
                 <SidebarMenuButton 
                   onClick={() => navigate('/admin')}
-                  isActive={location.pathname === '/admin'}
+                  isActive={isActive('/admin')}
                 >
                   <Home className="mr-2 h-5 w-5" />
                   Dashboard
@@ -63,7 +71,7 @@ const Admin: React.FC = () => {
               <SidebarMenuItem>
                 <SidebarMenuButton 
                   onClick={() => navigate('/admin/subscriptions')}
-                  isActive={location.pathname === '/admin/subscriptions'}
+                  isActive={isActive('/admin/subscriptions')}
                 >
                   <ListPlus className="mr-2 h-5 w-5" />
                   Listar Anúncios
@@ -72,15 +80,50 @@ const Admin: React.FC = () => {
               <SidebarMenuItem>
                 <SidebarMenuButton 
                   onClick={() => navigate('/admin/subscriptions/new')}
-                  isActive={location.pathname === '/admin/subscriptions/new'}
+                  isActive={isActive('/admin/subscriptions/new')}
                 >
                   <Edit className="mr-2 h-5 w-5" />
                   Novo Anúncio
                 </SidebarMenuButton>
               </SidebarMenuItem>
+              <SidebarMenuItem>
+                <SidebarMenuButton 
+                  onClick={() => navigate('/admin/subscriptions/pending')}
+                  isActive={isActive('/admin/subscriptions/pending')}
+                >
+                  <Bell className="mr-2 h-5 w-5" />
+                  Anúncios Pendentes
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              <SidebarMenuItem>
+                <SidebarMenuButton 
+                  onClick={() => navigate('/admin/subscriptions/import-excel')}
+                  isActive={isActive('/admin/subscriptions/import-excel')}
+                >
+                  <FileSpreadsheet className="mr-2 h-5 w-5" />
+                  Importar Excel
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              <SidebarMenuItem>
+                <SidebarMenuButton 
+                  onClick={() => navigate('/admin/users')}
+                  isActive={isActive('/admin/users')}
+                >
+                  <Users className="mr-2 h-5 w-5" />
+                  Gerenciar Usuários
+                </SidebarMenuButton>
+              </SidebarMenuItem>
             </SidebarMenu>
           </div>
           <div className="p-4">
+            <Button 
+              variant="default" 
+              className="w-full flex gap-2 mb-2" 
+              onClick={() => navigate('/')}
+            >
+              <Home className="h-5 w-5" />
+              Voltar ao Início
+            </Button>
             <Button 
               variant="outline" 
               className="w-full flex gap-2" 
@@ -103,6 +146,9 @@ const Admin: React.FC = () => {
               <Route path="/subscriptions" element={<SubscriptionList />} />
               <Route path="/subscriptions/new" element={<SubscriptionForm />} />
               <Route path="/subscriptions/edit/:id" element={<SubscriptionForm />} />
+              <Route path="/subscriptions/pending" element={<PendingSubscriptions />} />
+              <Route path="/subscriptions/import-excel" element={<ImportExcel />} />
+              <Route path="/users" element={<UserManagement />} />
             </Routes>
           </div>
         </main>

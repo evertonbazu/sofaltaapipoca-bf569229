@@ -96,19 +96,29 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const signUp = async (email: string, password: string, username: string) => {
     try {
+      // Register the user without email confirmation
       const { error } = await supabase.auth.signUp({
         email,
         password,
         options: {
           data: { username },
+          emailRedirectTo: window.location.origin,
         }
       });
       
       if (error) throw error;
       
+      // Auto-login the user after registration
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+      
+      if (signInError) throw signInError;
+      
       toast({
         title: "Cadastro realizado com sucesso!",
-        description: "Sua conta foi criada. Faça login para continuar.",
+        description: "Sua conta foi criada e você está logado.",
       });
     } catch (error: any) {
       toast({

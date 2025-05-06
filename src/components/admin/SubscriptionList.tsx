@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
@@ -11,7 +10,16 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Edit, Trash2, AlertTriangle, Loader2, Plus } from 'lucide-react';
+import { 
+  Edit, 
+  Trash2, 
+  AlertTriangle, 
+  Loader2, 
+  Plus, 
+  ArrowUp, 
+  ArrowDown, 
+  Home 
+} from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { SubscriptionData } from '@/types/subscriptionTypes';
 import { useToast } from '@/hooks/use-toast';
@@ -25,6 +33,17 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+
+type SortField = 'title' | 'price' | 'status' | 'addedDate' | 'telegramUsername';
+type SortDirection = 'asc' | 'desc';
 
 const SubscriptionList: React.FC = () => {
   const navigate = useNavigate();
@@ -35,6 +54,8 @@ const SubscriptionList: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState<boolean>(false);
+  const [sortField, setSortField] = useState<SortField>('addedDate');
+  const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
 
   useEffect(() => {
     fetchSubscriptions();
@@ -68,7 +89,9 @@ const SubscriptionList: React.FC = () => {
           addedDate: item.added_date
         }));
         
-        setSubscriptions(formattedData);
+        // Remove duplicates (based on title + telegramUsername)
+        const uniqueSubscriptions = removeDuplicates(formattedData);
+        setSubscriptions(uniqueSubscriptions);
       }
     } catch (err: any) {
       setError(err.message);
@@ -80,6 +103,23 @@ const SubscriptionList: React.FC = () => {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const removeDuplicates = (subs: SubscriptionData[]): SubscriptionData[] => {
+    const seen = new Map();
+    return subs.filter(sub => {
+      // Create a unique key for each subscription
+      const key = `${sub.title}-${sub.telegramUsername}`.toLowerCase();
+      
+      // If we've seen this key before, filter it out
+      if (seen.has(key)) {
+        return false;
+      }
+      
+      // Otherwise, add to seen and keep it
+      seen.set(key, true);
+      return true;
+    });
   };
 
   const confirmDelete = (id: string) => {
@@ -121,26 +161,108 @@ const SubscriptionList: React.FC = () => {
     setSearchTerm(e.target.value.toLowerCase());
   };
 
-  const filteredSubscriptions = searchTerm
-    ? subscriptions.filter(sub => 
-        sub.title.toLowerCase().includes(searchTerm) || 
-        sub.paymentMethod.toLowerCase().includes(searchTerm) ||
-        sub.telegramUsername.toLowerCase().includes(searchTerm) ||
-        sub.addedDate?.toLowerCase().includes(searchTerm)
-      )
-    : subscriptions;
+  const changeSort = (field: SortField) => {
+    if (sortField === field) {
+      // Toggle direction if same field
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      // New field, default to ascending
+      setSortField(field);
+      setSortDirection('asc');
+    }
+  };
+
+  const getSortIcon = (field: SortField) => {
+    if (sortField !== field) return null;
+    
+    return sortDirection === 'asc' 
+      ? <ArrowUp className="h-4 w-4 ml-1" /> 
+      : <ArrowDown className="h-4 w-4 ml-1" />;
+  };
+
+  // Filter and sort subscriptions
+  const filteredAndSortedSubscriptions = () => {
+    // First, filter by search term
+    let filtered = searchTerm
+      ? subscriptions.filter(sub => 
+          sub.title.toLowerCase().includes(searchTerm) || 
+          sub.paymentMethod.toLowerCase().includes(searchTerm) ||
+          sub.telegramUsername.toLowerCase().includes(searchTerm) ||
+          (sub.addedDate?.toLowerCase() || '').includes(searchTerm)
+        )
+      : subscriptions;
+
+    // Then sort
+    return filtered.sort((a, b) => {
+      let valueA: any, valueB: any;
+      
+      // Determine values to compare based on sort field
+      switch(sortField) {
+        case 'title':
+          valueA = a.title.toLowerCase();
+          valueB = b.title.toLowerCase();
+          break;
+        case 'price':
+          valueA = a.price;
+          valueB = b.price;
+          break;
+        case 'status':
+          valueA = a.status;
+          valueB = b.status;
+          break;
+        case 'telegramUsername':
+          valueA = a.telegramUsername.toLowerCase();
+          valueB = b.telegramUsername.toLowerCase();
+          break;
+        case 'addedDate':
+          // Convert date strings to comparable values
+          if (a.addedDate && b.addedDate) {
+            // Format is DD/MM/YYYY
+            const [dayA, monthA, yearA] = a.addedDate.split('/').map(Number);
+            const [dayB, monthB, yearB] = b.addedDate.split('/').map(Number);
+            
+            valueA = new Date(yearA, monthA - 1, dayA).getTime();
+            valueB = new Date(yearB, monthB - 1, dayB).getTime();
+          } else {
+            valueA = a.addedDate || '';
+            valueB = b.addedDate || '';
+          }
+          break;
+        default:
+          valueA = a[sortField as keyof SubscriptionData];
+          valueB = b[sortField as keyof SubscriptionData];
+      }
+      
+      // Handle sorting direction
+      if (sortDirection === 'asc') {
+        return valueA > valueB ? 1 : valueA < valueB ? -1 : 0;
+      } else {
+        return valueA < valueB ? 1 : valueA > valueB ? -1 : 0;
+      }
+    });
+  };
 
   return (
     <div>
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
         <h1 className="text-3xl font-bold">Anúncios</h1>
-        <Button 
-          onClick={() => navigate('/admin/subscriptions/new')} 
-          className="flex gap-2"
-        >
-          <Plus className="h-5 w-5" />
-          Novo Anúncio
-        </Button>
+        <div className="flex gap-2">
+          <Button 
+            variant="outline"
+            onClick={() => navigate('/')} 
+            className="flex gap-2"
+          >
+            <Home className="h-5 w-5" />
+            Início
+          </Button>
+          <Button 
+            onClick={() => navigate('/admin/subscriptions/new')} 
+            className="flex gap-2"
+          >
+            <Plus className="h-5 w-5" />
+            Novo Anúncio
+          </Button>
+        </div>
       </div>
       
       {error && (
@@ -150,24 +272,87 @@ const SubscriptionList: React.FC = () => {
         </div>
       )}
       
-      <div className="mb-6">
+      <div className="mb-6 flex flex-col sm:flex-row gap-4 items-start sm:items-center">
         <Input
           placeholder="Pesquisar anúncios..."
           value={searchTerm}
           onChange={handleSearch}
           className="max-w-md"
         />
+        
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline" className="flex gap-2">
+              Ordenar por
+              {getSortIcon(sortField)}
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuLabel>Escolha um campo</DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={() => changeSort('title')}>
+              Título {getSortIcon('title')}
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => changeSort('price')}>
+              Preço {getSortIcon('price')}
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => changeSort('status')}>
+              Status {getSortIcon('status')}
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => changeSort('addedDate')}>
+              Data {getSortIcon('addedDate')}
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => changeSort('telegramUsername')}>
+              Telegram {getSortIcon('telegramUsername')}
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
       
       <div className="overflow-x-auto rounded-lg border">
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead className="w-[300px]">Título</TableHead>
-              <TableHead>Preço</TableHead>
-              <TableHead className="hidden sm:table-cell">Status</TableHead>
-              <TableHead className="hidden lg:table-cell">Data</TableHead>
-              <TableHead className="hidden md:table-cell">Telegram</TableHead>
+              <TableHead 
+                className="w-[300px] cursor-pointer"
+                onClick={() => changeSort('title')}
+              >
+                <div className="flex items-center">
+                  Título {getSortIcon('title')}
+                </div>
+              </TableHead>
+              <TableHead 
+                className="cursor-pointer"
+                onClick={() => changeSort('price')}
+              >
+                <div className="flex items-center">
+                  Preço {getSortIcon('price')}
+                </div>
+              </TableHead>
+              <TableHead 
+                className="hidden sm:table-cell cursor-pointer"
+                onClick={() => changeSort('status')}
+              >
+                <div className="flex items-center">
+                  Status {getSortIcon('status')}
+                </div>
+              </TableHead>
+              <TableHead 
+                className="hidden lg:table-cell cursor-pointer"
+                onClick={() => changeSort('addedDate')}
+              >
+                <div className="flex items-center">
+                  Data {getSortIcon('addedDate')}
+                </div>
+              </TableHead>
+              <TableHead 
+                className="hidden md:table-cell cursor-pointer"
+                onClick={() => changeSort('telegramUsername')}
+              >
+                <div className="flex items-center">
+                  Telegram {getSortIcon('telegramUsername')}
+                </div>
+              </TableHead>
               <TableHead className="text-right">Ações</TableHead>
             </TableRow>
           </TableHeader>
@@ -181,14 +366,14 @@ const SubscriptionList: React.FC = () => {
                   </div>
                 </TableCell>
               </TableRow>
-            ) : filteredSubscriptions.length === 0 ? (
+            ) : filteredAndSortedSubscriptions().length === 0 ? (
               <TableRow>
                 <TableCell colSpan={6} className="h-24 text-center">
                   {searchTerm ? "Nenhum resultado encontrado" : "Nenhum anúncio cadastrado"}
                 </TableCell>
               </TableRow>
             ) : (
-              filteredSubscriptions.map((subscription) => (
+              filteredAndSortedSubscriptions().map((subscription) => (
                 <TableRow key={subscription.id}>
                   <TableCell className="font-medium">
                     {subscription.title}

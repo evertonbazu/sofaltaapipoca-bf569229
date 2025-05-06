@@ -3,13 +3,14 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { ListPlus, AlertTriangle, Users, Edit } from 'lucide-react';
+import { ListPlus, AlertTriangle, Users, Edit, Home } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 
 const AdminDashboard: React.FC = () => {
   const navigate = useNavigate();
   const [subscriptionCount, setSubscriptionCount] = useState<number>(0);
   const [userCount, setUserCount] = useState<number>(0);
+  const [pendingCount, setPendingCount] = useState<number>(0);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -25,6 +26,15 @@ const AdminDashboard: React.FC = () => {
         
         if (subError) throw subError;
         setSubscriptionCount(subCount || 0);
+        
+        // Get pending subscriptions count
+        const { count: pendingCount, error: pendingError } = await supabase
+          .from('pending_subscriptions')
+          .select('*', { count: 'exact', head: true })
+          .eq('status_approval', 'pending');
+        
+        if (pendingError) throw pendingError;
+        setPendingCount(pendingCount || 0);
         
         // Get user count
         const { count: usrCount, error: usrError } = await supabase
@@ -45,9 +55,19 @@ const AdminDashboard: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold">Dashboard</h1>
-        <p className="text-muted-foreground">Bem-vindo ao painel administrativo do Só Falta a Pipoca</p>
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center">
+        <div>
+          <h1 className="text-3xl font-bold">Dashboard</h1>
+          <p className="text-muted-foreground">Bem-vindo ao painel administrativo do Só Falta a Pipoca</p>
+        </div>
+        <Button 
+          variant="outline" 
+          className="mt-2 sm:mt-0 flex gap-2"
+          onClick={() => navigate('/')}
+        >
+          <Home className="h-5 w-5" />
+          Voltar ao Início
+        </Button>
       </div>
       
       {error && (
@@ -98,9 +118,32 @@ const AdminDashboard: React.FC = () => {
             <Button 
               variant="outline" 
               className="w-full"
-              onClick={() => window.open("https://supabase.com/dashboard/project/ljemdnvihzzjwnwweoaq/auth/users", "_blank")}
+              onClick={() => navigate('/admin/users')}
             >
               Gerenciar Usuários
+            </Button>
+          </CardFooter>
+        </Card>
+        
+        <Card className={pendingCount > 0 ? 'border-yellow-500 shadow-lg' : ''}>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <AlertTriangle className={`h-5 w-5 ${pendingCount > 0 ? 'text-yellow-500' : 'text-purple-500'}`} />
+              Anúncios Pendentes
+            </CardTitle>
+            <CardDescription>Anúncios aguardando aprovação</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <p className={`text-4xl font-bold ${pendingCount > 0 ? 'text-yellow-600' : ''}`}>
+              {isLoading ? '...' : pendingCount}
+            </p>
+          </CardContent>
+          <CardFooter>
+            <Button 
+              className={`w-full ${pendingCount > 0 ? 'bg-yellow-600 hover:bg-yellow-700' : 'bg-purple-600 hover:bg-purple-700'}`}
+              onClick={() => navigate('/admin/subscriptions/pending')}
+            >
+              {pendingCount > 0 ? 'Revisar Anúncios Pendentes' : 'Ver Anúncios Pendentes'}
             </Button>
           </CardFooter>
         </Card>
