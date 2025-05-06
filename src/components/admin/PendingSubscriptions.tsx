@@ -76,19 +76,20 @@ const PendingSubscriptions: React.FC = () => {
       setIsLoading(true);
       setError(null);
 
+      // Nova consulta usando join explícito entre pending_subscriptions e profiles
       const { data, error } = await supabase
         .from('pending_subscriptions')
         .select(`
           *,
           profiles:user_id (username)
-        `)
-        .order('created_at', { ascending: false });
+        `);
 
       if (error) throw error;
 
+      // Formatando os dados para incluir o nome de usuário do perfil relacionado
       const formattedData = data.map((item: any) => ({
         ...item,
-        username: item.profiles?.username,
+        username: item.profiles?.username || 'Sem nome',
       }));
 
       setPendingSubscriptions(formattedData);
@@ -102,10 +103,6 @@ const PendingSubscriptions: React.FC = () => {
     } finally {
       setIsLoading(false);
     }
-  };
-
-  const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setSearchTerm(e.target.value.toLowerCase());
   };
 
   const handleOpenRejectDialog = (subscription: PendingSubscription) => {
@@ -248,7 +245,7 @@ const PendingSubscriptions: React.FC = () => {
         <Input
           placeholder="Pesquisar anúncios..."
           value={searchTerm}
-          onChange={handleSearch}
+          onChange={(e) => setSearchTerm(e.target.value)}
           className="max-w-md"
         />
       </div>

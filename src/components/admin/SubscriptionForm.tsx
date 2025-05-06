@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
@@ -26,7 +27,8 @@ const SubscriptionForm: React.FC = () => {
     whatsappNumber: '',
     telegramUsername: '',
     icon: 'monitor',
-    addedDate: format(new Date(), 'dd/MM/yyyy')
+    addedDate: format(new Date(), 'dd/MM/yyyy'),
+    pixQrCode: ''
   });
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [isFetching, setIsFetching] = useState<boolean>(!!id);
@@ -60,7 +62,8 @@ const SubscriptionForm: React.FC = () => {
               whatsappNumber: data.whatsapp_number || '',
               telegramUsername: data.telegram_username || '',
               icon: data.icon || 'monitor',
-              addedDate: data.added_date || format(new Date(), 'dd/MM/yyyy')
+              addedDate: data.added_date || format(new Date(), 'dd/MM/yyyy'),
+              pixQrCode: data.pix_qr_code || ''
             });
 
             setPriceValue(data.price || '');

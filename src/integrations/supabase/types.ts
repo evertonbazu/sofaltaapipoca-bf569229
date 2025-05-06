@@ -45,6 +45,7 @@ export type Database = {
           icon: string | null
           id: string
           payment_method: string
+          pix_qr_code: string | null
           price: string
           price_color: string
           rejection_reason: string | null
@@ -64,6 +65,7 @@ export type Database = {
           icon?: string | null
           id?: string
           payment_method: string
+          pix_qr_code?: string | null
           price: string
           price_color?: string
           rejection_reason?: string | null
@@ -83,6 +85,7 @@ export type Database = {
           icon?: string | null
           id?: string
           payment_method?: string
+          pix_qr_code?: string | null
           price?: string
           price_color?: string
           rejection_reason?: string | null
@@ -123,6 +126,7 @@ export type Database = {
           icon: string | null
           id: string
           payment_method: string
+          pix_qr_code: string | null
           price: string
           price_color: string
           status: string
@@ -139,6 +143,7 @@ export type Database = {
           icon?: string | null
           id?: string
           payment_method: string
+          pix_qr_code?: string | null
           price: string
           price_color?: string
           status: string
@@ -155,6 +160,7 @@ export type Database = {
           icon?: string | null
           id?: string
           payment_method?: string
+          pix_qr_code?: string | null
           price?: string
           price_color?: string
           status?: string

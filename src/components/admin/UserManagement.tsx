@@ -1,6 +1,5 @@
 
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -21,19 +20,36 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Edit, Trash2, AlertTriangle, Loader2, UserCheck, UserX } from 'lucide-react';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogClose,
+} from "@/components/ui/dialog";
+import { Edit, Trash2, AlertTriangle, Loader2, UserCheck, UserX, Save } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { Label } from "@/components/ui/label";
+import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel } from "@/components/ui/form";
+import { useForm } from "react-hook-form";
 
 interface UserData {
   id: string;
   username: string | null;
   role: string;
   email?: string;
+  created_at?: string;
+  last_sign_in_at?: string;
+}
+
+interface EditUserFormData {
+  username: string;
 }
 
 const UserManagement: React.FC = () => {
-  const navigate = useNavigate();
   const { toast } = useToast();
   const [users, setUsers] = useState<UserData[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
@@ -43,39 +59,58 @@ const UserManagement: React.FC = () => {
   const [isDeleting, setIsDeleting] = useState<boolean>(false);
   const [roleChangeId, setRoleChangeId] = useState<string | null>(null);
   const [isChangingRole, setIsChangingRole] = useState<boolean>(false);
+  const [editingUser, setEditingUser] = useState<UserData | null>(null);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState<boolean>(false);
+  const [isSaving, setIsSaving] = useState<boolean>(false);
+
+  const form = useForm<EditUserFormData>({
+    defaultValues: {
+      username: '',
+    }
+  });
 
   useEffect(() => {
     fetchUsers();
   }, []);
+
+  useEffect(() => {
+    if (editingUser) {
+      form.reset({
+        username: editingUser.username || '',
+      });
+    }
+  }, [editingUser, form]);
 
   const fetchUsers = async () => {
     try {
       setIsLoading(true);
       setError(null);
 
-      // First get auth users
-      const { data: authUsers, error: authError } = await supabase.auth.admin.listUsers();
-      
+      // Obter dados dos usuários autenticados
+      const { data: authData, error: authError } = await supabase.auth.admin.listUsers();
+
       if (authError) throw authError;
-      
-      // Then get profiles
-      const { data: profiles, error: profilesError } = await supabase
+
+      // Obter dados dos perfis
+      const { data: profilesData, error: profilesError } = await supabase
         .from('profiles')
         .select('*');
-      
+
       if (profilesError) throw profilesError;
-      
-      // Combine the data
-      const combinedUsers = profiles.map(profile => {
-        const authUser = authUsers.users.find(u => u.id === profile.id);
+
+      // Combinar os dados para exibição
+      const combinedUsers = profilesData.map(profile => {
+        const authUser = authData.users.find(u => u.id === profile.id);
         return {
           id: profile.id,
           username: profile.username,
           role: profile.role,
-          email: authUser?.email
+          email: authUser?.email,
+          created_at: authUser?.created_at,
+          last_sign_in_at: authUser?.last_sign_in_at
         };
       });
-      
+
       setUsers(combinedUsers);
     } catch (err: any) {
       setError(err.message);
@@ -168,8 +203,61 @@ const UserManagement: React.FC = () => {
     }
   };
 
+  const handleEditUser = (user: UserData) => {
+    setEditingUser(user);
+    setIsEditDialogOpen(true);
+  };
+
+  const handleSaveUser = async (data: EditUserFormData) => {
+    if (!editingUser) return;
+    
+    try {
+      setIsSaving(true);
+      
+      const { error } = await supabase
+        .from('profiles')
+        .update({ username: data.username })
+        .eq('id', editingUser.id);
+        
+      if (error) throw error;
+      
+      // Atualizar estado local
+      setUsers(users.map(u => 
+        u.id === editingUser.id 
+          ? { ...u, username: data.username } 
+          : u
+      ));
+      
+      toast({
+        title: "Usuário atualizado",
+        description: "As informações do usuário foram atualizadas com sucesso."
+      });
+      
+      setIsEditDialogOpen(false);
+    } catch (err: any) {
+      toast({
+        variant: "destructive",
+        title: "Erro ao atualizar usuário",
+        description: err.message
+      });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchTerm(e.target.value.toLowerCase());
+  };
+
+  const formatDate = (dateString?: string) => {
+    if (!dateString) return "N/A";
+    return new Date(dateString).toLocaleDateString('pt-BR', { 
+      day: '2-digit', 
+      month: '2-digit', 
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
   };
 
   const filteredUsers = searchTerm
@@ -206,16 +294,18 @@ const UserManagement: React.FC = () => {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Username</TableHead>
+              <TableHead>Nome de Usuário</TableHead>
               <TableHead>Email</TableHead>
               <TableHead>Função</TableHead>
+              <TableHead className="hidden md:table-cell">Criado em</TableHead>
+              <TableHead className="hidden lg:table-cell">Último login</TableHead>
               <TableHead className="text-right">Ações</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {isLoading ? (
               <TableRow>
-                <TableCell colSpan={4} className="h-24 text-center">
+                <TableCell colSpan={6} className="h-24 text-center">
                   <div className="flex flex-col items-center justify-center">
                     <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
                     <span className="mt-2 text-muted-foreground">Carregando usuários...</span>
@@ -224,7 +314,7 @@ const UserManagement: React.FC = () => {
               </TableRow>
             ) : filteredUsers.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={4} className="h-24 text-center">
+                <TableCell colSpan={6} className="h-24 text-center">
                   {searchTerm ? "Nenhum resultado encontrado" : "Nenhum usuário cadastrado"}
                 </TableCell>
               </TableRow>
@@ -242,8 +332,22 @@ const UserManagement: React.FC = () => {
                       {user.role === 'admin' ? 'Administrador' : 'Membro'}
                     </span>
                   </TableCell>
+                  <TableCell className="hidden md:table-cell">
+                    {formatDate(user.created_at)}
+                  </TableCell>
+                  <TableCell className="hidden lg:table-cell">
+                    {formatDate(user.last_sign_in_at)}
+                  </TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleEditUser(user)}
+                        title="Editar informações do usuário"
+                      >
+                        <Edit className="h-4 w-4 text-blue-600" />
+                      </Button>
                       <Button
                         variant="outline"
                         size="sm"
@@ -328,6 +432,68 @@ const UserManagement: React.FC = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Edit User Dialog */}
+      <Dialog open={isEditDialogOpen} onOpenChange={(open) => {
+        setIsEditDialogOpen(open);
+        if (!open) setEditingUser(null);
+      }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Editar Usuário</DialogTitle>
+            <DialogDescription>
+              Atualize as informações do usuário.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <form onSubmit={form.handleSubmit(handleSaveUser)}>
+            <div className="py-4 space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="email">Email</Label>
+                <Input
+                  id="email"
+                  value={editingUser?.email || ''}
+                  disabled
+                  className="bg-gray-50"
+                />
+                <p className="text-sm text-muted-foreground">
+                  O email não pode ser alterado.
+                </p>
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="username">Nome de Usuário</Label>
+                <Input
+                  id="username"
+                  {...form.register('username')}
+                  placeholder="Digite o nome de usuário"
+                />
+              </div>
+            </div>
+            
+            <DialogFooter>
+              <DialogClose asChild>
+                <Button variant="outline" type="button" disabled={isSaving}>
+                  Cancelar
+                </Button>
+              </DialogClose>
+              <Button type="submit" disabled={isSaving}>
+                {isSaving ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Salvando...
+                  </>
+                ) : (
+                  <>
+                    <Save className="mr-2 h-4 w-4" />
+                    Salvar Alterações
+                  </>
+                )}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
