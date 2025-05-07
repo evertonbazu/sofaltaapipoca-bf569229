@@ -1,17 +1,15 @@
 
-import React, { useState } from 'react';
+import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { Home } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
-import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import SubscriptionSubmissionForm from '@/components/SubscriptionSubmissionForm';
 
 const NewSubscription: React.FC = () => {
   const { authState } = useAuth();
   const navigate = useNavigate();
-  const { toast } = useToast();
   
   if (!authState.user) {
     return (
@@ -67,6 +65,16 @@ const NewSubscription: React.FC = () => {
         <h1 className="text-2xl font-bold mb-6">Cadastrar Novo Anúncio</h1>
         
         <div className="bg-white shadow-md rounded-lg p-6">
+          <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-md">
+            <h3 className="font-medium text-blue-800">Instruções para cadastro:</h3>
+            <ul className="list-disc pl-5 mt-2 text-sm text-blue-700">
+              <li>Preencha todos os campos obrigatórios marcados com *</li>
+              <li>Envie uma imagem comprobatória da assinatura</li>
+              <li>Seu anúncio será revisado antes de ser publicado</li>
+              <li>Após aprovação, ele aparecerá na página principal</li>
+            </ul>
+          </div>
+          
           <SubscriptionSubmissionForm />
         </div>
       </div>

@@ -120,7 +120,7 @@ const SubscriptionSubmissionForm: React.FC = () => {
         const { data: buckets } = await supabase.storage.listBuckets();
         if (!buckets?.some(bucket => bucket.name === 'payment-proofs')) {
           await supabase.storage.createBucket('payment-proofs', {
-            public: false
+            public: true // Make sure the bucket is public so we can access the images
           });
         }
         
@@ -156,10 +156,14 @@ const SubscriptionSubmissionForm: React.FC = () => {
           price_color: formData.priceColor,
           pix_key: formData.pixKey,
           payment_proof_image: paymentProofImageUrl,
-          added_date: formattedDate
+          added_date: formattedDate,
+          status_approval: 'pending' // Explicitly set status_approval
         });
       
-      if (error) throw error;
+      if (error) {
+        console.error("Error submitting subscription:", error);
+        throw error;
+      }
       
       toast({
         title: "Anúncio enviado",
@@ -170,6 +174,7 @@ const SubscriptionSubmissionForm: React.FC = () => {
       navigate('/');
       
     } catch (err: any) {
+      console.error("Error in submission:", err);
       toast({
         variant: "destructive",
         title: "Erro ao enviar anúncio",
