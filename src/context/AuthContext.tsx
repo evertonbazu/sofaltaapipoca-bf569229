@@ -93,7 +93,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         password,
       });
       
-      if (error) throw error;
+      if (error) {
+        // Melhorar a mensagem de erro para email não confirmado
+        if (error.message === "Email not confirmed" || error.code === "email_not_confirmed") {
+          throw new Error("Um email foi enviado para você, faça a confirmação em sua caixa de entrada");
+        }
+        throw error;
+      }
       
       console.log('Login bem-sucedido:', data?.user?.id);
       toast({
@@ -132,14 +138,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       toast({
         title: "Cadastro realizado com sucesso!",
-        description: "Sua conta foi criada. Você pode fazer login agora.",
+        description: "Um email de verificação foi enviado para sua caixa de entrada. Confirme seu email para continuar.",
       });
       
-      // Auto-login após o registro
-      if (data?.user) {
-        console.log('Realizando login automático após cadastro');
-        await signIn(email, password);
-      }
+      // Não fazemos mais o auto-login após o registro, pois o email precisa ser confirmado
+      // O usuário será redirecionado para a página principal, mas precisará confirmar o email
     } catch (error: any) {
       console.error('Erro de cadastro:', error);
       toast({

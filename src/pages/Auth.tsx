@@ -12,6 +12,7 @@ const Auth: React.FC = () => {
   const { authState, signIn, signUp } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState('signin');
+  const [showVerifyMessage, setShowVerifyMessage] = useState(false);
   const navigate = useNavigate();
 
   // Login form state
@@ -69,8 +70,9 @@ const Auth: React.FC = () => {
     try {
       console.log('Tentando cadastrar:', signupEmail, username);
       await signUp(signupEmail, signupPassword, username);
-      // Após cadastro bem-sucedido, redirecionar para a página principal
-      navigate('/');
+      // Mostrar mensagem de verificação em vez de redirecionar
+      setShowVerifyMessage(true);
+      setActiveTab('signin');
     } catch (error: any) {
       console.error('Erro de cadastro:', error);
       setError(error.message || 'Falha no cadastro. Tente novamente mais tarde.');
@@ -115,6 +117,12 @@ const Auth: React.FC = () => {
             </TabsList>
             
             <TabsContent value="signin">
+              {showVerifyMessage && (
+                <div className="mb-4 p-4 bg-yellow-50 border border-yellow-200 rounded-md text-amber-800">
+                  <p className="font-medium">Verifique seu email</p>
+                  <p className="text-sm">Um link de confirmação foi enviado para seu email. Por favor, verifique sua caixa de entrada e confirme seu cadastro para fazer login.</p>
+                </div>
+              )}
               <form onSubmit={handleSignIn}>
                 <CardContent className="space-y-4">
                   <div className="space-y-2">
