@@ -2,29 +2,18 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/use-auth';
 import { Navigate, useNavigate } from 'react-router-dom';
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { MessageSquare } from 'lucide-react';
+import LoginForm from '@/components/auth/LoginForm';
+import SignupForm from '@/components/auth/SignupForm';
+import VerificationMessage from '@/components/auth/VerificationMessage';
 
 const Auth: React.FC = () => {
-  const { authState, signIn, signUp } = useAuth();
-  const [isLoading, setIsLoading] = useState(false);
+  const { authState } = useAuth();
   const [activeTab, setActiveTab] = useState('signin');
   const [showVerifyMessage, setShowVerifyMessage] = useState(false);
   const navigate = useNavigate();
-
-  // Login form state
-  const [loginEmail, setLoginEmail] = useState('');
-  const [loginPassword, setLoginPassword] = useState('');
-
-  // Signup form state
-  const [signupEmail, setSignupEmail] = useState('');
-  const [signupPassword, setSignupPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [username, setUsername] = useState('');
-  const [error, setError] = useState('');
 
   // Check if user is already authenticated
   useEffect(() => {
@@ -37,47 +26,6 @@ const Auth: React.FC = () => {
   if (authState.session && !authState.isLoading) {
     return <Navigate to="/" />;
   }
-
-  const handleSignIn = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError('');
-    setIsLoading(true);
-    
-    try {
-      console.log('Tentando login com:', loginEmail);
-      await signIn(loginEmail, loginPassword);
-      // Redirecionamento será feito pelo useEffect quando authState.session mudar
-    } catch (error: any) {
-      console.error('Erro de login:', error);
-      setError(error.message || 'Falha no login. Verifique suas credenciais.');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleSignUp = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError('');
-
-    if (signupPassword !== confirmPassword) {
-      setError('As senhas não coincidem');
-      return;
-    }
-
-    setIsLoading(true);
-    try {
-      console.log('Tentando cadastrar:', signupEmail, username);
-      await signUp(signupEmail, signupPassword, username);
-      // Mostrar mensagem de verificação
-      setShowVerifyMessage(true);
-      setActiveTab('signin');
-    } catch (error: any) {
-      console.error('Erro de cadastro:', error);
-      setError(error.message || 'Falha no cadastro. Tente novamente mais tarde.');
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
   if (authState.isLoading) {
     return (
@@ -99,128 +47,38 @@ const Auth: React.FC = () => {
       <div className="flex flex-1 items-center justify-center px-4 py-12">
         <Card className="w-full max-w-md">
           <CardHeader className="space-y-1">
-            <CardTitle className="text-2xl font-bold text-center">Bem-vindo</CardTitle>
+            <CardTitle className="text-2xl font-bold text-center">Welcome</CardTitle>
             <CardDescription className="text-center">
               {activeTab === 'signin' 
-                ? 'Faça login para acessar sua conta' 
-                : 'Crie sua conta para começar'
+                ? 'Log in to access your account' 
+                : 'Create your account to get started'
               }
             </CardDescription>
           </CardHeader>
           
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
             <TabsList className="grid grid-cols-2 mb-4">
-              <TabsTrigger value="signin">Entrar</TabsTrigger>
-              <TabsTrigger value="signup">Cadastrar</TabsTrigger>
+              <TabsTrigger value="signin">Log in</TabsTrigger>
+              <TabsTrigger value="signup">Sign up</TabsTrigger>
             </TabsList>
             
             <TabsContent value="signin">
-              {showVerifyMessage && (
-                <div className="mb-4 p-4 bg-yellow-50 border border-yellow-200 rounded-md text-amber-800">
-                  <p className="font-medium">Verifique seu email</p>
-                  <p className="text-sm">Um link de confirmação foi enviado para seu email. Por favor, verifique sua caixa de entrada e confirme seu cadastro para fazer login.</p>
-                </div>
-              )}
-              <form onSubmit={handleSignIn}>
-                <CardContent className="space-y-4">
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium" htmlFor="email">E-mail</label>
-                    <Input 
-                      id="email" 
-                      type="email" 
-                      placeholder="seu@email.com" 
-                      value={loginEmail} 
-                      onChange={(e) => setLoginEmail(e.target.value)} 
-                      required 
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <label className="text-sm font-medium" htmlFor="password">Senha</label>
-                    </div>
-                    <Input 
-                      id="password" 
-                      type="password" 
-                      placeholder="••••••••" 
-                      value={loginPassword} 
-                      onChange={(e) => setLoginPassword(e.target.value)} 
-                      required 
-                    />
-                  </div>
-                  {error && <p className="text-sm font-medium text-red-500">{error}</p>}
-                </CardContent>
-                
-                <CardFooter>
-                  <Button type="submit" className="w-full" disabled={isLoading}>
-                    {isLoading ? 'Entrando...' : 'Entrar'}
-                  </Button>
-                </CardFooter>
-              </form>
+              {showVerifyMessage && <VerificationMessage />}
+              <LoginForm setShowVerifyMessage={setShowVerifyMessage} />
             </TabsContent>
             
             <TabsContent value="signup">
-              <form onSubmit={handleSignUp}>
-                <CardContent className="space-y-4">
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium" htmlFor="signup-email">E-mail</label>
-                    <Input 
-                      id="signup-email" 
-                      type="email" 
-                      placeholder="seu@email.com" 
-                      value={signupEmail} 
-                      onChange={(e) => setSignupEmail(e.target.value)} 
-                      required 
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium" htmlFor="username">Nome de usuário</label>
-                    <Input 
-                      id="username" 
-                      type="text" 
-                      placeholder="Seu nome de usuário" 
-                      value={username} 
-                      onChange={(e) => setUsername(e.target.value)} 
-                      required 
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium" htmlFor="signup-password">Senha</label>
-                    <Input 
-                      id="signup-password" 
-                      type="password" 
-                      placeholder="••••••••" 
-                      value={signupPassword} 
-                      onChange={(e) => setSignupPassword(e.target.value)} 
-                      required 
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium" htmlFor="confirm-password">Confirmar Senha</label>
-                    <Input 
-                      id="confirm-password" 
-                      type="password" 
-                      placeholder="••••••••" 
-                      value={confirmPassword} 
-                      onChange={(e) => setConfirmPassword(e.target.value)} 
-                      required 
-                    />
-                  </div>
-                  {error && <p className="text-sm font-medium text-red-500">{error}</p>}
-                </CardContent>
-                
-                <CardFooter>
-                  <Button type="submit" className="w-full" disabled={isLoading}>
-                    {isLoading ? 'Cadastrando...' : 'Cadastrar'}
-                  </Button>
-                </CardFooter>
-              </form>
+              <SignupForm 
+                setShowVerifyMessage={setShowVerifyMessage} 
+                setActiveTab={setActiveTab}
+              />
             </TabsContent>
           </Tabs>
           
           <div className="px-8 pb-6 pt-2">
             <div className="flex items-center justify-center gap-2 text-sm text-gray-500">
               <MessageSquare className="h-4 w-4" />
-              <a href="https://wa.me/5513992077804" className="text-blue-600 hover:underline">Precisa de ajuda?</a>
+              <a href="https://wa.me/5513992077804" className="text-blue-600 hover:underline">Need help?</a>
             </div>
           </div>
         </Card>

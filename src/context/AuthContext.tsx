@@ -23,15 +23,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   });
 
   useEffect(() => {
-    // Configurar o listener de mudança de estado de autenticação PRIMEIRO
+    // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         console.log('Auth state changed:', event, session?.user?.id);
         
-        // Atualiza o estado da sessão imediatamente (operação síncrona)
+        // Update session state immediately (synchronous operation)
         setAuthState(prev => ({ ...prev, session }));
         
-        // Se tiver um usuário autenticado, busca os dados do perfil com setTimeout para evitar deadlocks
+        // If user is authenticated, fetch profile data with setTimeout to avoid deadlocks
         if (session?.user) {
           setTimeout(() => {
             fetchUserProfile(session.user.id);
@@ -42,7 +42,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     );
 
-    // DEPOIS verifica se existe uma sessão
+    // THEN check for existing session
     supabase.auth.getSession().then(({ data: { session } }) => {
       console.log('Current session:', session?.user?.id);
       setAuthState(prev => ({ ...prev, session }));
@@ -60,7 +60,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   const fetchUserProfile = async (userId: string) => {
-    console.log('Buscando perfil do usuário:', userId);
+    console.log('Fetching user profile:', userId);
     try {
       const { data, error } = await supabase
         .from('profiles')
@@ -69,51 +69,50 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         .maybeSingle();
 
       if (error) {
-        console.error('Erro ao buscar perfil:', error);
+        console.error('Error fetching profile:', error);
         throw error;
       }
 
-      console.log('Perfil encontrado:', data);
+      console.log('Profile found:', data);
       setAuthState(prev => ({
         ...prev,
         user: data as UserProfile,
         isLoading: false,
       }));
     } catch (error) {
-      console.error('Erro ao buscar perfil do usuário:', error);
+      console.error('Error fetching user profile:', error);
       setAuthState(prev => ({ ...prev, isLoading: false }));
     }
   };
 
   const signIn = async (email: string, password: string) => {
     try {
-      console.log('Iniciando login para:', email);
+      console.log('Starting login for:', email);
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
       
       if (error) {
-        // Melhorar a mensagem de erro para email não confirmado
+        // Improve error message for unconfirmed email
         if (error.message === "Email not confirmed" || error.code === "email_not_confirmed") {
-          throw new Error("Um email foi enviado para você, faça a confirmação em sua caixa de entrada");
+          throw new Error("An email has been sent to you, please confirm it in your inbox");
         }
         throw error;
       }
       
-      console.log('Login bem-sucedido:', data?.user?.id);
+      console.log('Login successful:', data?.user?.id);
       toast({
-        title: "Login realizado com sucesso",
-        description: "Você foi autenticado com sucesso.",
+        title: "Login successful",
+        description: "You have been successfully authenticated.",
       });
       
-      // O listener onAuthStateChange irá atualizar o estado
-      return data;
+      // No need to return data, the onAuthStateChange listener will update the state
     } catch (error: any) {
-      console.error('Erro de login:', error);
+      console.error('Login error:', error);
       toast({
-        title: "Erro ao fazer login",
-        description: error.message || "Não foi possível fazer login. Tente novamente.",
+        title: "Error logging in",
+        description: error.message || "Could not log in. Please try again.",
         variant: "destructive",
       });
       throw error;
@@ -122,9 +121,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const signUp = async (email: string, password: string, username: string) => {
     try {
-      console.log('Iniciando registro para:', email, username);
+      console.log('Starting registration for:', email, username);
       
-      // Configurar os dados do usuário, incluindo o username nos metadados
+      // Set up user data, including username in metadata
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
@@ -135,20 +134,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       if (error) throw error;
       
-      console.log('Cadastro bem-sucedido:', data?.user?.id);
+      console.log('Registration successful:', data?.user?.id);
       
       toast({
-        title: "Cadastro realizado com sucesso!",
-        description: "Um email de verificação foi enviado para sua caixa de entrada. Confirme seu email para continuar.",
+        title: "Registration successful!",
+        description: "A verification email has been sent to your inbox. Please confirm your email to continue.",
       });
       
-      // Não fazemos mais o auto-login após o registro, pois o email precisa ser confirmado
-      // O usuário será redirecionado para a página principal, mas precisará confirmar o email
+      // We no longer auto-login after registration since email needs to be confirmed
+      // The user will be redirected to the main page but will need to confirm their email
     } catch (error: any) {
-      console.error('Erro de cadastro:', error);
+      console.error('Registration error:', error);
       toast({
-        title: "Erro ao criar conta",
-        description: error.message || "Não foi possível criar a conta. Tente novamente.",
+        title: "Error creating account",
+        description: error.message || "Could not create account. Please try again.",
         variant: "destructive",
       });
       throw error;
@@ -164,13 +163,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         isLoading: false,
       });
       toast({
-        title: "Saiu com sucesso",
-        description: "Você foi desconectado da sua conta.",
+        title: "Logged out successfully",
+        description: "You have been disconnected from your account.",
       });
     } catch (error: any) {
       toast({
-        title: "Erro ao sair",
-        description: error.message || "Não foi possível sair. Tente novamente.",
+        title: "Error logging out",
+        description: error.message || "Could not log out. Please try again.",
         variant: "destructive",
       });
     }

@@ -5,7 +5,7 @@ import SearchBar from '@/components/SearchBar';
 import SubscriptionList from '@/components/SubscriptionList';
 import NoResults from '@/components/NoResults';
 import { MessageSquare, Megaphone, User, Settings, Home, Plus } from 'lucide-react';
-import { useAuth } from '@/context/AuthContext';
+import { useAuth } from '@/hooks/use-auth';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -174,13 +174,14 @@ const Index: React.FC = () => {
                 <span className="text-xs sm:text-sm">Cadastrar Anúncio</span>
               </Button>
             ) : (
-              <a 
-                href="/auth" 
+              <Button
+                variant="default" 
+                onClick={() => navigate('/auth')}
                 className="flex-1 flex flex-col items-center justify-center h-16 bg-yellow-500 hover:bg-yellow-600 text-white rounded-lg font-medium py-2 px-3 transition-all duration-200 hover:-translate-y-1"
               >
                 <Megaphone className="h-5 w-5 mb-1" />
                 <span className="text-xs sm:text-sm">Cadastre-se para Anunciar</span>
-              </a>
+              </Button>
             )}
             <a 
               href="https://wa.me/5513992077804" 
