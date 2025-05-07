@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
@@ -74,8 +75,8 @@ const SubscriptionList: React.FC = () => {
   const [isDeleting, setIsDeleting] = useState(false);
   const [selectedSubscriptions, setSelectedSubscriptions] = useState<Record<string, boolean>>({});
   const [deleteMultipleOpen, setDeleteMultipleOpen] = useState(false);
-  const [sortOrder, setSortOrder<'asc' | 'desc'>>('desc');
-  const [sortBy, setSortBy<string>>('added_date');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+  const [sortBy, setSortBy] = useState<string>('added_date');
   const [featureDialogOpen, setFeatureDialogOpen] = useState(false);
   const [featureId, setFeatureId] = useState<string | null>(null);
   const [isFeaturing, setIsFeaturing] = useState(false);
@@ -309,6 +310,7 @@ const SubscriptionList: React.FC = () => {
   const filteredSubscriptions = subscriptions.filter(sub => 
     sub.title.toLowerCase().includes(searchTerm) || 
     sub.telegram_username.toLowerCase().includes(searchTerm) ||
+    (sub.code && sub.code.toLowerCase().includes(searchTerm)) ||
     sub.status.toLowerCase().includes(searchTerm)
   );
 
