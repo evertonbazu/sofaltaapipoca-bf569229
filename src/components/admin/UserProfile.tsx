@@ -3,16 +3,18 @@ import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Loader2 } from 'lucide-react';
+import { Loader2, Save } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/context/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { useNavigate } from 'react-router-dom';
 
 const UserProfile: React.FC = () => {
   const { toast } = useToast();
   const { authState } = useAuth();
+  const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [isSaving, setIsSaving] = useState<boolean>(false);
   const [username, setUsername] = useState<string>('');
@@ -45,10 +47,12 @@ const UserProfile: React.FC = () => {
         
         if (profileData) {
           setUsername(profileData.username || '');
+          // Use email from profiles table
+          setEmail(profileData.email || '');
         }
         
-        // Set email from the session
-        if (authState.session?.user) {
+        // Set email from the session as a fallback
+        if (!profileData?.email && authState.session?.user) {
           setEmail(authState.session.user.email || '');
         }
       } catch (err: any) {
@@ -72,7 +76,8 @@ const UserProfile: React.FC = () => {
       const { error } = await supabase
         .from('profiles')
         .update({
-          username
+          username,
+          email // Also update email in the profiles table
         })
         .eq('id', authState.session.user.id);
       
@@ -95,6 +100,11 @@ const UserProfile: React.FC = () => {
     }
   };
 
+  // Handle page back navigation
+  const handleBack = () => {
+    navigate(-1); // Go back to the previous page
+  };
+
   if (isLoading) {
     return (
       <div className="flex flex-col items-center justify-center h-64">
@@ -105,8 +115,16 @@ const UserProfile: React.FC = () => {
   }
 
   return (
-    <div>
-      <h1 className="text-3xl font-bold mb-6">Meu Perfil</h1>
+    <div className="container mx-auto px-4 py-6">
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-3xl font-bold">Meu Perfil</h1>
+        <Button 
+          variant="outline" 
+          onClick={handleBack}
+        >
+          Voltar
+        </Button>
+      </div>
       
       {error && (
         <Alert variant="destructive" className="mb-6">
@@ -152,7 +170,12 @@ const UserProfile: React.FC = () => {
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 Salvando...
               </>
-            ) : "Salvar Alterações"}
+            ) : (
+              <>
+                <Save className="mr-2 h-4 w-4" />
+                Salvar Alterações
+              </>
+            )}
           </Button>
         </CardContent>
       </Card>

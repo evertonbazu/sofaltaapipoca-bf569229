@@ -15,20 +15,7 @@ import ImportSubscriptions from './components/admin/ImportSubscriptions';
 import UserManagement from './components/admin/UserManagement';
 import NewSubscription from './pages/NewSubscription';
 import Index from './pages/Index';
-
-const HomePage = () => (
-  <div className="container mx-auto py-8">
-    <h1 className="text-3xl font-bold mb-6">Só Falta a Pipoca</h1>
-    <p className="text-lg mb-4">Bem-vindo à plataforma de anúncios de assinaturas.</p>
-  </div>
-);
-
-const ProfilePage = () => (
-  <div className="container mx-auto py-8">
-    <h1 className="text-3xl font-bold mb-6">Perfil do Usuário</h1>
-    <p className="text-lg mb-4">Página de perfil em desenvolvimento.</p>
-  </div>
-);
+import UserProfile from './components/admin/UserProfile';
 
 // Create a separate component for the authenticated routes
 const AppRoutes = () => {
@@ -54,7 +41,7 @@ const AppRoutes = () => {
     <Routes>
       <Route path="/auth" element={<Auth />} />
       <Route path="/new" element={<NewSubscription />} />
-      <Route path="/profile" element={<ProfilePage />} />
+      <Route path="/profile" element={<UserProfile />} />
       <Route path="/" element={<Index />} />
       <Route
         path="/admin"
@@ -67,6 +54,7 @@ const AppRoutes = () => {
         }
       >
         <Route index element={<AdminDashboard />} />
+        <Route path="profile" element={<UserProfile />} />
         <Route path="subscriptions" element={<SubscriptionList />} />
         <Route path="subscriptions/new" element={<SubscriptionForm />} />
         <Route path="subscriptions/edit/:id" element={<SubscriptionForm />} />

@@ -135,7 +135,7 @@ const Index: React.FC = () => {
                   <Button
                     size="sm"
                     variant="outline"
-                    onClick={() => navigate('/admin/profile')}
+                    onClick={() => navigate('/profile')}
                   >
                     <UserCircle className="h-4 w-4 mr-1" />
                     Meu Perfil
@@ -186,7 +186,7 @@ const Index: React.FC = () => {
             {authState.user ? (
               <Button
                 className="flex-1 flex flex-col items-center justify-center h-16 bg-yellow-500 hover:bg-yellow-600 text-white rounded-lg font-medium py-2 px-3 transition-all duration-200 hover:-translate-y-1"
-                onClick={() => navigate('/new-subscription')}
+                onClick={() => navigate('/new')}
               >
                 <Plus className="h-5 w-5 mb-1" />
                 <span className="text-xs sm:text-sm">Cadastrar Anúncio</span>
