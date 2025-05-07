@@ -6,6 +6,7 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { SubscriptionData } from '@/types/subscriptionTypes';
 import * as XLSX from 'xlsx';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface ExcelSubscription {
   title: string;
@@ -19,10 +20,12 @@ interface ExcelSubscription {
   price_color?: string;
   icon?: string;
   added_date: string;
+  pix_qr_code?: string;
 }
 
 const ImportExcel: React.FC = () => {
   const { toast } = useToast();
+  const isMobile = useIsMobile();
   const [file, setFile] = useState<File | null>(null);
   const [previewData, setPreviewData] = useState<ExcelSubscription[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -91,7 +94,8 @@ const ImportExcel: React.FC = () => {
               header_color: row.header_color || 'bg-blue-600',
               price_color: row.price_color || 'text-blue-600',
               icon: row.icon || 'monitor',
-              added_date: row.added_date || new Date().toLocaleDateString('pt-BR')
+              added_date: row.added_date || new Date().toLocaleDateString('pt-BR'),
+              pix_qr_code: row.pix_qr_code || null
             };
           });
           
@@ -158,7 +162,8 @@ const ImportExcel: React.FC = () => {
           header_color: sub.header_color || 'bg-blue-600',
           price_color: sub.price_color || 'text-blue-600',
           icon: sub.icon || 'monitor',
-          added_date: sub.added_date
+          added_date: sub.added_date,
+          pix_qr_code: sub.pix_qr_code
         })));
       
       if (insertError) throw insertError;
@@ -189,7 +194,7 @@ const ImportExcel: React.FC = () => {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 max-w-full">
       <div>
         <h1 className="text-3xl font-bold">Importar Anúncios do Excel</h1>
         <p className="text-muted-foreground mt-2">
@@ -204,13 +209,13 @@ const ImportExcel: React.FC = () => {
         </div>
       )}
       
-      <div className="border rounded-lg p-6">
+      <div className="border rounded-lg p-4 sm:p-6">
         <div className="flex flex-col items-center justify-center gap-4">
           <FileSpreadsheet className="h-16 w-16 text-green-500" />
           <h2 className="text-xl font-semibold">Selecione um arquivo Excel</h2>
           <p className="text-sm text-center text-muted-foreground max-w-md">
             O arquivo deve conter as colunas: title, price, payment_method, status, access, 
-            whatsapp_number e telegram_username. Opcionalmente: header_color, price_color, icon e added_date.
+            whatsapp_number e telegram_username. Opcionalmente: header_color, price_color, icon, added_date e pix_qr_code.
           </p>
           
           <div className="w-full max-w-sm">
@@ -224,7 +229,7 @@ const ImportExcel: React.FC = () => {
               />
               <Button
                 variant="outline"
-                className="w-full border-dashed border-2 h-32"
+                className="w-full border-dashed border-2 h-24 sm:h-32"
               >
                 <div className="flex flex-col items-center">
                   <Upload className="h-6 w-6 mb-2" />

@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -33,6 +34,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Textarea } from "@/components/ui/textarea";
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface PendingSubscription {
   id: string;
@@ -54,9 +56,15 @@ interface PendingSubscription {
   pix_qr_code?: string;
 }
 
+interface Profile {
+  id: string;
+  username: string;
+}
+
 const PendingSubscriptions: React.FC = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const isMobile = useIsMobile();
   const [pendingSubscriptions, setPendingSubscriptions] = useState<PendingSubscription[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -76,23 +84,33 @@ const PendingSubscriptions: React.FC = () => {
       setIsLoading(true);
       setError(null);
 
-      // Nova consulta usando join explícito entre pending_subscriptions e profiles
-      const { data, error } = await supabase
+      // Primeiro, buscar todos os perfis para mapeamento de usuários
+      const { data: profiles, error: profilesError } = await supabase
+        .from('profiles')
+        .select('id, username');
+      
+      if (profilesError) throw profilesError;
+      
+      // Converter perfis em um mapa para facilitar a busca
+      const profilesMap = new Map<string, string>();
+      profiles.forEach((profile: Profile) => {
+        profilesMap.set(profile.id, profile.username);
+      });
+
+      // Buscar as inscrições pendentes
+      const { data: pendingSubs, error: pendingError } = await supabase
         .from('pending_subscriptions')
-        .select(`
-          *,
-          profiles:user_id (username)
-        `);
+        .select('*');
 
-      if (error) throw error;
+      if (pendingError) throw pendingError;
 
-      // Formatando os dados para incluir o nome de usuário do perfil relacionado
-      const formattedData = data.map((item: any) => ({
-        ...item,
-        username: item.profiles?.username || 'Sem nome',
+      // Combinar os dados com os nomes de usuário
+      const pendingWithUsernames = pendingSubs.map((sub: any) => ({
+        ...sub,
+        username: profilesMap.get(sub.user_id) || 'Sem nome',
       }));
 
-      setPendingSubscriptions(formattedData);
+      setPendingSubscriptions(pendingWithUsernames);
     } catch (err: any) {
       setError(err.message);
       toast({
@@ -107,7 +125,7 @@ const PendingSubscriptions: React.FC = () => {
 
   const handleOpenRejectDialog = (subscription: PendingSubscription) => {
     setSelectedSubscription(subscription);
-    setRejectionReason('');
+    setRejectionReason(subscription.rejection_reason || '');
     setRejectDialogOpen(true);
   };
 
@@ -229,7 +247,7 @@ const PendingSubscriptions: React.FC = () => {
     : pendingSubscriptions;
 
   return (
-    <div>
+    <div className="max-w-full">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
         <h1 className="text-3xl font-bold">Anúncios Pendentes</h1>
       </div>

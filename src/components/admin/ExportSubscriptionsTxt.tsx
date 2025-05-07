@@ -17,6 +17,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface Subscription {
   id: string;
@@ -28,6 +29,7 @@ interface Subscription {
   whatsapp_number: string;
   telegram_username: string;
   pix_qr_code?: string;
+  added_date?: string;
 }
 
 const ExportSubscriptionsTxt: React.FC = () => {
@@ -38,6 +40,7 @@ const ExportSubscriptionsTxt: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
+  const isMobile = useIsMobile();
 
   useEffect(() => {
     fetchSubscriptions();
@@ -127,7 +130,7 @@ const ExportSubscriptionsTxt: React.FC = () => {
   const allSelected = subscriptions.length > 0 && subscriptions.every(sub => selectedSubscriptions[sub.id]);
 
   return (
-    <div>
+    <div className="max-w-full">
       <h1 className="text-3xl font-bold mb-6">Exportar Anúncios (TXT)</h1>
       
       {error && (
@@ -166,7 +169,7 @@ const ExportSubscriptionsTxt: React.FC = () => {
             </div>
           </div>
           
-          <div className="rounded-md border mt-4">
+          <div className="rounded-md border mt-4 overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow>

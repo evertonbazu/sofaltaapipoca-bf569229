@@ -1,7 +1,9 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Table,
   TableBody,
@@ -41,6 +43,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { useIsMobile } from '@/hooks/use-mobile';
 
 type SortField = 'title' | 'price' | 'status' | 'addedDate' | 'telegramUsername';
 type SortDirection = 'asc' | 'desc';
@@ -48,6 +51,7 @@ type SortDirection = 'asc' | 'desc';
 const SubscriptionList: React.FC = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const isMobile = useIsMobile();
   const [subscriptions, setSubscriptions] = useState<SubscriptionData[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
@@ -56,6 +60,8 @@ const SubscriptionList: React.FC = () => {
   const [isDeleting, setIsDeleting] = useState<boolean>(false);
   const [sortField, setSortField] = useState<SortField>('addedDate');
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
+  const [selectedItems, setSelectedItems] = useState<Record<string, boolean>>({});
+  const [bulkDeleteMode, setBulkDeleteMode] = useState<boolean>(false);
 
   useEffect(() => {
     fetchSubscriptions();
@@ -86,12 +92,20 @@ const SubscriptionList: React.FC = () => {
           whatsappNumber: item.whatsapp_number,
           telegramUsername: item.telegram_username,
           icon: item.icon,
-          addedDate: item.added_date
+          addedDate: item.added_date,
+          pixQrCode: item.pix_qr_code
         }));
         
         // Remove duplicates (based on title + telegramUsername)
         const uniqueSubscriptions = removeDuplicates(formattedData);
         setSubscriptions(uniqueSubscriptions);
+        
+        // Reset selected items
+        const initialSelected: Record<string, boolean> = {};
+        uniqueSubscriptions.forEach(sub => {
+          if (sub.id) initialSelected[sub.id] = false;
+        });
+        setSelectedItems(initialSelected);
       }
     } catch (err: any) {
       setError(err.message);
@@ -180,6 +194,84 @@ const SubscriptionList: React.FC = () => {
       : <ArrowDown className="h-4 w-4 ml-1" />;
   };
 
+  // Handle bulk selection and deletion
+  const toggleSelectAll = () => {
+    const allSelected = Object.values(selectedItems).every(Boolean);
+    const newSelectedItems: Record<string, boolean> = {};
+    
+    subscriptions.forEach(sub => {
+      if (sub.id) newSelectedItems[sub.id] = !allSelected;
+    });
+    
+    setSelectedItems(newSelectedItems);
+  };
+
+  const toggleSelectItem = (id: string | undefined) => {
+    if (!id) return;
+    setSelectedItems(prev => ({
+      ...prev,
+      [id]: !prev[id]
+    }));
+  };
+
+  const handleBulkDelete = async () => {
+    try {
+      setIsDeleting(true);
+      
+      const selectedIds = Object.entries(selectedItems)
+        .filter(([_, value]) => value)
+        .map(([key, _]) => key);
+      
+      if (selectedIds.length === 0) {
+        toast({
+          title: "Nenhum anúncio selecionado",
+          description: "Selecione pelo menos um anúncio para excluir.",
+          variant: "destructive"
+        });
+        return;
+      }
+      
+      const { error } = await supabase
+        .from('subscriptions')
+        .delete()
+        .in('id', selectedIds);
+      
+      if (error) throw error;
+      
+      setSubscriptions(subscriptions.filter(sub => 
+        !selectedIds.includes(sub.id || '')
+      ));
+      
+      toast({
+        title: "Anúncios excluídos",
+        description: `${selectedIds.length} anúncios foram excluídos com sucesso.`
+      });
+      
+      // Reset selected items
+      const newSelectedItems: Record<string, boolean> = {};
+      subscriptions.forEach(sub => {
+        if (sub.id && !selectedIds.includes(sub.id)) {
+          newSelectedItems[sub.id] = false;
+        }
+      });
+      setSelectedItems(newSelectedItems);
+      setBulkDeleteMode(false);
+      
+    } catch (err: any) {
+      toast({
+        variant: "destructive",
+        title: "Erro ao excluir anúncios",
+        description: err.message
+      });
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  const getSelectedCount = () => {
+    return Object.values(selectedItems).filter(Boolean).length;
+  };
+
   // Filter and sort subscriptions
   const filteredAndSortedSubscriptions = () => {
     // First, filter by search term
@@ -243,25 +335,66 @@ const SubscriptionList: React.FC = () => {
   };
 
   return (
-    <div>
+    <div className="max-w-full">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
         <h1 className="text-3xl font-bold">Anúncios</h1>
-        <div className="flex gap-2">
-          <Button 
-            variant="outline"
-            onClick={() => navigate('/')} 
-            className="flex gap-2"
-          >
-            <Home className="h-5 w-5" />
-            Início
-          </Button>
-          <Button 
-            onClick={() => navigate('/admin/subscriptions/new')} 
-            className="flex gap-2"
-          >
-            <Plus className="h-5 w-5" />
-            Novo Anúncio
-          </Button>
+        <div className="flex flex-wrap gap-2">
+          {bulkDeleteMode ? (
+            <>
+              <Button 
+                variant="destructive" 
+                disabled={isDeleting || getSelectedCount() === 0}
+                onClick={handleBulkDelete}
+                className="flex gap-2"
+              >
+                {isDeleting ? (
+                  <>
+                    <Loader2 className="h-5 w-5 animate-spin" />
+                    Excluindo...
+                  </>
+                ) : (
+                  <>
+                    <Trash2 className="h-5 w-5" />
+                    Excluir ({getSelectedCount()})
+                  </>
+                )}
+              </Button>
+              <Button 
+                variant="outline"
+                onClick={() => setBulkDeleteMode(false)}
+                className="flex gap-2"
+              >
+                <X className="h-5 w-5" />
+                Cancelar
+              </Button>
+            </>
+          ) : (
+            <>
+              <Button 
+                variant="outline"
+                onClick={() => navigate('/')} 
+                className="flex gap-2"
+              >
+                <Home className="h-5 w-5" />
+                {!isMobile && "Início"}
+              </Button>
+              <Button 
+                variant="outline"
+                onClick={() => setBulkDeleteMode(true)} 
+                className="flex gap-2"
+              >
+                <Trash2 className="h-5 w-5" />
+                {!isMobile && "Excluir Vários"}
+              </Button>
+              <Button 
+                onClick={() => navigate('/admin/subscriptions/new')} 
+                className="flex gap-2"
+              >
+                <Plus className="h-5 w-5" />
+                {!isMobile && "Novo Anúncio"}
+              </Button>
+            </>
+          )}
         </div>
       </div>
       
@@ -313,6 +446,15 @@ const SubscriptionList: React.FC = () => {
         <Table>
           <TableHeader>
             <TableRow>
+              {bulkDeleteMode && (
+                <TableHead className="w-[40px]">
+                  <Checkbox
+                    checked={Object.values(selectedItems).every(Boolean) && Object.keys(selectedItems).length > 0}
+                    onCheckedChange={toggleSelectAll}
+                    aria-label="Selecionar todos"
+                  />
+                </TableHead>
+              )}
               <TableHead 
                 className="w-[300px] cursor-pointer"
                 onClick={() => changeSort('title')}
@@ -359,7 +501,7 @@ const SubscriptionList: React.FC = () => {
           <TableBody>
             {isLoading ? (
               <TableRow>
-                <TableCell colSpan={6} className="h-24 text-center">
+                <TableCell colSpan={bulkDeleteMode ? 7 : 6} className="h-24 text-center">
                   <div className="flex flex-col items-center justify-center">
                     <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
                     <span className="mt-2 text-muted-foreground">Carregando anúncios...</span>
@@ -368,13 +510,22 @@ const SubscriptionList: React.FC = () => {
               </TableRow>
             ) : filteredAndSortedSubscriptions().length === 0 ? (
               <TableRow>
-                <TableCell colSpan={6} className="h-24 text-center">
+                <TableCell colSpan={bulkDeleteMode ? 7 : 6} className="h-24 text-center">
                   {searchTerm ? "Nenhum resultado encontrado" : "Nenhum anúncio cadastrado"}
                 </TableCell>
               </TableRow>
             ) : (
               filteredAndSortedSubscriptions().map((subscription) => (
                 <TableRow key={subscription.id}>
+                  {bulkDeleteMode && (
+                    <TableCell className="px-2 py-2">
+                      <Checkbox
+                        checked={selectedItems[subscription.id || ''] || false}
+                        onCheckedChange={() => toggleSelectItem(subscription.id)}
+                        aria-label={`Selecionar ${subscription.title}`}
+                      />
+                    </TableCell>
+                  )}
                   <TableCell className="font-medium">
                     {subscription.title}
                   </TableCell>
@@ -397,14 +548,16 @@ const SubscriptionList: React.FC = () => {
                       >
                         <Edit className="h-4 w-4" />
                       </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="text-red-600 hover:text-red-700"
-                        onClick={() => confirmDelete(subscription.id || '')}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
+                      {!bulkDeleteMode && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="text-red-600 hover:text-red-700"
+                          onClick={() => confirmDelete(subscription.id || '')}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      )}
                     </div>
                   </TableCell>
                 </TableRow>

@@ -12,6 +12,7 @@ interface Subscription {
   whatsapp_number: string;
   telegram_username: string;
   pix_qr_code?: string;
+  added_date?: string;
 }
 
 /**
@@ -25,15 +26,20 @@ export const generateTxtContent = (selectedSubs: Subscription[]) => {
   selectedSubs.forEach((sub, index) => {
     content += `=== ASSINATURA ${index + 1} ===\n`;
     content += `Título: ${sub.title}\n`;
-    content += `Preço: ${sub.price}\n`;
-    content += `Forma de Pagamento: ${sub.payment_method}\n`;
-    content += `Status: ${sub.status}\n`;
-    content += `Acesso: ${sub.access}\n`;
-    content += `WhatsApp: ${sub.whatsapp_number}\n`;
-    content += `Telegram: ${sub.telegram_username}\n`;
+    content += `🏦 Valor: ${sub.price}\n`;
+    content += `💰 Forma de pagamento: ${sub.payment_method}\n`;
+    content += `📌 Status: ${sub.status}\n`;
+    content += `🔐 Acesso: ${sub.access}\n`;
+    content += `📱 WhatsApp: ${sub.whatsapp_number}\n`;
+    content += `📩 Telegram: ${sub.telegram_username}\n`;
     if (sub.pix_qr_code) {
       content += `QR Code PIX: ${sub.pix_qr_code}\n`;
     }
+    
+    if (sub.added_date) {
+      content += `\n📅 Adicionado em:\n${sub.added_date}\n`;
+    }
+    
     content += '\n';
   });
   

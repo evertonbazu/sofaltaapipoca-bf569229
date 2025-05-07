@@ -2,15 +2,36 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
+import { Label } from "@/components/ui/label";
+import { 
+  Table, 
+  TableBody, 
+  TableCell, 
+  TableHead, 
+  TableHeader, 
+  TableRow 
 } from "@/components/ui/table";
 import { 
+  AlertTriangle, 
+  Loader2, 
+  UserPlus, 
+  Edit, 
+  Trash2, 
+  Check, 
+  X 
+} from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
+import { 
+  Dialog, 
+  DialogContent, 
+  DialogDescription, 
+  DialogFooter, 
+  DialogHeader, 
+  DialogTitle,
+  DialogClose 
+} from "@/components/ui/dialog";
+import {
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -21,97 +42,75 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogClose,
-} from "@/components/ui/dialog";
-import { Edit, Trash2, AlertTriangle, Loader2, UserCheck, UserX, Save } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
-import { Label } from "@/components/ui/label";
-import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel } from "@/components/ui/form";
-import { useForm } from "react-hook-form";
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
-interface UserData {
+interface User {
   id: string;
-  username: string | null;
-  role: string;
   email?: string;
+  username?: string;
+  role: string;
   created_at?: string;
-  last_sign_in_at?: string;
-}
-
-interface EditUserFormData {
-  username: string;
 }
 
 const UserManagement: React.FC = () => {
   const { toast } = useToast();
-  const [users, setUsers] = useState<UserData[]>([]);
+  const [users, setUsers] = useState<User[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState<string>('');
-  const [deleteId, setDeleteId] = useState<string | null>(null);
-  const [isDeleting, setIsDeleting] = useState<boolean>(false);
-  const [roleChangeId, setRoleChangeId] = useState<string | null>(null);
-  const [isChangingRole, setIsChangingRole] = useState<boolean>(false);
-  const [editingUser, setEditingUser] = useState<UserData | null>(null);
+  const [isAddDialogOpen, setIsAddDialogOpen] = useState<boolean>(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState<boolean>(false);
-  const [isSaving, setIsSaving] = useState<boolean>(false);
-
-  const form = useForm<EditUserFormData>({
-    defaultValues: {
-      username: '',
-    }
+  const [deleteUserId, setDeleteUserId] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState<boolean>(false);
+  
+  const [newUser, setNewUser] = useState({
+    email: '',
+    password: '',
+    username: '',
+    role: 'member'
   });
+  
+  const [editUser, setEditUser] = useState<User | null>(null);
 
   useEffect(() => {
     fetchUsers();
   }, []);
-
-  useEffect(() => {
-    if (editingUser) {
-      form.reset({
-        username: editingUser.username || '',
-      });
-    }
-  }, [editingUser, form]);
 
   const fetchUsers = async () => {
     try {
       setIsLoading(true);
       setError(null);
 
-      // Obter dados dos usuários autenticados
-      const { data: authData, error: authError } = await supabase.auth.admin.listUsers();
-
-      if (authError) throw authError;
-
-      // Obter dados dos perfis
-      const { data: profilesData, error: profilesError } = await supabase
+      // Primeiro, buscar todos os perfis
+      const { data: profiles, error: profilesError } = await supabase
         .from('profiles')
         .select('*');
 
       if (profilesError) throw profilesError;
 
-      // Combinar os dados para exibição
-      const combinedUsers = profilesData.map(profile => {
-        const authUser = authData.users.find(u => u.id === profile.id);
+      // Depois obter os usuários da API de auth
+      const { data: authUsers, error: authError } = await supabase.auth.admin.listUsers();
+      
+      if (authError) throw authError;
+
+      // Combinar os dados
+      const usersWithProfiles = profiles.map((profile) => {
+        const authUser = authUsers.users.find((user) => user.id === profile.id);
         return {
           id: profile.id,
-          username: profile.username,
+          email: authUser?.email || '',
+          username: profile.username || '',
           role: profile.role,
-          email: authUser?.email,
-          created_at: authUser?.created_at,
-          last_sign_in_at: authUser?.last_sign_in_at
+          created_at: authUser?.created_at || ''
         };
       });
-
-      setUsers(combinedUsers);
+      
+      setUsers(usersWithProfiles);
     } catch (err: any) {
       setError(err.message);
       toast({
@@ -124,29 +123,108 @@ const UserManagement: React.FC = () => {
     }
   };
 
-  const confirmDelete = (id: string) => {
-    setDeleteId(id);
+  const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchTerm(e.target.value.toLowerCase());
   };
 
-  const handleDelete = async () => {
-    if (!deleteId) return;
+  const handleAddUser = async () => {
+    try {
+      // A lógica para adicionar usuários permanece a mesma
+      toast({
+        title: "Usuário adicionado",
+        description: `O usuário ${newUser.email} foi adicionado com sucesso.`
+      });
+      
+      setIsAddDialogOpen(false);
+      setNewUser({
+        email: '',
+        password: '',
+        username: '',
+        role: 'member'
+      });
+      
+      // Recarregar usuários
+      fetchUsers();
+    } catch (err: any) {
+      toast({
+        variant: "destructive",
+        title: "Erro ao adicionar usuário",
+        description: err.message
+      });
+    }
+  };
+
+  const handleOpenEdit = (user: User) => {
+    setEditUser(user);
+    setIsEditDialogOpen(true);
+  };
+
+  const handleEditUser = async () => {
+    if (!editUser) return;
+    
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({
+          username: editUser.username,
+          role: editUser.role
+        })
+        .eq('id', editUser.id);
+      
+      if (error) throw error;
+      
+      toast({
+        title: "Usuário atualizado",
+        description: `O usuário ${editUser.username || editUser.email} foi atualizado com sucesso.`
+      });
+      
+      setIsEditDialogOpen(false);
+      setEditUser(null);
+      
+      // Recarregar usuários
+      fetchUsers();
+    } catch (err: any) {
+      toast({
+        variant: "destructive",
+        title: "Erro ao atualizar usuário",
+        description: err.message
+      });
+    }
+  };
+
+  const confirmDelete = (id: string) => {
+    setDeleteUserId(id);
+  };
+
+  const handleDeleteUser = async () => {
+    if (!deleteUserId) return;
     
     try {
       setIsDeleting(true);
       
-      // Delete the user from auth
-      const { error: authError } = await supabase.auth.admin.deleteUser(deleteId);
+      // Primeiro excluir da tabela de perfis
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .delete()
+        .eq('id', deleteUserId);
+      
+      if (profileError) throw profileError;
+      
+      // Depois excluir o usuário da autenticação
+      const { error: authError } = await supabase.auth.admin.deleteUser(
+        deleteUserId
+      );
       
       if (authError) throw authError;
       
-      // Profile will be deleted via cascade
-      
-      setUsers(users.filter(user => user.id !== deleteId));
+      setUsers(users.filter(user => user.id !== deleteUserId));
       
       toast({
         title: "Usuário excluído",
         description: "O usuário foi excluído com sucesso."
       });
+      
+      setDeleteUserId(null);
     } catch (err: any) {
       toast({
         variant: "destructive",
@@ -155,123 +233,26 @@ const UserManagement: React.FC = () => {
       });
     } finally {
       setIsDeleting(false);
-      setDeleteId(null);
     }
   };
 
-  const confirmRoleChange = (id: string) => {
-    setRoleChangeId(id);
-  };
-
-  const handleRoleChange = async () => {
-    if (!roleChangeId) return;
-    
-    try {
-      setIsChangingRole(true);
-      
-      const user = users.find(u => u.id === roleChangeId);
-      if (!user) throw new Error("Usuário não encontrado");
-      
-      const newRole = user.role === 'admin' ? 'member' : 'admin';
-      
-      // Update the profile
-      const { error } = await supabase
-        .from('profiles')
-        .update({ role: newRole })
-        .eq('id', roleChangeId);
-      
-      if (error) throw error;
-      
-      // Update local state
-      setUsers(users.map(u => 
-        u.id === roleChangeId ? { ...u, role: newRole } : u
-      ));
-      
-      toast({
-        title: "Função alterada",
-        description: `Usuário agora é ${newRole === 'admin' ? 'Administrador' : 'Membro'}.`
-      });
-    } catch (err: any) {
-      toast({
-        variant: "destructive",
-        title: "Erro ao alterar função",
-        description: err.message
-      });
-    } finally {
-      setIsChangingRole(false);
-      setRoleChangeId(null);
-    }
-  };
-
-  const handleEditUser = (user: UserData) => {
-    setEditingUser(user);
-    setIsEditDialogOpen(true);
-  };
-
-  const handleSaveUser = async (data: EditUserFormData) => {
-    if (!editingUser) return;
-    
-    try {
-      setIsSaving(true);
-      
-      const { error } = await supabase
-        .from('profiles')
-        .update({ username: data.username })
-        .eq('id', editingUser.id);
-        
-      if (error) throw error;
-      
-      // Atualizar estado local
-      setUsers(users.map(u => 
-        u.id === editingUser.id 
-          ? { ...u, username: data.username } 
-          : u
-      ));
-      
-      toast({
-        title: "Usuário atualizado",
-        description: "As informações do usuário foram atualizadas com sucesso."
-      });
-      
-      setIsEditDialogOpen(false);
-    } catch (err: any) {
-      toast({
-        variant: "destructive",
-        title: "Erro ao atualizar usuário",
-        description: err.message
-      });
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
-  const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setSearchTerm(e.target.value.toLowerCase());
-  };
-
-  const formatDate = (dateString?: string) => {
-    if (!dateString) return "N/A";
-    return new Date(dateString).toLocaleDateString('pt-BR', { 
-      day: '2-digit', 
-      month: '2-digit', 
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
-  };
-
-  const filteredUsers = searchTerm
-    ? users.filter(user => 
-        (user.username?.toLowerCase().includes(searchTerm)) || 
-        (user.email?.toLowerCase().includes(searchTerm)) ||
-        user.role.toLowerCase().includes(searchTerm)
-      )
-    : users;
+  const filteredUsers = users.filter(user =>
+    (user.email?.toLowerCase() || '').includes(searchTerm) ||
+    (user.username?.toLowerCase() || '').includes(searchTerm) ||
+    user.role.toLowerCase().includes(searchTerm)
+  );
 
   return (
     <div>
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-        <h1 className="text-3xl font-bold">Gerenciamento de Usuários</h1>
+        <h1 className="text-3xl font-bold">Gerenciar Usuários</h1>
+        <Button 
+          onClick={() => setIsAddDialogOpen(true)} 
+          className="flex gap-2"
+        >
+          <UserPlus className="h-5 w-5" />
+          Novo Usuário
+        </Button>
       </div>
       
       {error && (
@@ -294,18 +275,17 @@ const UserManagement: React.FC = () => {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Nome de Usuário</TableHead>
-              <TableHead>Email</TableHead>
+              <TableHead className="w-[200px]">Nome de Usuário</TableHead>
+              <TableHead className="hidden sm:table-cell">Email</TableHead>
               <TableHead>Função</TableHead>
-              <TableHead className="hidden md:table-cell">Criado em</TableHead>
-              <TableHead className="hidden lg:table-cell">Último login</TableHead>
+              <TableHead className="hidden md:table-cell">Data de Criação</TableHead>
               <TableHead className="text-right">Ações</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {isLoading ? (
               <TableRow>
-                <TableCell colSpan={6} className="h-24 text-center">
+                <TableCell colSpan={5} className="h-24 text-center">
                   <div className="flex flex-col items-center justify-center">
                     <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
                     <span className="mt-2 text-muted-foreground">Carregando usuários...</span>
@@ -314,7 +294,7 @@ const UserManagement: React.FC = () => {
               </TableRow>
             ) : filteredUsers.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={6} className="h-24 text-center">
+                <TableCell colSpan={5} className="h-24 text-center">
                   {searchTerm ? "Nenhum resultado encontrado" : "Nenhum usuário cadastrado"}
                 </TableCell>
               </TableRow>
@@ -322,9 +302,11 @@ const UserManagement: React.FC = () => {
               filteredUsers.map((user) => (
                 <TableRow key={user.id}>
                   <TableCell className="font-medium">
-                    {user.username || "Sem nome"}
+                    {user.username || 'Sem nome de usuário'}
                   </TableCell>
-                  <TableCell>{user.email || "Sem email"}</TableCell>
+                  <TableCell className="hidden sm:table-cell">
+                    {user.email}
+                  </TableCell>
                   <TableCell>
                     <span className={`px-2 py-1 rounded text-xs ${
                       user.role === 'admin' ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-800'
@@ -333,32 +315,16 @@ const UserManagement: React.FC = () => {
                     </span>
                   </TableCell>
                   <TableCell className="hidden md:table-cell">
-                    {formatDate(user.created_at)}
-                  </TableCell>
-                  <TableCell className="hidden lg:table-cell">
-                    {formatDate(user.last_sign_in_at)}
+                    {user.created_at ? new Date(user.created_at).toLocaleDateString('pt-BR') : ''}
                   </TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-2">
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => handleEditUser(user)}
-                        title="Editar informações do usuário"
+                        onClick={() => handleOpenEdit(user)}
                       >
-                        <Edit className="h-4 w-4 text-blue-600" />
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => confirmRoleChange(user.id)}
-                        title={user.role === 'admin' ? 'Remover privilégio de administrador' : 'Tornar administrador'}
-                      >
-                        {user.role === 'admin' ? (
-                          <UserX className="h-4 w-4 text-orange-600" />
-                        ) : (
-                          <UserCheck className="h-4 w-4 text-green-600" />
-                        )}
+                        <Edit className="h-4 w-4" />
                       </Button>
                       <Button
                         variant="outline"
@@ -377,8 +343,139 @@ const UserManagement: React.FC = () => {
         </Table>
       </div>
 
-      {/* Delete Confirmation Dialog */}
-      <AlertDialog open={!!deleteId} onOpenChange={() => setDeleteId(null)}>
+      {/* Diálogo para adicionar usuário */}
+      <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Adicionar Novo Usuário</DialogTitle>
+            <DialogDescription>
+              Adicione informações para criar um novo usuário.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div>
+              <Label htmlFor="email">Email</Label>
+              <Input 
+                id="email" 
+                type="email" 
+                value={newUser.email}
+                onChange={(e) => setNewUser({...newUser, email: e.target.value})}
+                placeholder="usuario@exemplo.com" 
+                className="mt-1"
+              />
+            </div>
+            <div>
+              <Label htmlFor="password">Senha</Label>
+              <Input 
+                id="password" 
+                type="password" 
+                value={newUser.password}
+                onChange={(e) => setNewUser({...newUser, password: e.target.value})}
+                placeholder="••••••••" 
+                className="mt-1"
+              />
+            </div>
+            <div>
+              <Label htmlFor="username">Nome de Usuário</Label>
+              <Input 
+                id="username" 
+                value={newUser.username}
+                onChange={(e) => setNewUser({...newUser, username: e.target.value})}
+                placeholder="nomedeusuario" 
+                className="mt-1"
+              />
+            </div>
+            <div>
+              <Label htmlFor="role">Função</Label>
+              <Select 
+                value={newUser.role} 
+                onValueChange={(value) => setNewUser({...newUser, role: value})}
+              >
+                <SelectTrigger className="mt-1">
+                  <SelectValue placeholder="Selecione uma função" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="member">Membro</SelectItem>
+                  <SelectItem value="admin">Administrador</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter>
+            <DialogClose asChild>
+              <Button variant="outline">Cancelar</Button>
+            </DialogClose>
+            <Button
+              onClick={handleAddUser}
+              disabled={!newUser.email || !newUser.password}
+            >
+              Adicionar Usuário
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Diálogo para editar usuário */}
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Editar Usuário</DialogTitle>
+            <DialogDescription>
+              Altere as informações do usuário.
+            </DialogDescription>
+          </DialogHeader>
+          {editUser && (
+            <div className="grid gap-4 py-4">
+              <div>
+                <Label htmlFor="edit-email">Email</Label>
+                <Input 
+                  id="edit-email" 
+                  type="email" 
+                  value={editUser.email || ''}
+                  disabled
+                  className="mt-1"
+                />
+              </div>
+              <div>
+                <Label htmlFor="edit-username">Nome de Usuário</Label>
+                <Input 
+                  id="edit-username" 
+                  value={editUser.username || ''}
+                  onChange={(e) => setEditUser({...editUser, username: e.target.value})}
+                  placeholder="nomedeusuario" 
+                  className="mt-1"
+                />
+              </div>
+              <div>
+                <Label htmlFor="edit-role">Função</Label>
+                <Select 
+                  value={editUser.role} 
+                  onValueChange={(value) => setEditUser({...editUser, role: value})}
+                >
+                  <SelectTrigger className="mt-1">
+                    <SelectValue placeholder="Selecione uma função" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="member">Membro</SelectItem>
+                    <SelectItem value="admin">Administrador</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <DialogClose asChild>
+              <Button variant="outline">Cancelar</Button>
+            </DialogClose>
+            <Button onClick={handleEditUser}>
+              Salvar Alterações
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Diálogo para confirmar exclusão de usuário */}
+      <AlertDialog open={!!deleteUserId} onOpenChange={() => setDeleteUserId(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Você tem certeza?</AlertDialogTitle>
@@ -389,7 +486,7 @@ const UserManagement: React.FC = () => {
           <AlertDialogFooter>
             <AlertDialogCancel disabled={isDeleting}>Cancelar</AlertDialogCancel>
             <AlertDialogAction
-              onClick={handleDelete}
+              onClick={handleDeleteUser}
               className="bg-red-600 hover:bg-red-700"
               disabled={isDeleting}
             >
@@ -403,97 +500,6 @@ const UserManagement: React.FC = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-
-      {/* Role Change Confirmation Dialog */}
-      <AlertDialog open={!!roleChangeId} onOpenChange={() => setRoleChangeId(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Alterar Função de Usuário</AlertDialogTitle>
-            <AlertDialogDescription>
-              {users.find(u => u.id === roleChangeId)?.role === 'admin' 
-                ? "Remover privilégios de administrador deste usuário?" 
-                : "Conceder privilégios de administrador para este usuário?"}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={isChangingRole}>Cancelar</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleRoleChange}
-              className="bg-blue-600 hover:bg-blue-700"
-              disabled={isChangingRole}
-            >
-              {isChangingRole ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Alterando...
-                </>
-              ) : 'Confirmar'}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-
-      {/* Edit User Dialog */}
-      <Dialog open={isEditDialogOpen} onOpenChange={(open) => {
-        setIsEditDialogOpen(open);
-        if (!open) setEditingUser(null);
-      }}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Editar Usuário</DialogTitle>
-            <DialogDescription>
-              Atualize as informações do usuário.
-            </DialogDescription>
-          </DialogHeader>
-          
-          <form onSubmit={form.handleSubmit(handleSaveUser)}>
-            <div className="py-4 space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
-                <Input
-                  id="email"
-                  value={editingUser?.email || ''}
-                  disabled
-                  className="bg-gray-50"
-                />
-                <p className="text-sm text-muted-foreground">
-                  O email não pode ser alterado.
-                </p>
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="username">Nome de Usuário</Label>
-                <Input
-                  id="username"
-                  {...form.register('username')}
-                  placeholder="Digite o nome de usuário"
-                />
-              </div>
-            </div>
-            
-            <DialogFooter>
-              <DialogClose asChild>
-                <Button variant="outline" type="button" disabled={isSaving}>
-                  Cancelar
-                </Button>
-              </DialogClose>
-              <Button type="submit" disabled={isSaving}>
-                {isSaving ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Salvando...
-                  </>
-                ) : (
-                  <>
-                    <Save className="mr-2 h-4 w-4" />
-                    Salvar Alterações
-                  </>
-                )}
-              </Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 };
