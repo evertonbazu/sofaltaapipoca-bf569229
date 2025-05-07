@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import SearchBar from '@/components/SearchBar';
@@ -7,7 +6,7 @@ import NoResults from '@/components/NoResults';
 import { MessageSquare, Megaphone, User, Settings, Home, Plus } from 'lucide-react';
 import { useAuth } from '@/hooks/use-auth';
 import { Button } from '@/components/ui/button';
-import { supabase } from '@/integrations/supabase/client';
+import { supabase, importSampleSubscriptions } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
 const Index: React.FC = () => {
@@ -50,12 +49,11 @@ const Index: React.FC = () => {
         });
       }
       
-      const { data, error } = await supabase.functions.invoke('import-subscriptions');
-      
-      if (error) throw error;
+      // Use a função local em vez da Edge Function
+      const subscriptions = await importSampleSubscriptions();
       
       // Filter out subscriptions that already exist
-      const newSubs = (data || []).filter((sub: any) => {
+      const newSubs = subscriptions.filter((sub: any) => {
         const key = `${sub.title}-${sub.telegram_username}`.toLowerCase();
         return !existingMap.has(key);
       });
