@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import SearchBar from '@/components/SearchBar';
@@ -67,12 +66,24 @@ const Index: React.FC = () => {
         return;
       }
       
-      // Insert new subscriptions
-      const { error: insertError } = await supabase
-        .from('subscriptions')
-        .insert(newSubs);
-      
-      if (insertError) throw insertError;
+      // Insert new subscriptions one by one
+      for (const sub of newSubs) {
+        // Generate a unique code for each subscription
+        const code = 'SF' + Math.floor(1000 + Math.random() * 9000).toString();
+        
+        // Add code to the subscription
+        const subWithCode = {
+          ...sub,
+          code: code
+        };
+        
+        // Insert the subscription
+        const { error: insertError } = await supabase
+          .from('subscriptions')
+          .insert(subWithCode);
+          
+        if (insertError) throw insertError;
+      }
       
       toast({
         title: "Anúncios importados",

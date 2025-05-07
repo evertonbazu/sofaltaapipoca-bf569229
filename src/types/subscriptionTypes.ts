@@ -16,6 +16,7 @@ export interface SubscriptionData {
   pixKey?: string;
   paymentProofImage?: string;
   featured?: boolean;
+  code: string; // Add required code field
 }
 
 // Interfaces para os dados das tabelas do Supabase
@@ -36,6 +37,7 @@ export interface SubscriptionFromSupabase {
   pix_key?: string;
   payment_proof_image?: string;
   featured?: boolean;
+  code: string; // Add required code field
 }
 
 export interface PendingSubscriptionFromSupabase {
@@ -67,4 +69,5 @@ export interface ProfileFromSupabase {
   role: string;
   created_at: string;
   updated_at: string;
+  email?: string; // Add optional email field
 }

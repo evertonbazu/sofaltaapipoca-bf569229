@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -64,6 +63,7 @@ interface PendingSubscription {
   pix_key?: string;
   payment_proof_image?: string;
   código?: number;
+  code?: string;
 }
 
 interface Profile {
@@ -241,6 +241,9 @@ const PendingSubscriptions: React.FC = () => {
       delete subscription.rejection_reason;
       delete subscription.username;
 
+      // Generate a unique code for the subscription
+      const code = 'SF' + Math.floor(1000 + Math.random() * 9000).toString();
+
       // First add to subscriptions table
       const { error: insertError } = await supabase
         .from('subscriptions')
@@ -260,7 +263,7 @@ const PendingSubscriptions: React.FC = () => {
           pix_key: subscription.pix_key,
           payment_proof_image: subscription.payment_proof_image,
           user_id: subscription.user_id, // Ensure we keep the original user_id
-          código: subscription.código
+          code: code // Add the required code field
         });
 
       if (insertError) throw insertError;

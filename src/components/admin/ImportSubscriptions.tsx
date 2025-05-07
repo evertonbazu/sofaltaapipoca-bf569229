@@ -205,27 +205,33 @@ const ImportSubscriptions: React.FC = () => {
         setIsImporting(false);
         return;
       }
-      
-      // Insert new subscriptions
-      const { error: insertError } = await supabase
-        .from('subscriptions')
-        .insert(newSubscriptions.map(sub => ({
-          title: sub.title,
-          price: sub.price,
-          payment_method: sub.payment_method,
-          status: sub.status,
-          access: sub.access,
-          whatsapp_number: sub.whatsapp_number,
-          telegram_username: sub.telegram_username,
-          header_color: sub.header_color || 'bg-blue-600',
-          price_color: sub.price_color || 'text-blue-600',
-          icon: sub.icon || 'monitor',
-          added_date: sub.added_date,
-          pix_qr_code: sub.pix_qr_code,
-          código: sub.código
-        })));
-      
-      if (insertError) throw insertError;
+
+      // Insert new subscriptions one by one to generate unique codes
+      for (const sub of newSubscriptions) {
+        // Generate a unique code for each subscription
+        const code = 'SF' + Math.floor(1000 + Math.random() * 9000).toString();
+        
+        const { error: insertError } = await supabase
+          .from('subscriptions')
+          .insert({
+            title: sub.title,
+            price: sub.price,
+            payment_method: sub.payment_method,
+            status: sub.status,
+            access: sub.access,
+            whatsapp_number: sub.whatsapp_number,
+            telegram_username: sub.telegram_username,
+            header_color: sub.header_color || 'bg-blue-600',
+            price_color: sub.price_color || 'text-blue-600',
+            icon: sub.icon || 'monitor',
+            added_date: sub.added_date,
+            pix_qr_code: sub.pix_qr_code,
+            código: sub.código,
+            code: code // Add required code field
+          });
+        
+        if (insertError) throw insertError;
+      }
       
       toast({
         title: "Importação bem-sucedida",

@@ -107,7 +107,6 @@ export type Database = {
           access: string
           added_date: string | null
           code: string
-          código: number | null
           created_at: string | null
           featured: boolean | null
           header_color: string
@@ -130,7 +129,6 @@ export type Database = {
           access: string
           added_date?: string | null
           code: string
-          código?: number | null
           created_at?: string | null
           featured?: boolean | null
           header_color: string
@@ -153,7 +151,6 @@ export type Database = {
           access?: string
           added_date?: string | null
           code?: string
-          código?: number | null
           created_at?: string | null
           featured?: boolean | null
           header_color?: string

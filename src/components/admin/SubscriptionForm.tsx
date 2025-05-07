@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
@@ -31,7 +30,8 @@ const SubscriptionForm: React.FC = () => {
     addedDate: format(new Date(), 'dd/MM/yyyy'),
     pixQrCode: '',
     pixKey: '',
-    featured: false
+    featured: false,
+    code: '' // Add default value for code
   });
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [isFetching, setIsFetching] = useState<boolean>(!!id);
@@ -69,7 +69,8 @@ const SubscriptionForm: React.FC = () => {
               pixQrCode: data.pix_qr_code || '',
               pixKey: data.pix_key || '',
               paymentProofImage: data.payment_proof_image || '',
-              featured: data.featured || false
+              featured: data.featured || false,
+              code: data.code || '' // Add code from data
             });
 
             setPriceValue(data.price || '');
@@ -185,6 +186,13 @@ const SubscriptionForm: React.FC = () => {
         paymentProofImageUrl = publicUrl;
       }
 
+      // Generate a unique code if this is a new subscription
+      let subscriptionCode = formData.code;
+      if (!id && !subscriptionCode) {
+        // Generate a unique code in format "SF" + 4 random digits
+        subscriptionCode = 'SF' + Math.floor(1000 + Math.random() * 9000).toString();
+      }
+
       const subscriptionData = {
         title: formData.title,
         price: formData.price,
@@ -199,7 +207,8 @@ const SubscriptionForm: React.FC = () => {
         added_date: formData.addedDate,
         pix_key: formData.pixKey,
         payment_proof_image: paymentProofImageUrl,
-        featured: formData.featured
+        featured: formData.featured,
+        code: subscriptionCode // Include the code field
       };
 
       if (id) {
@@ -497,6 +506,21 @@ const SubscriptionForm: React.FC = () => {
                 onChange={handleChange}
                 required
               />
+            </div>
+            
+            {/* Add code field */}
+            <div className="space-y-2">
+              <Label htmlFor="code">Código Único</Label>
+              <Input
+                id="code"
+                name="code"
+                placeholder="Ex: SF1234"
+                value={formData.code}
+                onChange={handleChange}
+                disabled={!!id} // Only allow editing for new subscriptions
+              />
+              {!id && <p className="text-xs text-gray-500 mt-1">Um código único será gerado automaticamente se este campo for deixado vazio.</p>}
+              {id && <p className="text-xs text-gray-500 mt-1">O código único não pode ser alterado após a criação.</p>}
             </div>
           </CardContent>
           <CardFooter className="flex justify-between">
