@@ -9,7 +9,152 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      pending_subscriptions: {
+        Row: {
+          access: string
+          added_date: string | null
+          header_color: string
+          icon: string | null
+          id: string
+          payment_method: string
+          pix_qr_code: string | null
+          price: string
+          price_color: string
+          rejection_reason: string | null
+          reviewed_at: string | null
+          status: string
+          status_approval: string | null
+          submitted_at: string | null
+          telegram_username: string
+          title: string
+          user_id: string | null
+          whatsapp_number: string
+        }
+        Insert: {
+          access: string
+          added_date?: string | null
+          header_color: string
+          icon?: string | null
+          id?: string
+          payment_method: string
+          pix_qr_code?: string | null
+          price: string
+          price_color: string
+          rejection_reason?: string | null
+          reviewed_at?: string | null
+          status: string
+          status_approval?: string | null
+          submitted_at?: string | null
+          telegram_username: string
+          title: string
+          user_id?: string | null
+          whatsapp_number: string
+        }
+        Update: {
+          access?: string
+          added_date?: string | null
+          header_color?: string
+          icon?: string | null
+          id?: string
+          payment_method?: string
+          pix_qr_code?: string | null
+          price?: string
+          price_color?: string
+          rejection_reason?: string | null
+          reviewed_at?: string | null
+          status?: string
+          status_approval?: string | null
+          submitted_at?: string | null
+          telegram_username?: string
+          title?: string
+          user_id?: string | null
+          whatsapp_number?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pending_subscriptions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          created_at: string | null
+          id: string
+          role: string | null
+          updated_at: string | null
+          username: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id: string
+          role?: string | null
+          updated_at?: string | null
+          username?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          role?: string | null
+          updated_at?: string | null
+          username?: string | null
+        }
+        Relationships: []
+      }
+      subscriptions: {
+        Row: {
+          access: string
+          added_date: string | null
+          featured: boolean | null
+          header_color: string
+          icon: string | null
+          id: string
+          payment_method: string
+          pix_qr_code: string | null
+          price: string
+          price_color: string
+          status: string
+          telegram_username: string
+          title: string
+          whatsapp_number: string
+        }
+        Insert: {
+          access: string
+          added_date?: string | null
+          featured?: boolean | null
+          header_color: string
+          icon?: string | null
+          id?: string
+          payment_method: string
+          pix_qr_code?: string | null
+          price: string
+          price_color: string
+          status: string
+          telegram_username: string
+          title: string
+          whatsapp_number: string
+        }
+        Update: {
+          access?: string
+          added_date?: string | null
+          featured?: boolean | null
+          header_color?: string
+          icon?: string | null
+          id?: string
+          payment_method?: string
+          pix_qr_code?: string | null
+          price?: string
+          price_color?: string
+          status?: string
+          telegram_username?: string
+          title?: string
+          whatsapp_number?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

@@ -14,3 +14,50 @@ export interface SubscriptionData {
   addedDate?: string;
   pixQrCode?: string;
 }
+
+// Interfaces para os dados das tabelas do Supabase
+export interface SubscriptionFromSupabase {
+  id: string;
+  title: string;
+  price: string;
+  payment_method: string;
+  status: string;
+  access: string;
+  header_color: string;
+  price_color: string;
+  whatsapp_number: string;
+  telegram_username: string;
+  icon?: string;
+  added_date?: string;
+  pix_qr_code?: string;
+  featured?: boolean;
+}
+
+export interface PendingSubscriptionFromSupabase {
+  id: string;
+  title: string;
+  price: string;
+  payment_method: string;
+  status: string;
+  access: string;
+  header_color: string;
+  price_color: string;
+  whatsapp_number: string;
+  telegram_username: string;
+  icon?: string;
+  added_date?: string;
+  pix_qr_code?: string;
+  user_id: string;
+  status_approval: string;
+  reviewed_at?: string;
+  rejection_reason?: string;
+  submitted_at: string;
+}
+
+export interface ProfileFromSupabase {
+  id: string;
+  username?: string;
+  role: string;
+  created_at: string;
+  updated_at: string;
+}

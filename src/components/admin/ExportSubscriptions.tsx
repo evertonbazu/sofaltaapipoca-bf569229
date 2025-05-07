@@ -6,6 +6,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { saveAs } from 'file-saver';
 import * as XLSX from 'xlsx';
 import { useToast } from "@/hooks/use-toast";
+import { SubscriptionFromSupabase } from "@/types/subscriptionTypes";
 
 const ExportSubscriptions: React.FC = () => {
   const [isLoading, setIsLoading] = useState<boolean>(false);
@@ -33,7 +34,7 @@ const ExportSubscriptions: React.FC = () => {
       }
       
       // Format the data for export
-      const formattedData = data.map(item => ({
+      const formattedData = data.map((item: SubscriptionFromSupabase) => ({
         id: item.id,
         title: item.title,
         price: item.price,

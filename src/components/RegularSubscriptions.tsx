@@ -3,7 +3,7 @@ import React, { useEffect, useState } from "react";
 import SubscriptionItem from "./SubscriptionItem";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { supabase } from '@/integrations/supabase/client';
-import { SubscriptionData } from "@/types/subscriptionTypes";
+import { SubscriptionData, SubscriptionFromSupabase } from "@/types/subscriptionTypes";
 
 interface RegularSubscriptionsProps {
   searchTerm?: string;
@@ -32,7 +32,7 @@ const RegularSubscriptions: React.FC<RegularSubscriptionsProps> = ({
           .order('added_date', { ascending: false })
           .limit(6);
         
-        const featuredIds = featuredData?.map(item => item.id) || [];
+        const featuredIds = featuredData?.map((item: {id: string}) => item.id) || [];
         setFeaturedIds(featuredIds);
         
         // Then get all remaining subscriptions
@@ -50,7 +50,7 @@ const RegularSubscriptions: React.FC<RegularSubscriptionsProps> = ({
         if (error) throw error;
         
         if (data) {
-          const formattedSubscriptions: SubscriptionData[] = data.map(item => ({
+          const formattedSubscriptions: SubscriptionData[] = data.map((item: SubscriptionFromSupabase) => ({
             id: item.id,
             title: item.title,
             price: item.price,
@@ -62,7 +62,8 @@ const RegularSubscriptions: React.FC<RegularSubscriptionsProps> = ({
             whatsappNumber: item.whatsapp_number,
             telegramUsername: item.telegram_username,
             icon: item.icon,
-            addedDate: item.added_date
+            addedDate: item.added_date,
+            pixQrCode: item.pix_qr_code
           }));
           
           setAllSubscriptions(formattedSubscriptions);

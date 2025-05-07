@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -18,19 +17,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useIsMobile } from '@/hooks/use-mobile';
+import { SubscriptionFromSupabase } from '@/types/subscriptionTypes';
 
-interface Subscription {
-  id: string;
-  title: string;
-  price: string;
-  payment_method: string;
-  status: string;
-  access: string;
-  whatsapp_number: string;
-  telegram_username: string;
-  pix_qr_code?: string;
-  added_date?: string;
-}
+interface Subscription extends SubscriptionFromSupabase {}
 
 const ExportSubscriptionsTxt: React.FC = () => {
   const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
