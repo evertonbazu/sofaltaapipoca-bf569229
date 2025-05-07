@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
 import { supabase } from '@/integrations/supabase/client';
@@ -8,7 +8,6 @@ import { useToast } from '@/hooks/use-toast';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
@@ -16,39 +15,33 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  RadioGroup,
-  RadioGroupItem
-} from "@/components/ui/radio-group";
 import { AlertCircle, Upload, Loader2 } from 'lucide-react';
 
 interface FormData {
   title: string;
+  customTitle?: string;
   price: string;
   paymentMethod: string;
+  customPaymentMethod?: string;
   status: string;
   access: string;
-  headerColor: string;
-  priceColor: string;
   whatsappNumber: string;
   telegramUsername: string;
-  icon: string;
-  pixQrCode?: string;
+  pixKey: string;
   paymentProofImage?: File;
-  código?: number;
 }
 
 const initialFormData: FormData = {
   title: '',
+  customTitle: '',
   price: '',
-  paymentMethod: 'PIX',
-  status: '',
-  access: '',
-  headerColor: 'bg-blue-600',
-  priceColor: 'text-blue-600',
+  paymentMethod: 'PIX (Mensal)',
+  customPaymentMethod: '',
+  status: 'Assinado',
+  access: 'LOGIN E SENHA',
   whatsappNumber: '',
   telegramUsername: '',
-  icon: 'monitor',
+  pixKey: '',
 };
 
 const SubscriptionSubmissionForm: React.FC = () => {
@@ -58,6 +51,84 @@ const SubscriptionSubmissionForm: React.FC = () => {
   const [formData, setFormData] = useState<FormData>(initialFormData);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [existingTitles, setExistingTitles] = useState<string[]>([]);
+  const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    // Fetch existing subscription titles for the dropdown
+    const fetchExistingTitles = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('subscriptions')
+          .select('title')
+          .order('title');
+        
+        if (error) throw error;
+        
+        if (data) {
+          // Extract unique titles
+          const uniqueTitles = Array.from(new Set(data.map(item => item.title)));
+          setExistingTitles(uniqueTitles);
+        }
+      } catch (err) {
+        console.error("Error fetching subscription titles:", err);
+      }
+    };
+    
+    fetchExistingTitles();
+  }, []);
+
+  const validateForm = (): boolean => {
+    const errors: Record<string, string> = {};
+    
+    // Check required fields
+    if (!formData.title) {
+      errors.title = "Título do anúncio é obrigatório";
+    }
+    
+    if (formData.title === "outro" && !formData.customTitle) {
+      errors.customTitle = "Título personalizado é obrigatório";
+    }
+    
+    if (!formData.price) {
+      errors.price = "Preço é obrigatório";
+    }
+    
+    if (!formData.paymentMethod) {
+      errors.paymentMethod = "Forma de pagamento é obrigatória";
+    }
+    
+    if (formData.paymentMethod === "outro" && !formData.customPaymentMethod) {
+      errors.customPaymentMethod = "Forma de pagamento personalizada é obrigatória";
+    }
+    
+    if (!formData.status) {
+      errors.status = "Status é obrigatório";
+    }
+    
+    if (!formData.access) {
+      errors.access = "Tipo de acesso é obrigatório";
+    }
+    
+    if (!formData.whatsappNumber) {
+      errors.whatsappNumber = "Número do WhatsApp é obrigatório";
+    }
+    
+    if (!formData.telegramUsername) {
+      errors.telegramUsername = "Usuário do Telegram é obrigatório";
+    }
+    
+    if (!formData.pixKey) {
+      errors.pixKey = "Chave PIX é obrigatória";
+    }
+    
+    if (!formData.paymentProofImage) {
+      errors.paymentProofImage = "Comprovante de pagamento é obrigatório";
+    }
+    
+    setValidationErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -65,6 +136,15 @@ const SubscriptionSubmissionForm: React.FC = () => {
       ...prev,
       [name]: value
     }));
+    
+    // Clear validation error for this field
+    if (validationErrors[name]) {
+      setValidationErrors(prev => {
+        const newErrors = { ...prev };
+        delete newErrors[name];
+        return newErrors;
+      });
+    }
     
     // Clear error when user is typing
     if (errorMessage) setErrorMessage(null);
@@ -75,6 +155,15 @@ const SubscriptionSubmissionForm: React.FC = () => {
       ...prev,
       [name]: value
     }));
+    
+    // Clear validation error for this field
+    if (validationErrors[name]) {
+      setValidationErrors(prev => {
+        const newErrors = { ...prev };
+        delete newErrors[name];
+        return newErrors;
+      });
+    }
     
     // Clear error when user makes a selection
     if (errorMessage) setErrorMessage(null);
@@ -87,6 +176,15 @@ const SubscriptionSubmissionForm: React.FC = () => {
         ...prev,
         paymentProofImage: file
       }));
+      
+      // Clear validation error for this field
+      if (validationErrors.paymentProofImage) {
+        setValidationErrors(prev => {
+          const newErrors = { ...prev };
+          delete newErrors.paymentProofImage;
+          return newErrors;
+        });
+      }
     }
   };
 
@@ -94,13 +192,12 @@ const SubscriptionSubmissionForm: React.FC = () => {
     e.preventDefault();
     
     // Validate form
-    if (!formData.title || !formData.price || !formData.status || 
-        !formData.access || !formData.whatsappNumber || !formData.telegramUsername) {
-      setErrorMessage('Preencha todos os campos obrigatórios.');
+    if (!validateForm()) {
+      setErrorMessage('Por favor, corrija os erros no formulário.');
       toast({
         variant: "destructive",
         title: "Erro no formulário",
-        description: "Preencha todos os campos obrigatórios.",
+        description: "Por favor, preencha todos os campos obrigatórios.",
       });
       return;
     }
@@ -121,6 +218,37 @@ const SubscriptionSubmissionForm: React.FC = () => {
       // Format today's date as DD/MM/YYYY
       const today = new Date();
       const formattedDate = format(today, 'dd/MM/yyyy');
+      
+      // Determine the actual title to use
+      const finalTitle = formData.title === 'outro' ? formData.customTitle : formData.title;
+      
+      // Determine the actual payment method to use
+      const finalPaymentMethod = formData.paymentMethod === 'outro' 
+        ? formData.customPaymentMethod 
+        : formData.paymentMethod;
+      
+      // Generate header and price colors based on existing subscriptions with the same title
+      let headerColor = 'bg-blue-600';
+      let priceColor = 'text-blue-600';
+      let icon = 'monitor';
+      
+      try {
+        // Try to find existing subscription with the same title to match styling
+        const { data: existingStyle } = await supabase
+          .from('subscriptions')
+          .select('header_color, price_color, icon')
+          .eq('title', finalTitle)
+          .limit(1);
+          
+        if (existingStyle && existingStyle.length > 0) {
+          headerColor = existingStyle[0].header_color || headerColor;
+          priceColor = existingStyle[0].price_color || priceColor;
+          icon = existingStyle[0].icon || icon;
+        }
+      } catch (err) {
+        // Ignore styling errors, use defaults
+        console.log("Could not fetch existing styling, using defaults");
+      }
       
       // Upload payment proof image if provided
       let paymentProofImageUrl = null;
@@ -150,34 +278,36 @@ const SubscriptionSubmissionForm: React.FC = () => {
           paymentProofImageUrl = publicUrl;
         } catch (uploadErr: any) {
           console.error("Error uploading image:", uploadErr);
-          // Continue with submission even if image upload fails
-          toast({
-            variant: "destructive",
-            title: "Aviso",
-            description: "Não foi possível anexar a imagem, mas seu anúncio será enviado."
-          });
+          throw new Error("Não foi possível enviar a imagem do comprovante. Por favor, tente novamente.");
         }
       }
       
+      // Generate a unique code
+      const { data: codeData, error: codeError } = await supabase.rpc('generate_subscription_code');
+      
+      if (codeError) throw new Error("Erro ao gerar código único para o anúncio.");
+      
+      const code = codeData || `SF${Math.floor(1000 + Math.random() * 9000)}`;
+      
       // Preparar os dados conforme o schema esperado pelo Supabase
       const subscriptionData = {
-        title: formData.title,
+        title: finalTitle,
         price: formData.price,
-        payment_method: formData.paymentMethod,
+        payment_method: finalPaymentMethod,
         status: formData.status,
         access: formData.access,
-        header_color: formData.headerColor,
-        price_color: formData.priceColor,
+        header_color: headerColor,
+        price_color: priceColor,
         whatsapp_number: formData.whatsappNumber,
         telegram_username: formData.telegramUsername.startsWith('@') 
           ? formData.telegramUsername 
           : `@${formData.telegramUsername}`,
-        icon: formData.icon,
+        icon: icon,
         added_date: formattedDate,
-        pix_qr_code: formData.pixQrCode || null,
+        pix_key: formData.pixKey,
         payment_proof_image: paymentProofImageUrl,
         user_id: authState.user.id,
-        código: formData.código || null
+        code: code
       };
       
       // Insert the subscription into pending_subscriptions table
@@ -217,40 +347,6 @@ const SubscriptionSubmissionForm: React.FC = () => {
     }
   };
 
-  const headerColorOptions = [
-    { value: 'bg-blue-600', label: 'Azul' },
-    { value: 'bg-green-600', label: 'Verde' },
-    { value: 'bg-red-600', label: 'Vermelho' },
-    { value: 'bg-purple-600', label: 'Roxo' },
-    { value: 'bg-yellow-600', label: 'Amarelo' },
-    { value: 'bg-pink-600', label: 'Rosa' },
-    { value: 'bg-teal-600', label: 'Teal' },
-    { value: 'bg-orange-600', label: 'Laranja' },
-  ];
-  
-  const priceColorOptions = [
-    { value: 'text-blue-600', label: 'Azul' },
-    { value: 'text-green-600', label: 'Verde' },
-    { value: 'text-red-600', label: 'Vermelho' },
-    { value: 'text-purple-600', label: 'Roxo' },
-    { value: 'text-yellow-600', label: 'Amarelo' },
-    { value: 'text-pink-600', label: 'Rosa' },
-    { value: 'text-teal-600', label: 'Teal' },
-    { value: 'text-orange-600', label: 'Laranja' },
-  ];
-  
-  const iconOptions = [
-    { value: 'monitor', label: 'Monitor' },
-    { value: 'music', label: 'Música' },
-    { value: 'video', label: 'Vídeo' },
-    { value: 'tv', label: 'TV' },
-    { value: 'book', label: 'Livro' },
-    { value: 'gamepad2', label: 'Jogos' },
-    { value: 'smartphone', label: 'Smartphone' },
-    { value: 'graduation-cap', label: 'Educação' },
-    { value: 'shield', label: 'Segurança' },
-  ];
-
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       {errorMessage && (
@@ -263,14 +359,44 @@ const SubscriptionSubmissionForm: React.FC = () => {
       <div className="space-y-4">
         <div>
           <Label htmlFor="title">Título do Anúncio *</Label>
-          <Input
-            id="title"
-            name="title"
+          <Select
             value={formData.title}
-            onChange={handleChange}
-            placeholder="Ex: Netflix Premium"
-            required
-          />
+            onValueChange={(value) => handleSelectChange(value, 'title')}
+          >
+            <SelectTrigger id="title" className={validationErrors.title ? "border-red-500" : ""}>
+              <SelectValue placeholder="Selecione ou digite um novo título" />
+            </SelectTrigger>
+            <SelectContent>
+              {existingTitles.map((title, index) => (
+                <SelectItem key={index} value={title}>{title}</SelectItem>
+              ))}
+              <SelectItem value="outro">Outro (personalizado)</SelectItem>
+            </SelectContent>
+          </Select>
+          {validationErrors.title && (
+            <p className="text-sm text-red-500 flex items-center mt-1">
+              <AlertCircle className="h-3 w-3 mr-1" /> {validationErrors.title}
+            </p>
+          )}
+          
+          {formData.title === 'outro' && (
+            <div className="mt-2">
+              <Label htmlFor="customTitle">Título Personalizado *</Label>
+              <Input
+                id="customTitle"
+                name="customTitle"
+                value={formData.customTitle}
+                onChange={handleChange}
+                placeholder="Digite o título personalizado"
+                className={validationErrors.customTitle ? "border-red-500" : ""}
+              />
+              {validationErrors.customTitle && (
+                <p className="text-sm text-red-500 flex items-center mt-1">
+                  <AlertCircle className="h-3 w-3 mr-1" /> {validationErrors.customTitle}
+                </p>
+              )}
+            </div>
+          )}
         </div>
         
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -282,8 +408,13 @@ const SubscriptionSubmissionForm: React.FC = () => {
               value={formData.price}
               onChange={handleChange}
               placeholder="Ex: R$ 10,00"
-              required
+              className={validationErrors.price ? "border-red-500" : ""}
             />
+            {validationErrors.price && (
+              <p className="text-sm text-red-500 flex items-center mt-1">
+                <AlertCircle className="h-3 w-3 mr-1" /> {validationErrors.price}
+              </p>
+            )}
           </div>
           
           <div>
@@ -292,42 +423,94 @@ const SubscriptionSubmissionForm: React.FC = () => {
               value={formData.paymentMethod}
               onValueChange={(value) => handleSelectChange(value, 'paymentMethod')}
             >
-              <SelectTrigger id="paymentMethod">
-                <SelectValue placeholder="Selecione..." />
+              <SelectTrigger id="paymentMethod" className={validationErrors.paymentMethod ? "border-red-500" : ""}>
+                <SelectValue placeholder="Selecione a forma de pagamento" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="PIX">PIX</SelectItem>
-                <SelectItem value="Boleto">Boleto</SelectItem>
-                <SelectItem value="Cartão de Crédito">Cartão de Crédito</SelectItem>
-                <SelectItem value="PayPal">PayPal</SelectItem>
-                <SelectItem value="Transferência Bancária">Transferência Bancária</SelectItem>
+                <SelectItem value="PIX (Mensal)">PIX (Mensal)</SelectItem>
+                <SelectItem value="PIX (Anual)">PIX (Anual)</SelectItem>
+                <SelectItem value="outro">Outra forma</SelectItem>
               </SelectContent>
             </Select>
+            {validationErrors.paymentMethod && (
+              <p className="text-sm text-red-500 flex items-center mt-1">
+                <AlertCircle className="h-3 w-3 mr-1" /> {validationErrors.paymentMethod}
+              </p>
+            )}
+            
+            {formData.paymentMethod === 'outro' && (
+              <div className="mt-2">
+                <Label htmlFor="customPaymentMethod">Forma de Pagamento Personalizada *</Label>
+                <Input
+                  id="customPaymentMethod"
+                  name="customPaymentMethod"
+                  value={formData.customPaymentMethod}
+                  onChange={handleChange}
+                  placeholder="Digite a forma de pagamento personalizada"
+                  className={validationErrors.customPaymentMethod ? "border-red-500" : ""}
+                />
+                {validationErrors.customPaymentMethod && (
+                  <p className="text-sm text-red-500 flex items-center mt-1">
+                    <AlertCircle className="h-3 w-3 mr-1" /> {validationErrors.customPaymentMethod}
+                  </p>
+                )}
+              </div>
+            )}
           </div>
         </div>
         
-        <div>
-          <Label htmlFor="status">Status *</Label>
-          <Input
-            id="status"
-            name="status"
-            value={formData.status}
-            onChange={handleChange}
-            placeholder="Ex: Assinado (2 vagas)"
-            required
-          />
-        </div>
-        
-        <div>
-          <Label htmlFor="access">Tipo de Acesso *</Label>
-          <Input
-            id="access"
-            name="access"
-            value={formData.access}
-            onChange={handleChange}
-            placeholder="Ex: ATIVAÇÃO / LOGIN / PERFIL"
-            required
-          />
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <Label htmlFor="status">Status *</Label>
+            <Select
+              value={formData.status}
+              onValueChange={(value) => handleSelectChange(value, 'status')}
+            >
+              <SelectTrigger id="status" className={validationErrors.status ? "border-red-500" : ""}>
+                <SelectValue placeholder="Selecione o status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="Assinado">Assinado</SelectItem>
+                <SelectItem value="Assinado (1 vaga)">Assinado (1 vaga)</SelectItem>
+                <SelectItem value="Assinado (2 vagas)">Assinado (2 vagas)</SelectItem>
+                <SelectItem value="Assinado (3 vagas)">Assinado (3 vagas)</SelectItem>
+                <SelectItem value="Assinado (4 vagas)">Assinado (4 vagas)</SelectItem>
+                <SelectItem value="Aguardando Membros">Aguardando Membros</SelectItem>
+                <SelectItem value="Aguardando Membros (1 vaga)">Aguardando Membros (1 vaga)</SelectItem>
+                <SelectItem value="Aguardando Membros (2 vagas)">Aguardando Membros (2 vagas)</SelectItem>
+                <SelectItem value="Aguardando Membros (3 vagas)">Aguardando Membros (3 vagas)</SelectItem>
+                <SelectItem value="Aguardando Membros (4 vagas)">Aguardando Membros (4 vagas)</SelectItem>
+              </SelectContent>
+            </Select>
+            {validationErrors.status && (
+              <p className="text-sm text-red-500 flex items-center mt-1">
+                <AlertCircle className="h-3 w-3 mr-1" /> {validationErrors.status}
+              </p>
+            )}
+          </div>
+          
+          <div>
+            <Label htmlFor="access">Tipo de Acesso *</Label>
+            <Select
+              value={formData.access}
+              onValueChange={(value) => handleSelectChange(value, 'access')}
+            >
+              <SelectTrigger id="access" className={validationErrors.access ? "border-red-500" : ""}>
+                <SelectValue placeholder="Selecione o tipo de acesso" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="ATIVAÇÃO">ATIVAÇÃO</SelectItem>
+                <SelectItem value="LOGIN E SENHA">LOGIN E SENHA</SelectItem>
+                <SelectItem value="CONVITE">CONVITE</SelectItem>
+                <SelectItem value="OUTRO">OUTRO</SelectItem>
+              </SelectContent>
+            </Select>
+            {validationErrors.access && (
+              <p className="text-sm text-red-500 flex items-center mt-1">
+                <AlertCircle className="h-3 w-3 mr-1" /> {validationErrors.access}
+              </p>
+            )}
+          </div>
         </div>
         
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -339,8 +522,13 @@ const SubscriptionSubmissionForm: React.FC = () => {
               value={formData.whatsappNumber}
               onChange={handleChange}
               placeholder="Ex: 5511999999999"
-              required
+              className={validationErrors.whatsappNumber ? "border-red-500" : ""}
             />
+            {validationErrors.whatsappNumber && (
+              <p className="text-sm text-red-500 flex items-center mt-1">
+                <AlertCircle className="h-3 w-3 mr-1" /> {validationErrors.whatsappNumber}
+              </p>
+            )}
           </div>
           
           <div>
@@ -351,46 +539,41 @@ const SubscriptionSubmissionForm: React.FC = () => {
               value={formData.telegramUsername}
               onChange={handleChange}
               placeholder="Ex: @usuariotelegram"
-              required
+              className={validationErrors.telegramUsername ? "border-red-500" : ""}
             />
+            {validationErrors.telegramUsername && (
+              <p className="text-sm text-red-500 flex items-center mt-1">
+                <AlertCircle className="h-3 w-3 mr-1" /> {validationErrors.telegramUsername}
+              </p>
+            )}
             <p className="text-sm text-gray-500 mt-1">Se não tiver @, adicionaremos automaticamente</p>
           </div>
         </div>
         
         <div>
-          <Label htmlFor="código">Código</Label>
+          <Label htmlFor="pixKey">Qual sua chave PIX? *</Label>
           <Input
-            id="código"
-            name="código"
-            type="number"
-            value={formData.código || ''}
-            onChange={(e) => setFormData(prev => ({
-              ...prev,
-              código: e.target.value ? parseInt(e.target.value) : undefined
-            }))}
-            placeholder="Código do anúncio (opcional)"
-          />
-        </div>
-        
-        <div>
-          <Label htmlFor="pixQrCode">QR Code PIX (opcional)</Label>
-          <Textarea
-            id="pixQrCode"
-            name="pixQrCode"
-            value={formData.pixQrCode || ''}
+            id="pixKey"
+            name="pixKey"
+            value={formData.pixKey}
             onChange={handleChange}
-            placeholder="Cole aqui o código do QR code PIX"
-            className="h-24"
+            placeholder="Ex: seu@email.com ou 11999999999"
+            className={validationErrors.pixKey ? "border-red-500" : ""}
           />
+          {validationErrors.pixKey && (
+            <p className="text-sm text-red-500 flex items-center mt-1">
+              <AlertCircle className="h-3 w-3 mr-1" /> {validationErrors.pixKey}
+            </p>
+          )}
         </div>
         
         <div>
-          <Label>Comprovante de pagamento (opcional)</Label>
-          <div className="mt-1 border-2 border-dashed border-gray-300 rounded-md p-6">
+          <Label>Comprovante de pagamento *</Label>
+          <div className={`mt-1 border-2 border-dashed ${validationErrors.paymentProofImage ? "border-red-500" : "border-gray-300"} rounded-md p-6`}>
             <div className="flex justify-center">
               <div className="space-y-2 text-center">
                 <div className="flex justify-center">
-                  <Upload className="h-7 w-7 text-gray-400" />
+                  <Upload className={`h-7 w-7 ${validationErrors.paymentProofImage ? "text-red-500" : "text-gray-400"}`} />
                 </div>
                 <div className="text-sm text-gray-500">
                   <label htmlFor="paymentProofImage" className="relative cursor-pointer rounded-md font-medium text-primary hover:text-primary-dark focus-within:outline-none">
@@ -415,75 +598,11 @@ const SubscriptionSubmissionForm: React.FC = () => {
               </div>
             )}
           </div>
-        </div>
-        
-        <div>
-          <Label>Cor do cabeçalho</Label>
-          <RadioGroup
-            value={formData.headerColor}
-            onValueChange={(value) => handleSelectChange(value, 'headerColor')}
-            className="grid grid-cols-4 gap-2 mt-2"
-          >
-            {headerColorOptions.map((option) => (
-              <div key={option.value} className="flex items-center space-x-2">
-                <RadioGroupItem id={`header-${option.value}`} value={option.value} className="sr-only" />
-                <Label
-                  htmlFor={`header-${option.value}`}
-                  className={`${option.value} flex-1 h-8 rounded-md cursor-pointer flex items-center justify-center text-white text-xs px-2 ${
-                    formData.headerColor === option.value ? 'ring-2 ring-offset-2 ring-primary' : ''
-                  }`}
-                >
-                  {option.label}
-                </Label>
-              </div>
-            ))}
-          </RadioGroup>
-        </div>
-        
-        <div>
-          <Label>Cor do preço</Label>
-          <RadioGroup
-            value={formData.priceColor}
-            onValueChange={(value) => handleSelectChange(value, 'priceColor')}
-            className="grid grid-cols-4 gap-2 mt-2"
-          >
-            {priceColorOptions.map((option) => (
-              <div key={option.value} className="flex items-center space-x-2">
-                <RadioGroupItem id={`price-${option.value}`} value={option.value} className="sr-only" />
-                <Label
-                  htmlFor={`price-${option.value}`}
-                  className={`${option.value} flex-1 h-8 rounded-md cursor-pointer flex items-center justify-center text-xs px-2 border ${
-                    formData.priceColor === option.value ? 'ring-2 ring-offset-2 ring-primary' : ''
-                  }`}
-                >
-                  {option.label}
-                </Label>
-              </div>
-            ))}
-          </RadioGroup>
-        </div>
-        
-        <div>
-          <Label>Ícone</Label>
-          <RadioGroup
-            value={formData.icon}
-            onValueChange={(value) => handleSelectChange(value, 'icon')}
-            className="grid grid-cols-3 gap-2 mt-2"
-          >
-            {iconOptions.map((option) => (
-              <div key={option.value} className="flex items-center space-x-2">
-                <RadioGroupItem id={`icon-${option.value}`} value={option.value} className="sr-only" />
-                <Label
-                  htmlFor={`icon-${option.value}`}
-                  className={`flex-1 h-8 rounded-md cursor-pointer flex items-center justify-center text-xs px-2 border ${
-                    formData.icon === option.value ? 'ring-2 ring-offset-2 ring-primary bg-gray-100' : ''
-                  }`}
-                >
-                  {option.label}
-                </Label>
-              </div>
-            ))}
-          </RadioGroup>
+          {validationErrors.paymentProofImage && (
+            <p className="text-sm text-red-500 flex items-center mt-1">
+              <AlertCircle className="h-3 w-3 mr-1" /> {validationErrors.paymentProofImage}
+            </p>
+          )}
         </div>
         
         <div className="pt-4">

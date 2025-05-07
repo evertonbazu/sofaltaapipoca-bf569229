@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import SearchBar from '@/components/SearchBar';
@@ -201,14 +202,13 @@ const Index: React.FC = () => {
                 <span className="text-xs sm:text-sm">Cadastre-se para Anunciar</span>
               </Button>
             )}
-            <a 
-              href="https://wa.me/5513992077804" 
-              target="_blank"
+            <Button
               className="flex-1 flex flex-col items-center justify-center h-16 bg-green-500 hover:bg-green-600 text-white rounded-lg font-medium py-2 px-3 transition-all duration-200 hover:-translate-y-1"
+              onClick={() => navigate('/contact')}
             >
               <MessageSquare className="h-5 w-5 mb-1" />
               <span className="text-xs sm:text-sm">Fale Conosco</span>
-            </a>
+            </Button>
           </div>
           
           {authState.user && isAdmin() && (

@@ -16,6 +16,7 @@ import UserManagement from './components/admin/UserManagement';
 import NewSubscription from './pages/NewSubscription';
 import Index from './pages/Index';
 import UserProfile from './components/admin/UserProfile';
+import Contact from './pages/Contact';
 
 // Create a separate component for the authenticated routes
 const AppRoutes = () => {
@@ -42,6 +43,7 @@ const AppRoutes = () => {
       <Route path="/auth" element={<Auth />} />
       <Route path="/new" element={<NewSubscription />} />
       <Route path="/profile" element={<UserProfile />} />
+      <Route path="/contact" element={<Contact />} />
       <Route path="/" element={<Index />} />
       <Route
         path="/admin"
