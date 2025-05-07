@@ -54,6 +54,8 @@ interface PendingSubscription {
   price_color?: string;
   icon?: string;
   pix_qr_code?: string;
+  pix_key?: string;
+  payment_proof_image?: string;
 }
 
 interface Profile {
@@ -84,27 +86,27 @@ const PendingSubscriptions: React.FC = () => {
       setIsLoading(true);
       setError(null);
 
-      // Primeiro, buscar todos os perfis para mapeamento de usuários
+      // Fetch all profiles for user mapping
       const { data: profiles, error: profilesError } = await supabase
         .from('profiles')
         .select('id, username');
       
       if (profilesError) throw profilesError;
       
-      // Converter perfis em um mapa para facilitar a busca
+      // Convert profiles to a map for easier lookup
       const profilesMap = new Map<string, string>();
       profiles.forEach((profile: Profile) => {
-        profilesMap.set(profile.id, profile.username);
+        profilesMap.set(profile.id, profile.username || 'Sem nome');
       });
 
-      // Buscar as inscrições pendentes
+      // Fetch pending subscriptions
       const { data: pendingSubs, error: pendingError } = await supabase
         .from('pending_subscriptions')
         .select('*');
 
       if (pendingError) throw pendingError;
 
-      // Combinar os dados com os nomes de usuário
+      // Combine data with usernames
       const pendingWithUsernames = pendingSubs.map((sub: any) => ({
         ...sub,
         username: profilesMap.get(sub.user_id) || 'Sem nome',
@@ -112,6 +114,7 @@ const PendingSubscriptions: React.FC = () => {
 
       setPendingSubscriptions(pendingWithUsernames);
     } catch (err: any) {
+      console.error("Error fetching pending subscriptions:", err);
       setError(err.message);
       toast({
         variant: "destructive",
@@ -166,6 +169,7 @@ const PendingSubscriptions: React.FC = () => {
 
       setRejectDialogOpen(false);
     } catch (err: any) {
+      console.error("Error rejecting subscription:", err);
       toast({
         variant: "destructive",
         title: "Erro ao rejeitar anúncio",
@@ -182,22 +186,32 @@ const PendingSubscriptions: React.FC = () => {
     try {
       setIsProcessing(true);
 
+      const subscription = { ...selectedSubscription };
+      
+      // Remove fields that shouldn't be in the subscriptions table
+      delete subscription.status_approval;
+      delete subscription.rejection_reason;
+      delete subscription.username;
+
       // First add to subscriptions table
       const { error: insertError } = await supabase
         .from('subscriptions')
         .insert({
-          title: selectedSubscription.title,
-          price: selectedSubscription.price,
-          payment_method: selectedSubscription.payment_method,
-          status: selectedSubscription.status,
-          access: selectedSubscription.access,
-          whatsapp_number: selectedSubscription.whatsapp_number,
-          telegram_username: selectedSubscription.telegram_username,
-          added_date: selectedSubscription.added_date,
-          header_color: selectedSubscription.header_color || 'bg-blue-600',
-          price_color: selectedSubscription.price_color || 'text-blue-600',
-          icon: selectedSubscription.icon || 'monitor',
-          pix_qr_code: selectedSubscription.pix_qr_code
+          title: subscription.title,
+          price: subscription.price,
+          payment_method: subscription.payment_method,
+          status: subscription.status,
+          access: subscription.access,
+          whatsapp_number: subscription.whatsapp_number,
+          telegram_username: subscription.telegram_username,
+          added_date: subscription.added_date,
+          header_color: subscription.header_color || 'bg-blue-600',
+          price_color: subscription.price_color || 'text-blue-600',
+          icon: subscription.icon || 'monitor',
+          pix_qr_code: subscription.pix_qr_code,
+          pix_key: subscription.pix_key,
+          payment_proof_image: subscription.payment_proof_image,
+          user_id: subscription.user_id // Ensure we keep the original user_id
         });
 
       if (insertError) throw insertError;
@@ -228,6 +242,7 @@ const PendingSubscriptions: React.FC = () => {
 
       setApproveDialogOpen(false);
     } catch (err: any) {
+      console.error("Error approving subscription:", err);
       toast({
         variant: "destructive",
         title: "Erro ao aprovar anúncio",
@@ -240,9 +255,9 @@ const PendingSubscriptions: React.FC = () => {
 
   const filteredSubscriptions = searchTerm
     ? pendingSubscriptions.filter(sub => 
-        sub.title.toLowerCase().includes(searchTerm) || 
-        sub.telegram_username.toLowerCase().includes(searchTerm) ||
-        (sub.username && sub.username.toLowerCase().includes(searchTerm))
+        sub.title.toLowerCase().includes(searchTerm.toLowerCase()) || 
+        sub.telegram_username.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (sub.username && sub.username.toLowerCase().includes(searchTerm.toLowerCase()))
       )
     : pendingSubscriptions;
 
@@ -250,6 +265,10 @@ const PendingSubscriptions: React.FC = () => {
     <div className="max-w-full">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
         <h1 className="text-3xl font-bold">Anúncios Pendentes</h1>
+        <Button onClick={fetchPendingSubscriptions} variant="outline" className="flex items-center gap-2">
+          <Loader2 className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
+          Atualizar
+        </Button>
       </div>
       
       {error && (

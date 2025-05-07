@@ -2,6 +2,16 @@
 -- Enable Row Level Security for pending_subscriptions
 ALTER TABLE IF EXISTS public.pending_subscriptions ENABLE ROW LEVEL SECURITY;
 
+-- Create security definer function for admin check
+CREATE OR REPLACE FUNCTION public.is_admin()
+RETURNS BOOLEAN AS $$
+  SELECT EXISTS (
+    SELECT 1 FROM public.profiles 
+    WHERE id = auth.uid() 
+    AND role = 'admin'
+  );
+$$ LANGUAGE SQL SECURITY DEFINER STABLE;
+
 -- Create policy to allow authenticated users to insert their own submissions
 CREATE POLICY "Users can insert their own pending subscriptions" 
 ON public.pending_subscriptions 
@@ -28,41 +38,11 @@ CREATE POLICY "Admins can view all pending subscriptions"
 ON public.pending_subscriptions 
 FOR SELECT 
 TO authenticated 
-USING ((SELECT role FROM public.profiles WHERE id = auth.uid()) = 'admin');
+USING (public.is_admin());
 
 -- Create policy to allow admin users to update pending subscriptions
 CREATE POLICY "Admins can update all pending subscriptions" 
 ON public.pending_subscriptions 
 FOR UPDATE 
 TO authenticated 
-USING ((SELECT role FROM public.profiles WHERE id = auth.uid()) = 'admin');
-
--- Create an example pending subscription record (for testing purposes)
--- Replace UUID with an actual user_id from your system
--- INSERT INTO public.pending_subscriptions (
---   title, 
---   price, 
---   payment_method, 
---   status, 
---   access, 
---   whatsapp_number,
---   telegram_username,
---   header_color,
---   price_color,
---   user_id,
---   added_date,
---   status_approval
--- ) VALUES (
---   'EXEMPLO NETFLIX',
---   'R$ 15,00',
---   'PIX (Mensal)',
---   'Assinado (2 vagas)',
---   'LOGIN E SENHA',
---   '5511999999999',
---   '@usuario_teste',
---   'bg-red-600',
---   'text-red-600',
---   'USER_UUID_HERE', -- Replace with actual UUID
---   '07/05/2025',
---   'pending'
--- );
+USING (public.is_admin());
