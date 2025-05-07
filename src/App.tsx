@@ -14,6 +14,7 @@ import ExportSubscriptions from './components/admin/ExportSubscriptions';
 import ImportSubscriptions from './components/admin/ImportSubscriptions';
 import UserManagement from './components/admin/UserManagement';
 import NewSubscription from './pages/NewSubscription';
+import Index from './pages/Index';
 
 const HomePage = () => (
   <div className="container mx-auto py-8">
@@ -29,9 +30,10 @@ const ProfilePage = () => (
   </div>
 );
 
-const App = () => {
+// Create a separate component for the authenticated routes
+const AppRoutes = () => {
   const [loading, setLoading] = useState(true);
-  const { authState } = useAuth();
+  const { authState, isAdmin } = useAuth();
 
   useEffect(() => {
     // Simulate loading delay
@@ -40,36 +42,51 @@ const App = () => {
     }, 500);
   }, []);
 
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+      </div>
+    );
+  }
+
+  return (
+    <Routes>
+      <Route path="/auth" element={<Auth />} />
+      <Route path="/new" element={<NewSubscription />} />
+      <Route path="/profile" element={<ProfilePage />} />
+      <Route path="/" element={<Index />} />
+      <Route
+        path="/admin"
+        element={
+          authState?.user?.role === 'admin' ? (
+            <Admin />
+          ) : (
+            <Navigate to="/" replace />
+          )
+        }
+      >
+        <Route index element={<AdminDashboard />} />
+        <Route path="subscriptions" element={<SubscriptionList />} />
+        <Route path="subscriptions/new" element={<SubscriptionForm />} />
+        <Route path="subscriptions/edit/:id" element={<SubscriptionForm />} />
+        <Route path="pending" element={<PendingSubscriptions />} />
+        <Route path="export" element={<ExportSubscriptionsTxt />} />
+        <Route path="export-all" element={<ExportSubscriptions />} />
+        <Route path="import" element={<ImportSubscriptions />} />
+        <Route path="users" element={<UserManagement />} />
+      </Route>
+    </Routes>
+  );
+};
+
+// Main App component that only provides the AuthProvider
+const App = () => {
   return (
     <>
       <AuthProvider>
         <Router>
-          <Routes>
-            <Route path="/auth" element={<Auth />} />
-            <Route path="/new" element={<NewSubscription />} />
-            <Route path="/profile" element={<ProfilePage />} />
-            <Route path="/" element={<HomePage />} />
-            <Route
-              path="/admin"
-              element={
-                authState?.user?.role === 'admin' ? (
-                  <Admin />
-                ) : (
-                  <Navigate to="/" replace />
-                )
-              }
-            >
-              <Route index element={<AdminDashboard />} />
-              <Route path="subscriptions" element={<SubscriptionList />} />
-              <Route path="subscriptions/new" element={<SubscriptionForm />} />
-              <Route path="subscriptions/edit/:id" element={<SubscriptionForm />} />
-              <Route path="pending" element={<PendingSubscriptions />} />
-              <Route path="export" element={<ExportSubscriptionsTxt />} />
-              <Route path="export-all" element={<ExportSubscriptions />} />
-              <Route path="import" element={<ImportSubscriptions />} />
-              <Route path="users" element={<UserManagement />} />
-            </Route>
-          </Routes>
+          <AppRoutes />
         </Router>
       </AuthProvider>
       <Toaster />
