@@ -14,12 +14,17 @@ const UserProfile: React.FC = () => {
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [isSaving, setIsSaving] = useState<boolean>(false);
   const [username, setUsername] = useState<string>('');
+  const [email, setEmail] = useState<string>('');
   
   useEffect(() => {
     if (authState.user) {
       setUsername(authState.user.username || '');
+      // Get email from the session object instead
+      if (authState.session?.user) {
+        setEmail(authState.session.user.email || '');
+      }
     }
-  }, [authState.user]);
+  }, [authState.user, authState.session]);
 
   const handleUpdateProfile = async () => {
     if (!authState.user) return;
@@ -82,7 +87,7 @@ const UserProfile: React.FC = () => {
           <Input 
             id="email" 
             type="email" 
-            value={authState.user?.email || ''} 
+            value={email} 
             disabled 
             className="w-full bg-gray-100"
           />
