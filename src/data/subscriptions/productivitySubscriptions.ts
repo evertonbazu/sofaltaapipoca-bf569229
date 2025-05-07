@@ -1,7 +1,8 @@
 
 import { SubscriptionData } from "@/types/subscriptionTypes";
+import { addMissingCodes } from "@/utils/codeGenerator";
 
-export const productivitySubscriptions: SubscriptionData[] = [
+const rawProductivitySubscriptions = [
   {
     title: "GOOGLE ONE IA PREMIUM 2TB COM GEMINI ADVANCED 2.5",
     price: "R$ 20,00 - PIX (Mensal)",
@@ -55,3 +56,6 @@ export const productivitySubscriptions: SubscriptionData[] = [
     addedDate: "01/04/2025"
   }
 ];
+
+// Add codes to all productivity subscriptions with category code 4
+export const productivitySubscriptions: SubscriptionData[] = addMissingCodes(rawProductivitySubscriptions as SubscriptionData[], 4);

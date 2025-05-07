@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -21,6 +20,7 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { AlertCircle, Loader2, Search, UserCog } from 'lucide-react';
 import { format } from 'date-fns';
+import { ProfileFromSupabase } from '@/types/subscriptionTypes';
 
 interface UserProfile {
   id: string;
@@ -28,7 +28,7 @@ interface UserProfile {
   role: string;
   created_at: string;
   updated_at: string;
-  email?: string; // Add optional email field
+  email?: string;
 }
 
 const UserManagement = () => {
@@ -47,11 +47,6 @@ const UserManagement = () => {
       setIsLoading(true);
       setError(null);
 
-      // Fetch all users from auth.users via the admin API
-      const { data: authUsers, error: authError } = await supabase.auth.admin.listUsers();
-
-      if (authError) throw authError;
-
       // Fetch all profiles
       const { data: profiles, error: profilesError } = await supabase
         .from('profiles')
@@ -60,15 +55,14 @@ const UserManagement = () => {
       if (profilesError) throw profilesError;
 
       // Combine the data from auth.users and profiles
-      const combinedUsers = profiles.map((profile: UserProfile) => {
-        const authUser = authUsers?.users?.find(user => user.id === profile.id);
+      const userProfiles = profiles.map((profile: ProfileFromSupabase) => {
         return {
           ...profile,
-          email: authUser?.email // Add email from auth user
+          email: profile.email || ''
         };
       });
 
-      setUsers(combinedUsers);
+      setUsers(userProfiles);
     } catch (err: any) {
       console.error("Error fetching users:", err);
       setError(err.message);

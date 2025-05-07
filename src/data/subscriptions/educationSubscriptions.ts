@@ -1,7 +1,8 @@
 
 import { SubscriptionData } from "@/types/subscriptionTypes";
+import { addMissingCodes } from "@/utils/codeGenerator";
 
-export const educationSubscriptions: SubscriptionData[] = [
+const rawEducationSubscriptions = [
   {
     title: "BABBEL (Cursos de Idiomas)",
     price: "R$ 10,00 - PIX (Mensal)",
@@ -68,3 +69,6 @@ export const educationSubscriptions: SubscriptionData[] = [
     addedDate: "01/04/2025"
   }
 ];
+
+// Add codes to all education subscriptions with category code 1
+export const educationSubscriptions: SubscriptionData[] = addMissingCodes(rawEducationSubscriptions as SubscriptionData[], 1);

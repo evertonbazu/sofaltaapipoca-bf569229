@@ -1,7 +1,8 @@
 
 import { SubscriptionData } from "@/types/subscriptionTypes";
+import { addMissingCodes } from "@/utils/codeGenerator";
 
-export const youtubeSubscriptions: SubscriptionData[] = [
+const rawYoutubeSubscriptions = [
   {
     title: "YOUTUBE PREMIUM",
     price: "120,00 /ano - PIX (Mensal)",
@@ -29,3 +30,6 @@ export const youtubeSubscriptions: SubscriptionData[] = [
     addedDate: "01/04/2025"
   }
 ];
+
+// Add codes to all youtube subscriptions with category code 3
+export const youtubeSubscriptions: SubscriptionData[] = addMissingCodes(rawYoutubeSubscriptions as SubscriptionData[], 3);

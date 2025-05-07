@@ -1,7 +1,8 @@
 
 import { SubscriptionData } from "@/types/subscriptionTypes";
+import { addMissingCodes } from "@/utils/codeGenerator";
 
-export const musicSubscriptions: SubscriptionData[] = [
+const rawMusicSubscriptions = [
   {
     title: "SPOTIFY",
     price: "R$ 7,00 - PIX (Mensal)",
@@ -29,3 +30,6 @@ export const musicSubscriptions: SubscriptionData[] = [
     addedDate: "01/04/2025"
   }
 ];
+
+// Add codes to all music subscriptions with category code 2
+export const musicSubscriptions: SubscriptionData[] = addMissingCodes(rawMusicSubscriptions as SubscriptionData[], 2);

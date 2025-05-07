@@ -80,7 +80,8 @@ const FeaturedSubscriptions: React.FC<FeaturedSubscriptionsProps> = ({
             pixQrCode: item.pix_qr_code,
             pixKey: item.pix_key,
             paymentProofImage: item.payment_proof_image,
-            featured: item.featured
+            featured: item.featured,
+            code: item.code // Include the code field
           }));
           
           setAllSubscriptions(formattedSubscriptions);

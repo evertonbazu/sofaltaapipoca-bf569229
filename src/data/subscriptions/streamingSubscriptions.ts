@@ -1,6 +1,8 @@
-import { SubscriptionData } from "@/types/subscriptionTypes";
 
-export const streamingSubscriptions: SubscriptionData[] = [
+import { SubscriptionData } from "@/types/subscriptionTypes";
+import { addMissingCodes } from "@/utils/codeGenerator";
+
+const rawStreamingSubscriptions = [
   {
     title: "PERPLEXITY IA (Claude/ChatGpt/Gemini/Grok)",
     price: "R$ 10,00 - PIX (Mensal)",
@@ -340,3 +342,6 @@ export const streamingSubscriptions: SubscriptionData[] = [
     addedDate: "01/04/2025"
   }
 ];
+
+// Add codes to all streaming subscriptions
+export const streamingSubscriptions: SubscriptionData[] = addMissingCodes(rawStreamingSubscriptions as SubscriptionData[], 5);
