@@ -1,7 +1,7 @@
 
-import React, { useState } from 'react';
-import { useAuth } from '@/context/AuthContext';
-import { Navigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useAuth } from '@/hooks/use-auth';
+import { Navigate, useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -12,6 +12,7 @@ const Auth: React.FC = () => {
   const { authState, signIn, signUp } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState('signin');
+  const navigate = useNavigate();
 
   // Login form state
   const [loginEmail, setLoginEmail] = useState('');
@@ -24,7 +25,14 @@ const Auth: React.FC = () => {
   const [username, setUsername] = useState('');
   const [error, setError] = useState('');
 
-  // If user is already authenticated, redirect to home
+  // Check if user is already authenticated
+  useEffect(() => {
+    if (authState.user && !authState.isLoading) {
+      navigate('/');
+    }
+  }, [authState.user, authState.isLoading, navigate]);
+
+  // Se o usuário já estiver autenticado, redirecionamos para a home
   if (authState.user && !authState.isLoading) {
     return <Navigate to="/" />;
   }
@@ -35,9 +43,13 @@ const Auth: React.FC = () => {
     setIsLoading(true);
     
     try {
+      // Usar um console.log para depuração
+      console.log('Tentando login com:', loginEmail);
       await signIn(loginEmail, loginPassword);
+      // Se o login for bem-sucedido, o hook useAuth irá atualizar o estado e redirecionar
     } catch (error: any) {
-      console.error('Login error:', error);
+      console.error('Erro de login:', error);
+      setError(error.message || 'Falha no login. Verifique suas credenciais.');
     } finally {
       setIsLoading(false);
     }
@@ -54,10 +66,12 @@ const Auth: React.FC = () => {
 
     setIsLoading(true);
     try {
+      console.log('Tentando cadastrar:', signupEmail, username);
       await signUp(signupEmail, signupPassword, username);
-      setActiveTab('signin');
+      // Se o cadastro for bem-sucedido, o hook useAuth já fará login automático e redirecionará
     } catch (error: any) {
-      console.error('Signup error:', error);
+      console.error('Erro de cadastro:', error);
+      setError(error.message || 'Falha no cadastro. Tente novamente mais tarde.');
     } finally {
       setIsLoading(false);
     }
@@ -125,6 +139,7 @@ const Auth: React.FC = () => {
                       required 
                     />
                   </div>
+                  {error && <p className="text-sm font-medium text-red-500">{error}</p>}
                 </CardContent>
                 
                 <CardFooter>

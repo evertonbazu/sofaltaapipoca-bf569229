@@ -253,7 +253,7 @@ const Index: React.FC = () => {
   );
 };
 
-// Submission form component for users to submit announcements
+// Componente de formulário para envio de anúncios
 interface FormData {
   title: string;
   price: string;
@@ -263,6 +263,8 @@ interface FormData {
   whatsappNumber: string;
   telegramUsername: string;
   pixQrCode?: File | null;
+  headerColor: string;  // Adicionando campos que faltavam
+  priceColor: string;   // Adicionando campos que faltavam
 }
 
 const SubmissionForm: React.FC = () => {
@@ -277,7 +279,9 @@ const SubmissionForm: React.FC = () => {
     access: '',
     whatsappNumber: '',
     telegramUsername: '',
-    pixQrCode: null
+    pixQrCode: null,
+    headerColor: 'bg-blue-600', // Valor padrão
+    priceColor: 'text-blue-600'  // Valor padrão
   });
   const [priceValue, setPriceValue] = useState('');
 
@@ -375,6 +379,7 @@ const SubmissionForm: React.FC = () => {
         pixQrCodeUrl = publicUrl;
       }
       
+      // Preparar os dados conforme o schema esperado pelo Supabase
       const { error } = await supabase
         .from('pending_subscriptions')
         .insert({
@@ -386,6 +391,8 @@ const SubmissionForm: React.FC = () => {
           access: formData.access,
           whatsapp_number: formData.whatsappNumber,
           telegram_username: formData.telegramUsername,
+          header_color: formData.headerColor,
+          price_color: formData.priceColor,
           pix_qr_code: pixQrCodeUrl,
           added_date: formattedDate
         });
@@ -406,7 +413,9 @@ const SubmissionForm: React.FC = () => {
         access: '',
         whatsappNumber: '',
         telegramUsername: '',
-        pixQrCode: null
+        pixQrCode: null,
+        headerColor: 'bg-blue-600',
+        priceColor: 'text-blue-600'
       });
       setPriceValue('');
       
@@ -529,6 +538,43 @@ const SubmissionForm: React.FC = () => {
           placeholder="Ex: usuariotelegram"
           required
         />
+      </div>
+      
+      {/* Adicionar campos para as cores */}
+      <div>
+        <label className="block text-sm font-medium">Cor do Cabeçalho</label>
+        <select 
+          name="headerColor"
+          value={formData.headerColor}
+          onChange={handleChange}
+          className="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+          required
+        >
+          <option value="bg-blue-600">Azul</option>
+          <option value="bg-red-600">Vermelho</option>
+          <option value="bg-green-600">Verde</option>
+          <option value="bg-purple-600">Roxo</option>
+          <option value="bg-yellow-600">Amarelo</option>
+          <option value="bg-pink-600">Rosa</option>
+        </select>
+      </div>
+      
+      <div>
+        <label className="block text-sm font-medium">Cor do Preço</label>
+        <select 
+          name="priceColor"
+          value={formData.priceColor}
+          onChange={handleChange}
+          className="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+          required
+        >
+          <option value="text-blue-600">Azul</option>
+          <option value="text-red-600">Vermelho</option>
+          <option value="text-green-600">Verde</option>
+          <option value="text-purple-600">Roxo</option>
+          <option value="text-yellow-600">Amarelo</option>
+          <option value="text-pink-600">Rosa</option>
+        </select>
       </div>
       
       <div className="pt-4">

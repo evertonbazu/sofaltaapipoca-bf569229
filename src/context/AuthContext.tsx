@@ -23,12 +23,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   });
 
   useEffect(() => {
-    // Set up auth state listener first
+    // Configurar o listener de mudança de estado de autenticação PRIMEIRO
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
+        console.log('Auth state changed:', event, session?.user?.id);
+        
+        // Atualiza o estado da sessão imediatamente (operação síncrona)
         setAuthState(prev => ({ ...prev, session }));
         
-        // Defer profile fetching with setTimeout
+        // Se tiver um usuário autenticado, busca os dados do perfil com setTimeout para evitar deadlocks
         if (session?.user) {
           setTimeout(() => {
             fetchUserProfile(session.user.id);
@@ -39,8 +42,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     );
 
-    // Then check for existing session
+    // DEPOIS verifica se existe uma sessão
     supabase.auth.getSession().then(({ data: { session } }) => {
+      console.log('Current session:', session?.user?.id);
       setAuthState(prev => ({ ...prev, session }));
       
       if (session?.user) {
@@ -56,6 +60,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   const fetchUserProfile = async (userId: string) => {
+    console.log('Buscando perfil do usuário:', userId);
     try {
       const { data, error } = await supabase
         .from('profiles')
@@ -63,28 +68,37 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         .eq('id', userId)
         .maybeSingle();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Erro ao buscar perfil:', error);
+        throw error;
+      }
 
+      console.log('Perfil encontrado:', data);
       setAuthState(prev => ({
         ...prev,
         user: data as UserProfile,
         isLoading: false,
       }));
     } catch (error) {
-      console.error('Error fetching user profile:', error);
+      console.error('Erro ao buscar perfil do usuário:', error);
       setAuthState(prev => ({ ...prev, isLoading: false }));
     }
   };
 
   const signIn = async (email: string, password: string) => {
     try {
-      const { error } = await supabase.auth.signInWithPassword({
+      console.log('Iniciando login para:', email);
+      const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
       
       if (error) throw error;
+      
+      console.log('Login bem-sucedido:', data?.user?.id);
+      // O listener onAuthStateChange irá atualizar o estado
     } catch (error: any) {
+      console.error('Erro de login:', error);
       toast({
         title: "Erro ao fazer login",
         description: error.message || "Não foi possível fazer login. Tente novamente.",
@@ -96,31 +110,33 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const signUp = async (email: string, password: string, username: string) => {
     try {
-      // Register the user without email confirmation
-      const { error } = await supabase.auth.signUp({
+      console.log('Iniciando registro para:', email, username);
+      
+      // Configurar os dados do usuário, incluindo o username nos metadados
+      const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
           data: { username },
-          emailRedirectTo: window.location.origin,
         }
       });
       
       if (error) throw error;
       
-      // Auto-login the user after registration
-      const { error: signInError } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
-      
-      if (signInError) throw signInError;
+      console.log('Cadastro bem-sucedido:', data?.user?.id);
       
       toast({
         title: "Cadastro realizado com sucesso!",
-        description: "Sua conta foi criada e você está logado.",
+        description: "Sua conta foi criada. Você pode fazer login agora.",
       });
+      
+      // Auto-login após o registro
+      if (data?.user) {
+        console.log('Realizando login automático após cadastro');
+        await signIn(email, password);
+      }
     } catch (error: any) {
+      console.error('Erro de cadastro:', error);
       toast({
         title: "Erro ao criar conta",
         description: error.message || "Não foi possível criar a conta. Tente novamente.",
@@ -137,6 +153,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         user: null,
         session: null,
         isLoading: false,
+      });
+      toast({
+        title: "Saiu com sucesso",
+        description: "Você foi desconectado da sua conta.",
       });
     } catch (error: any) {
       toast({
