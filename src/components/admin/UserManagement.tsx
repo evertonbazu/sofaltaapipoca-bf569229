@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -83,38 +84,69 @@ const UserManagement: React.FC = () => {
       setIsLoading(true);
       setError(null);
 
-      // Fetch all user profiles
+      // First get all auth users
+      const { data: authUsers, error: authError } = await supabase.auth.admin.listUsers();
+      
+      if (authError) throw authError;
+
+      // Get all profiles
       const { data: profiles, error: profilesError } = await supabase
         .from('profiles')
         .select('*');
 
       if (profilesError) throw profilesError;
 
-      if (!profiles || profiles.length === 0) {
-        setUsers([]);
-        setIsLoading(false);
-        return;
-      }
-
-      // Map profiles to user objects
-      const usersWithProfiles = profiles.map((profile: any) => {
+      // Combine auth users with profiles
+      const combinedUsers = profiles.map((profile: any) => {
+        const authUser = authUsers?.users?.find(user => user.id === profile.id);
         return {
           id: profile.id,
-          email: profile.email || '',
+          email: authUser?.email || '',
           username: profile.username || '',
           role: profile.role || 'member',
-          created_at: profile.created_at || ''
+          created_at: profile.created_at || authUser?.created_at || ''
         };
       });
       
-      setUsers(usersWithProfiles);
+      setUsers(combinedUsers);
     } catch (err: any) {
-      setError(err.message);
-      toast({
-        variant: "destructive",
-        title: "Erro ao carregar usuários",
-        description: err.message
-      });
+      console.error("Error fetching users:", err);
+      
+      // Fallback to just using profiles if auth.admin.listUsers fails
+      // This is more likely to happen since most users won't have admin API access
+      try {
+        const { data: profiles, error: profilesError } = await supabase
+          .from('profiles')
+          .select('*');
+  
+        if (profilesError) throw profilesError;
+  
+        if (!profiles || profiles.length === 0) {
+          setUsers([]);
+          setIsLoading(false);
+          return;
+        }
+  
+        // Map profiles to user objects
+        const usersWithProfiles = profiles.map((profile: any) => {
+          return {
+            id: profile.id,
+            email: '', // We might not have this without auth API
+            username: profile.username || '',
+            role: profile.role || 'member',
+            created_at: profile.created_at || ''
+          };
+        });
+        
+        setUsers(usersWithProfiles);
+      } catch (fallbackError: any) {
+        setError(fallbackError.message);
+        toast({
+          variant: "destructive",
+          title: "Erro ao carregar usuários",
+          description: fallbackError.message
+        });
+      }
     } finally {
       setIsLoading(false);
     }

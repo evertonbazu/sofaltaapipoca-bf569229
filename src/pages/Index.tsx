@@ -1,9 +1,10 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import SearchBar from '@/components/SearchBar';
 import SubscriptionList from '@/components/SubscriptionList';
 import NoResults from '@/components/NoResults';
-import { MessageSquare, Megaphone, User, Settings, Home, Plus } from 'lucide-react';
+import { MessageSquare, Megaphone, User, Settings, Home, Plus, UserCircle } from 'lucide-react';
 import { useAuth } from '@/hooks/use-auth';
 import { Button } from '@/components/ui/button';
 import { supabase, importSampleSubscriptions } from '@/integrations/supabase/client';
@@ -120,6 +121,14 @@ const Index: React.FC = () => {
             <div className="flex gap-2">
               {authState.user ? (
                 <>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => navigate('/admin/profile')}
+                  >
+                    <UserCircle className="h-4 w-4 mr-1" />
+                    Meu Perfil
+                  </Button>
                   {isAdmin() && (
                     <Button
                       size="sm"

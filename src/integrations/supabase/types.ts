@@ -106,6 +106,7 @@ export type Database = {
         Row: {
           access: string
           added_date: string | null
+          code: string
           código: number | null
           created_at: string | null
           featured: boolean | null
@@ -128,6 +129,7 @@ export type Database = {
         Insert: {
           access: string
           added_date?: string | null
+          code: string
           código?: number | null
           created_at?: string | null
           featured?: boolean | null
@@ -150,6 +152,7 @@ export type Database = {
         Update: {
           access?: string
           added_date?: string | null
+          code?: string
           código?: number | null
           created_at?: string | null
           featured?: boolean | null
