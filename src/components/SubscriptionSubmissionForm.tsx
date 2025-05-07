@@ -109,35 +109,45 @@ const SubscriptionSubmissionForm: React.FC = () => {
     try {
       setIsSubmitting(true);
       
-      // Format todays date as DD/MM/YYYY
+      // Format today's date as DD/MM/YYYY
       const today = new Date();
       const formattedDate = format(today, 'dd/MM/yyyy');
       
       // Upload payment proof image if provided
       let paymentProofImageUrl = null;
       if (formData.paymentProofImage) {
-        // First, check if storage bucket exists and create if not
-        const { data: buckets } = await supabase.storage.listBuckets();
-        if (!buckets?.some(bucket => bucket.name === 'payment-proofs')) {
-          await supabase.storage.createBucket('payment-proofs', {
-            public: true // Make sure the bucket is public so we can access the images
+        try {
+          // First, check if storage bucket exists and create if not
+          const { data: buckets } = await supabase.storage.listBuckets();
+          if (!buckets?.some(bucket => bucket.name === 'payment-proofs')) {
+            await supabase.storage.createBucket('payment-proofs', {
+              public: true // Make sure the bucket is public so we can access the images
+            });
+          }
+          
+          // Upload the file
+          const fileName = `${authState.user.id}_${Date.now()}_${formData.paymentProofImage.name}`;
+          const { data, error: uploadError } = await supabase.storage
+            .from('payment-proofs')
+            .upload(fileName, formData.paymentProofImage);
+            
+          if (uploadError) throw uploadError;
+          
+          // Get the URL
+          const { data: { publicUrl } } = supabase.storage
+            .from('payment-proofs')
+            .getPublicUrl(fileName);
+            
+          paymentProofImageUrl = publicUrl;
+        } catch (uploadErr: any) {
+          console.error("Error uploading image:", uploadErr);
+          // Continue with submission even if image upload fails
+          toast({
+            variant: "warning",
+            title: "Aviso",
+            description: "Não foi possível anexar a imagem, mas seu anúncio será enviado."
           });
         }
-        
-        // Upload the file
-        const fileName = `${authState.user.id}_${Date.now()}_${formData.paymentProofImage.name}`;
-        const { data, error: uploadError } = await supabase.storage
-          .from('payment-proofs')
-          .upload(fileName, formData.paymentProofImage);
-          
-        if (uploadError) throw uploadError;
-        
-        // Get the URL
-        const { data: { publicUrl } } = supabase.storage
-          .from('payment-proofs')
-          .getPublicUrl(fileName);
-          
-        paymentProofImageUrl = publicUrl;
       }
       
       // Preparar os dados conforme o schema esperado pelo Supabase
