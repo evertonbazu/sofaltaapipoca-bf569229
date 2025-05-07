@@ -43,6 +43,7 @@ export type Database = {
         Row: {
           access: string
           added_date: string | null
+          código: number | null
           header_color: string
           icon: string | null
           id: string
@@ -65,6 +66,7 @@ export type Database = {
         Insert: {
           access: string
           added_date?: string | null
+          código?: number | null
           header_color: string
           icon?: string | null
           id?: string
@@ -87,6 +89,7 @@ export type Database = {
         Update: {
           access?: string
           added_date?: string | null
+          código?: number | null
           header_color?: string
           icon?: string | null
           id?: string

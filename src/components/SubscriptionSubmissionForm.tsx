@@ -122,9 +122,8 @@ const SubscriptionSubmissionForm: React.FC = () => {
       errors.pixKey = "Chave PIX é obrigatória";
     }
     
-    if (!formData.paymentProofImage) {
-      errors.paymentProofImage = "Comprovante de pagamento é obrigatório";
-    }
+    // Remove validation for payment proof image
+    // Payment proof image is now optional
     
     setValidationErrors(errors);
     return Object.keys(errors).length === 0;
@@ -254,31 +253,36 @@ const SubscriptionSubmissionForm: React.FC = () => {
       let paymentProofImageUrl = null;
       if (formData.paymentProofImage) {
         try {
-          // First, check if storage bucket exists and create if not
+          // Check if storage bucket exists
           const { data: buckets } = await supabase.storage.listBuckets();
-          if (!buckets?.some(bucket => bucket.name === 'payment-proofs')) {
-            await supabase.storage.createBucket('payment-proofs', {
-              public: true // Make sure the bucket is public so we can access the images
+          const bucketName = 'payment-proofs';
+          
+          // Create bucket if it doesn't exist
+          if (!buckets?.some(bucket => bucket.name === bucketName)) {
+            await supabase.storage.createBucket(bucketName, {
+              public: true // Make sure the bucket is public
             });
           }
           
           // Upload the file
           const fileName = `${authState.user.id}_${Date.now()}_${formData.paymentProofImage.name}`;
-          const { data, error: uploadError } = await supabase.storage
-            .from('payment-proofs')
+          const { error: uploadError } = await supabase.storage
+            .from(bucketName)
             .upload(fileName, formData.paymentProofImage);
             
           if (uploadError) throw uploadError;
           
           // Get the URL
           const { data: { publicUrl } } = supabase.storage
-            .from('payment-proofs')
+            .from(bucketName)
             .getPublicUrl(fileName);
             
           paymentProofImageUrl = publicUrl;
         } catch (uploadErr: any) {
           console.error("Error uploading image:", uploadErr);
-          throw new Error("Não foi possível enviar a imagem do comprovante. Por favor, tente novamente.");
+          // Don't throw error - continue with submission even if image upload fails
+          // Just log the error and proceed without the image
+          console.log("Continuing submission without image due to upload error");
         }
       }
       
@@ -568,7 +572,7 @@ const SubscriptionSubmissionForm: React.FC = () => {
         </div>
         
         <div>
-          <Label>Comprovante de pagamento *</Label>
+          <Label>Comprovante de pagamento (opcional)</Label>
           <div className={`mt-1 border-2 border-dashed ${validationErrors.paymentProofImage ? "border-red-500" : "border-gray-300"} rounded-md p-6`}>
             <div className="flex justify-center">
               <div className="space-y-2 text-center">

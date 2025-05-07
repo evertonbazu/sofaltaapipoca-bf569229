@@ -69,7 +69,7 @@ const NewSubscription: React.FC = () => {
             <h3 className="font-medium text-blue-800">Instruções para cadastro:</h3>
             <ul className="list-disc pl-5 mt-2 text-sm text-blue-700">
               <li>Preencha todos os campos obrigatórios marcados com *</li>
-              <li>Envie uma imagem comprobatória da assinatura</li>
+              <li>O comprovante de assinatura é opcional</li>
               <li>Seu anúncio será revisado antes de ser publicado</li>
               <li>Após aprovação, ele aparecerá na página principal</li>
             </ul>

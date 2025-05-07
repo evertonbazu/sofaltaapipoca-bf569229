@@ -162,28 +162,36 @@ const SubscriptionForm: React.FC = () => {
       // Upload payment proof image if provided
       let paymentProofImageUrl = existingPaymentProofImageUrl;
       if (paymentProofImage) {
-        // First, check if storage bucket exists and create if not
-        const { data: buckets } = await supabase.storage.listBuckets();
-        if (!buckets?.some(bucket => bucket.name === 'payment-proofs')) {
-          await supabase.storage.createBucket('payment-proofs', {
-            public: false
-          });
+        try {
+          // First, check if storage bucket exists and create if not
+          const { data: buckets } = await supabase.storage.listBuckets();
+          const bucketName = 'payment-proofs';
+          
+          if (!buckets?.some(bucket => bucket.name === bucketName)) {
+            await supabase.storage.createBucket(bucketName, {
+              public: false
+            });
+          }
+          
+          // Upload the file
+          const fileName = `admin_${Date.now()}_${paymentProofImage.name}`;
+          const { data, error: uploadError } = await supabase.storage
+            .from(bucketName)
+            .upload(fileName, paymentProofImage);
+            
+          if (uploadError) throw uploadError;
+          
+          // Get the URL
+          const { data: { publicUrl } } = supabase.storage
+            .from(bucketName)
+            .getPublicUrl(fileName);
+            
+          paymentProofImageUrl = publicUrl;
+        } catch (err) {
+          console.error("Error uploading image:", err);
+          // Continue with submission even if image upload fails
+          // We'll use the existing image URL if available
         }
-        
-        // Upload the file
-        const fileName = `admin_${Date.now()}_${paymentProofImage.name}`;
-        const { data, error: uploadError } = await supabase.storage
-          .from('payment-proofs')
-          .upload(fileName, paymentProofImage);
-          
-        if (uploadError) throw uploadError;
-        
-        // Get the URL
-        const { data: { publicUrl } } = supabase.storage
-          .from('payment-proofs')
-          .getPublicUrl(fileName);
-          
-        paymentProofImageUrl = publicUrl;
       }
 
       // Generate a unique code if this is a new subscription
@@ -473,7 +481,7 @@ const SubscriptionForm: React.FC = () => {
             </div>
             
             <div className="space-y-2">
-              <Label htmlFor="paymentProofImage">Comprovante de Assinatura</Label>
+              <Label htmlFor="paymentProofImage">Comprovante de Assinatura (opcional)</Label>
               <Input
                 id="paymentProofImage"
                 name="paymentProofImage"
@@ -492,7 +500,7 @@ const SubscriptionForm: React.FC = () => {
                 </div>
               )}
               <p className="text-xs text-gray-500 mt-1">
-                {existingPaymentProofImageUrl ? "Envie um novo arquivo para substituir o comprovante atual." : "Envie uma imagem que comprove a assinatura ativa."}
+                {existingPaymentProofImageUrl ? "Envie um novo arquivo para substituir o comprovante atual." : "Envie uma imagem que comprove a assinatura ativa (opcional)."}
               </p>
             </div>
             
