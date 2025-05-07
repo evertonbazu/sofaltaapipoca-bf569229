@@ -14,6 +14,7 @@ import ExportSubscriptions from './components/admin/ExportSubscriptions';
 import ImportSubscriptions from './components/admin/ImportSubscriptions';
 import UserManagement from './components/admin/UserManagement';
 import NewSubscription from './pages/NewSubscription';
+import ContactUs from './pages/ContactUs';
 import Index from './pages/Index';
 import UserProfile from './components/admin/UserProfile';
 
@@ -42,6 +43,7 @@ const AppRoutes = () => {
       <Route path="/auth" element={<Auth />} />
       <Route path="/new" element={<NewSubscription />} />
       <Route path="/profile" element={<UserProfile />} />
+      <Route path="/contact" element={<ContactUs />} />
       <Route path="/" element={<Index />} />
       <Route
         path="/admin"
