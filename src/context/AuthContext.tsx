@@ -108,6 +108,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       });
       
       // O listener onAuthStateChange irá atualizar o estado
+      return data;
     } catch (error: any) {
       console.error('Erro de login:', error);
       toast({

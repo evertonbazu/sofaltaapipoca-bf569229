@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/use-auth';
 import { Navigate, useNavigate } from 'react-router-dom';
@@ -32,7 +33,7 @@ const Auth: React.FC = () => {
     }
   }, [authState.session, authState.isLoading, navigate]);
 
-  // Se o usuário já estiver autenticado, redirecionamos para a home
+  // Redirect authenticated users to home page
   if (authState.session && !authState.isLoading) {
     return <Navigate to="/" />;
   }
@@ -43,11 +44,9 @@ const Auth: React.FC = () => {
     setIsLoading(true);
     
     try {
-      // Usar um console.log para depuração
       console.log('Tentando login com:', loginEmail);
       await signIn(loginEmail, loginPassword);
-      // Após login bem-sucedido, redirecionar para a página principal
-      // O redirecionamento é feito pelo useEffect quando o authState.session mudar
+      // Redirecionamento será feito pelo useEffect quando authState.session mudar
     } catch (error: any) {
       console.error('Erro de login:', error);
       setError(error.message || 'Falha no login. Verifique suas credenciais.');
@@ -69,7 +68,7 @@ const Auth: React.FC = () => {
     try {
       console.log('Tentando cadastrar:', signupEmail, username);
       await signUp(signupEmail, signupPassword, username);
-      // Mostrar mensagem de verificação em vez de redirecionar
+      // Mostrar mensagem de verificação
       setShowVerifyMessage(true);
       setActiveTab('signin');
     } catch (error: any) {
