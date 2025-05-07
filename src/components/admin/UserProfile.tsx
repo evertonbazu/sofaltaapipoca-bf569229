@@ -6,8 +6,9 @@ import { Label } from "@/components/ui/label";
 import { Loader2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { useAuth } from '@/hooks/use-auth';
+import { useAuth } from '@/context/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 const UserProfile: React.FC = () => {
   const { toast } = useToast();
@@ -16,6 +17,7 @@ const UserProfile: React.FC = () => {
   const [isSaving, setIsSaving] = useState<boolean>(false);
   const [username, setUsername] = useState<string>('');
   const [email, setEmail] = useState<string>('');
+  const [error, setError] = useState<string | null>(null);
   
   useEffect(() => {
     const fetchUserProfile = async () => {
@@ -26,6 +28,7 @@ const UserProfile: React.FC = () => {
 
       try {
         setIsLoading(true);
+        setError(null);
         
         // Get user profile from profiles table
         const { data: profileData, error: profileError } = await supabase
@@ -36,11 +39,7 @@ const UserProfile: React.FC = () => {
         
         if (profileError) {
           console.error("Error fetching user profile:", profileError);
-          toast({
-            variant: "destructive",
-            title: "Erro ao carregar perfil",
-            description: "Não foi possível obter seus dados de perfil."
-          });
+          setError("Não foi possível obter seus dados de perfil.");
           return;
         }
         
@@ -54,11 +53,7 @@ const UserProfile: React.FC = () => {
         }
       } catch (err: any) {
         console.error("Error in fetchUserProfile:", err);
-        toast({
-          variant: "destructive",
-          title: "Erro ao carregar perfil",
-          description: err.message || "Ocorreu um erro ao carregar seu perfil."
-        });
+        setError(err.message || "Ocorreu um erro ao carregar seu perfil.");
       } finally {
         setIsLoading(false);
       }
@@ -72,6 +67,7 @@ const UserProfile: React.FC = () => {
     
     try {
       setIsSaving(true);
+      setError(null);
       
       const { error } = await supabase
         .from('profiles')
@@ -88,6 +84,7 @@ const UserProfile: React.FC = () => {
       });
       
     } catch (err: any) {
+      setError(err.message || "Não foi possível atualizar seu perfil.");
       toast({
         variant: "destructive",
         title: "Erro ao atualizar perfil",
@@ -110,6 +107,12 @@ const UserProfile: React.FC = () => {
   return (
     <div>
       <h1 className="text-3xl font-bold mb-6">Meu Perfil</h1>
+      
+      {error && (
+        <Alert variant="destructive" className="mb-6">
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      )}
       
       <Card className="max-w-md space-y-6">
         <CardHeader>

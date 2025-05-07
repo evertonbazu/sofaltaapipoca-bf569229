@@ -13,7 +13,7 @@ interface Subscription {
   telegram_username: string;
   pix_qr_code?: string;
   added_date?: string;
-  código?: number;
+  code?: string;
 }
 
 /**
@@ -27,20 +27,17 @@ export const generateTxtContent = (selectedSubs: Subscription[]) => {
   selectedSubs.forEach((sub, index) => {
     if (index > 0) {
       // Add double line break between subscriptions
-      content += '\n\n';
+      content += '\n\n\n';
     }
     
+    // Format as requested
+    content += `🔢 Código: ${sub.code || 'N/A'}\n`;
     content += `🖥 ${sub.title}\n`;
     content += `🏦 ${sub.price} - ${sub.payment_method}\n`;
     content += `📌 ${sub.status}\n`;
     content += `🔐 ${sub.access}\n`;
     content += `📩 ${sub.telegram_username}\n`;
     content += `📱 ${sub.whatsapp_number}\n`;
-    
-    if (sub.código) {
-      content += `\nCódigo: ${sub.código}\n`;
-    }
-    
     content += `\n📅 Adicionado em: ${sub.added_date || new Date().toLocaleDateString('pt-BR')}`;
   });
   
@@ -95,8 +92,8 @@ export const exportSubscriptionsAsTxt = (selectedSubs: Subscription[]) => {
 export const parseTxtContent = (txtContent: string): any[] => {
   const subscriptions: any[] = [];
   
-  // Split by double line breaks to separate subscriptions
-  const blocks = txtContent.split('\n\n');
+  // Split by triple line breaks to separate subscriptions
+  const blocks = txtContent.split('\n\n\n');
   
   let currentSubscription: any = {
     header_color: 'bg-blue-600',
@@ -111,12 +108,12 @@ export const parseTxtContent = (txtContent: string): any[] => {
     // Process each line of the subscription block
     const lines = block.split('\n');
     
-    lines.forEach(line => {
-      line = line.trim();
-      if (!line) return;
+    for (let j = 0; j < lines.length; j++) {
+      const line = lines[j].trim();
+      if (!line) continue;
       
-      // Match title (🖥)
-      if (line.startsWith('🖥')) {
+      // Match code (🔢)
+      if (line.startsWith('🔢')) {
         if (Object.keys(currentSubscription).length > 3) {
           // Save previous subscription if it has required fields
           if (currentSubscription.title && currentSubscription.price) {
@@ -130,6 +127,14 @@ export const parseTxtContent = (txtContent: string): any[] => {
             icon: 'monitor'
           };
         }
+        
+        const codeMatch = line.match(/🔢 Código:\s*([^\n]+)/);
+        if (codeMatch && codeMatch[1]) {
+          currentSubscription.code = codeMatch[1].trim();
+        }
+      }
+      // Match title (🖥)
+      else if (line.startsWith('🖥')) {
         currentSubscription.title = line.replace('🖥', '').trim();
       }
       // Match price (🏦)
@@ -163,19 +168,19 @@ export const parseTxtContent = (txtContent: string): any[] => {
       else if (line.startsWith('📅')) {
         currentSubscription.added_date = line.replace('📅 Adicionado em:', '').trim();
       }
-      // Match code (Código)
-      else if (line.toLowerCase().startsWith('código:')) {
-        const codeMatch = line.match(/Código:\s*(\d+)/i);
-        if (codeMatch && codeMatch[1]) {
-          currentSubscription.código = parseInt(codeMatch[1].trim());
-        }
-      }
-    });
-  }
-  
-  // Add the last subscription if it has required fields
-  if (currentSubscription.title && currentSubscription.price) {
-    subscriptions.push(currentSubscription);
+    }
+    
+    // Add the subscription after processing the block
+    if (currentSubscription.title && currentSubscription.price) {
+      subscriptions.push({...currentSubscription});
+      
+      // Reset for next subscription
+      currentSubscription = {
+        header_color: 'bg-blue-600',
+        price_color: 'text-blue-600',
+        icon: 'monitor'
+      };
+    }
   }
   
   return subscriptions;

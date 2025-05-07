@@ -17,7 +17,7 @@ interface SubscriptionItemProps {
   subscriptionRefs?: React.MutableRefObject<{[key: string]: HTMLDivElement | null}>;
   isSearchResult?: boolean;
   featured?: boolean;
-  code?: string; // Add code field
+  code: string; // Código do anúncio
 }
 
 const SubscriptionItem: React.FC<SubscriptionItemProps> = ({
@@ -35,7 +35,7 @@ const SubscriptionItem: React.FC<SubscriptionItemProps> = ({
   subscriptionRefs,
   isSearchResult = false,
   featured = false,
-  code // Add code to the props destructuring
+  code
 }) => {
   // If the subscription needs to be referenced (for featured items), use a ref
   if (subscriptionRefs) {
@@ -55,7 +55,7 @@ const SubscriptionItem: React.FC<SubscriptionItemProps> = ({
           addedDate={addedDate}
           isSearchResult={isSearchResult}
           featured={featured}
-          code={code}  // Pass code to SubscriptionCard
+          code={code}
         />
       </div>
     );
@@ -77,7 +77,7 @@ const SubscriptionItem: React.FC<SubscriptionItemProps> = ({
       addedDate={addedDate}
       isSearchResult={isSearchResult}
       featured={featured}
-      code={code}  // Pass code to SubscriptionCard
+      code={code}
     />
   );
 };
