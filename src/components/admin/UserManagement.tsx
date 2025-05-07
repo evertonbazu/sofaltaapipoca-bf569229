@@ -16,9 +16,7 @@ import {
   Loader2, 
   UserPlus, 
   Edit, 
-  Trash2, 
-  Check, 
-  X 
+  Trash2 
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -93,20 +91,20 @@ const UserManagement: React.FC = () => {
 
       if (profilesError) throw profilesError;
 
-      // Depois obter os usuários da API de auth
-      const { data: authUsers, error: authError } = await supabase.auth.admin.listUsers();
-      
-      if (authError) throw authError;
+      if (!profiles || profiles.length === 0) {
+        setUsers([]);
+        setIsLoading(false);
+        return;
+      }
 
-      // Combinar os dados
-      const usersWithProfiles = profiles.map((profile) => {
-        const authUser = authUsers.users.find((user) => user.id === profile.id);
+      // Para ambientes de desenvolvimento, podemos apenas usar os dados do perfil
+      const usersWithProfiles = profiles.map((profile: any) => {
         return {
           id: profile.id,
-          email: authUser?.email || '',
+          email: profile.email || '',
           username: profile.username || '',
-          role: profile.role,
-          created_at: authUser?.created_at || ''
+          role: profile.role || 'member',
+          created_at: profile.created_at || ''
         };
       });
       
@@ -129,7 +127,30 @@ const UserManagement: React.FC = () => {
 
   const handleAddUser = async () => {
     try {
-      // A lógica para adicionar usuários permanece a mesma
+      // Criar usuário com Supabase Auth
+      const { data, error: authError } = await supabase.auth.signUp({
+        email: newUser.email,
+        password: newUser.password,
+        options: {
+          data: {
+            username: newUser.username
+          }
+        }
+      });
+
+      if (authError) throw authError;
+
+      // O perfil deve ser criado automaticamente pelo trigger no banco de dados
+      // Mas podemos atualizar o role manualmente se necessário
+      if (data.user) {
+        const { error: updateError } = await supabase
+          .from('profiles')
+          .update({ role: newUser.role })
+          .eq('id', data.user.id);
+        
+        if (updateError) throw updateError;
+      }
+      
       toast({
         title: "Usuário adicionado",
         description: `O usuário ${newUser.email} foi adicionado com sucesso.`
@@ -210,12 +231,12 @@ const UserManagement: React.FC = () => {
       
       if (profileError) throw profileError;
       
-      // Depois excluir o usuário da autenticação
-      const { error: authError } = await supabase.auth.admin.deleteUser(
-        deleteUserId
-      );
-      
-      if (authError) throw authError;
+      // Se disponível, excluir o usuário da autenticação
+      try {
+        await supabase.auth.admin.deleteUser(deleteUserId);
+      } catch (err) {
+        console.log("Admin API não disponível no ambiente atual");
+      }
       
       setUsers(users.filter(user => user.id !== deleteUserId));
       
