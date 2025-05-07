@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -84,7 +83,7 @@ const UserManagement: React.FC = () => {
       setIsLoading(true);
       setError(null);
 
-      // Primeiro, buscar todos os perfis
+      // Fetch all user profiles
       const { data: profiles, error: profilesError } = await supabase
         .from('profiles')
         .select('*');
@@ -97,7 +96,7 @@ const UserManagement: React.FC = () => {
         return;
       }
 
-      // Para ambientes de desenvolvimento, podemos apenas usar os dados do perfil
+      // Map profiles to user objects
       const usersWithProfiles = profiles.map((profile: any) => {
         return {
           id: profile.id,
@@ -127,7 +126,7 @@ const UserManagement: React.FC = () => {
 
   const handleAddUser = async () => {
     try {
-      // Criar usuário com Supabase Auth
+      // Create user with Supabase Auth
       const { data, error: authError } = await supabase.auth.signUp({
         email: newUser.email,
         password: newUser.password,
@@ -140,8 +139,7 @@ const UserManagement: React.FC = () => {
 
       if (authError) throw authError;
 
-      // O perfil deve ser criado automaticamente pelo trigger no banco de dados
-      // Mas podemos atualizar o role manualmente se necessário
+      // Update the role if needed
       if (data.user) {
         const { error: updateError } = await supabase
           .from('profiles')
@@ -164,7 +162,7 @@ const UserManagement: React.FC = () => {
         role: 'member'
       });
       
-      // Recarregar usuários
+      // Reload users
       fetchUsers();
     } catch (err: any) {
       toast({
@@ -202,7 +200,7 @@ const UserManagement: React.FC = () => {
       setIsEditDialogOpen(false);
       setEditUser(null);
       
-      // Recarregar usuários
+      // Reload users
       fetchUsers();
     } catch (err: any) {
       toast({
@@ -223,7 +221,7 @@ const UserManagement: React.FC = () => {
     try {
       setIsDeleting(true);
       
-      // Primeiro excluir da tabela de perfis
+      // Delete from profiles table first
       const { error: profileError } = await supabase
         .from('profiles')
         .delete()
@@ -231,11 +229,11 @@ const UserManagement: React.FC = () => {
       
       if (profileError) throw profileError;
       
-      // Se disponível, excluir o usuário da autenticação
+      // Try to delete the user from auth if available
       try {
         await supabase.auth.admin.deleteUser(deleteUserId);
       } catch (err) {
-        console.log("Admin API não disponível no ambiente atual");
+        console.log("Admin API not available in current environment");
       }
       
       setUsers(users.filter(user => user.id !== deleteUserId));
@@ -364,7 +362,7 @@ const UserManagement: React.FC = () => {
         </Table>
       </div>
 
-      {/* Diálogo para adicionar usuário */}
+      {/* Add User Dialog */}
       <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
@@ -436,7 +434,7 @@ const UserManagement: React.FC = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Diálogo para editar usuário */}
+      {/* Edit User Dialog */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
@@ -495,7 +493,7 @@ const UserManagement: React.FC = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Diálogo para confirmar exclusão de usuário */}
+      {/* Delete User Confirmation Dialog */}
       <AlertDialog open={!!deleteUserId} onOpenChange={() => setDeleteUserId(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>

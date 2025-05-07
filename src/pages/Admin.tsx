@@ -13,6 +13,7 @@ import UserManagement from '@/components/admin/UserManagement';
 import PendingSubscriptions from '@/components/admin/PendingSubscriptions';
 import ImportSubscriptions from '@/components/admin/ImportSubscriptions';
 import ExportSubscriptionsTxt from '@/components/admin/ExportSubscriptionsTxt';
+import UserProfile from '@/components/admin/UserProfile';
 
 const Admin: React.FC = () => {
   const { authState, isAdmin, signOut } = useAuth();
@@ -31,13 +32,9 @@ const Admin: React.FC = () => {
     );
   }
 
-  // If user is not authenticated or not an admin, redirect to auth page
+  // If user is not authenticated, redirect to auth page
   if (!authState.user) {
     return <Navigate to="/auth" />;
-  }
-  
-  if (!isAdmin()) {
-    return <Navigate to="/" />;
   }
 
   const handleSignOut = async () => {
@@ -114,13 +111,24 @@ const Admin: React.FC = () => {
                   Exportar TXT
                 </SidebarMenuButton>
               </SidebarMenuItem>
+              {isAdmin() && (
+                <SidebarMenuItem>
+                  <SidebarMenuButton 
+                    onClick={() => navigate('/admin/users')}
+                    isActive={isActive('/admin/users')}
+                  >
+                    <Users className="mr-2 h-5 w-5" />
+                    Gerenciar Usuários
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              )}
               <SidebarMenuItem>
                 <SidebarMenuButton 
-                  onClick={() => navigate('/admin/users')}
-                  isActive={isActive('/admin/users')}
+                  onClick={() => navigate('/admin/profile')}
+                  isActive={isActive('/admin/profile')}
                 >
-                  <Users className="mr-2 h-5 w-5" />
-                  Gerenciar Usuários
+                  <User className="mr-2 h-5 w-5" />
+                  Meu Perfil
                 </SidebarMenuButton>
               </SidebarMenuItem>
             </SidebarMenu>
@@ -159,7 +167,10 @@ const Admin: React.FC = () => {
               <Route path="/pending" element={<PendingSubscriptions />} />
               <Route path="/import" element={<ImportSubscriptions />} />
               <Route path="/export" element={<ExportSubscriptionsTxt />} />
-              <Route path="/users" element={<UserManagement />} />
+              {isAdmin() && (
+                <Route path="/users" element={<UserManagement />} />
+              )}
+              <Route path="/profile" element={<UserProfile />} />
             </Routes>
           </div>
         </main>
