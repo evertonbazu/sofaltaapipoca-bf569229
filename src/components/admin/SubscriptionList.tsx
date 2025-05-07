@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
@@ -61,7 +60,7 @@ interface Subscription {
   pix_qr_code?: string;
   pix_key?: string;
   payment_proof_image?: string;
-  código?: number;
+  code?: string;
 }
 
 const SubscriptionList: React.FC = () => {
@@ -75,8 +74,8 @@ const SubscriptionList: React.FC = () => {
   const [isDeleting, setIsDeleting] = useState(false);
   const [selectedSubscriptions, setSelectedSubscriptions] = useState<Record<string, boolean>>({});
   const [deleteMultipleOpen, setDeleteMultipleOpen] = useState(false);
-  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
-  const [sortBy, setSortBy] = useState<string>('added_date');
+  const [sortOrder, setSortOrder<'asc' | 'desc'>>('desc');
+  const [sortBy, setSortBy<string>>('added_date');
   const [featureDialogOpen, setFeatureDialogOpen] = useState(false);
   const [featureId, setFeatureId] = useState<string | null>(null);
   const [isFeaturing, setIsFeaturing] = useState(false);
@@ -358,8 +357,8 @@ const SubscriptionList: React.FC = () => {
                 <SelectItem value="added_date-asc">Data (mais antigo)</SelectItem>
                 <SelectItem value="title-asc">Título (A-Z)</SelectItem>
                 <SelectItem value="title-desc">Título (Z-A)</SelectItem>
-                <SelectItem value="código-asc">Código (crescente)</SelectItem>
-                <SelectItem value="código-desc">Código (decrescente)</SelectItem>
+                <SelectItem value="code-asc">Código (crescente)</SelectItem>
+                <SelectItem value="code-desc">Código (decrescente)</SelectItem>
               </SelectContent>
             </Select>
             <Button
@@ -410,7 +409,7 @@ const SubscriptionList: React.FC = () => {
                         variant="ghost" 
                         size="sm" 
                         className="ml-1 p-0" 
-                        onClick={() => handleToggleSort('código')}
+                        onClick={() => handleToggleSort('code')}
                       >
                         <ArrowUpDown className="h-4 w-4" />
                       </Button>
@@ -476,7 +475,7 @@ const SubscriptionList: React.FC = () => {
                         />
                       </TableCell>
                       <TableCell className="font-medium">
-                        {subscription.código || '-'}
+                        {subscription.code || '-'}
                       </TableCell>
                       <TableCell className="font-medium">
                         {subscription.title}

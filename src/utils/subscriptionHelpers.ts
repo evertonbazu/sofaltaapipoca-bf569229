@@ -1,6 +1,7 @@
 
 import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
+import { generateSubscriptionCode } from '@/utils/codeGenerator';
 
 /**
  * Creates an example subscription in the database
@@ -62,6 +63,9 @@ export const createApprovedSubscription = async (adminUserId: string) => {
     // Format today's date as DD/MM/YYYY
     const today = new Date();
     const formattedDate = format(today, 'dd/MM/yyyy');
+    
+    // Generate a unique code for the subscription
+    const code = generateSubscriptionCode('SF', 9, Math.floor(Math.random() * 999) + 1);
 
     // Create a new subscription directly in the approved subscriptions table
     const { data, error } = await supabase
@@ -78,7 +82,8 @@ export const createApprovedSubscription = async (adminUserId: string) => {
         header_color: 'bg-red-600',
         price_color: 'text-red-600',
         added_date: formattedDate,
-        featured: false
+        featured: false,
+        code: code // Add code field
       })
       .select();
       

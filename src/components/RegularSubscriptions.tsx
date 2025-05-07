@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from "react";
 import SubscriptionItem from "./SubscriptionItem";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -79,7 +78,7 @@ const RegularSubscriptions: React.FC<RegularSubscriptionsProps> = ({
             pixKey: item.pix_key,
             paymentProofImage: item.payment_proof_image,
             featured: item.featured,
-            code: item.code // Include the code field
+            code: item.code // Make sure to include the code field
           }));
           
           setAllSubscriptions(formattedSubscriptions);
@@ -173,6 +172,7 @@ const RegularSubscriptions: React.FC<RegularSubscriptionsProps> = ({
           telegramUsername={subscription.telegramUsername}
           icon={subscription.icon}
           addedDate={subscription.addedDate}
+          code={subscription.code} // Pass code to SubscriptionItem
         />
       ))}
     </div>

@@ -19,6 +19,7 @@ interface SubscriptionCardProps {
   addedDate?: string;
   version?: string;
   featured?: boolean;
+  code?: string; // Add code field to the component
 }
 
 const SubscriptionCard = ({
@@ -36,7 +37,8 @@ const SubscriptionCard = ({
   isSearchResult = false,
   addedDate,
   version = '1.1.0',
-  featured = false
+  featured = false,
+  code // Add code to the props
 }: SubscriptionCardProps) => {
   const handleWhatsappClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
     const whatsappUrl = `https://api.whatsapp.com/send?phone=${whatsappNumber}`;
@@ -77,6 +79,13 @@ const SubscriptionCard = ({
         </h2>
       </div>
       <div className="p-3 sm:p-5 space-y-3 sm:space-y-4">
+        {/* Display the code field if present */}
+        {code && (
+          <div className="flex flex-wrap justify-between items-center">
+            <span className="font-semibold text-gray-700 text-sm sm:text-base">🔢 Código:</span>
+            <span className="font-medium text-gray-900 text-sm sm:text-base">{code}</span>
+          </div>
+        )}
         <div className="flex flex-wrap justify-between items-center">
           <span className="font-semibold text-gray-700 text-sm sm:text-base">🏦 Valor:</span>
           <span className={`text-lg sm:text-xl font-bold ${priceColor}`}>{price}</span>

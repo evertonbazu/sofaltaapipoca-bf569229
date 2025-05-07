@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from "react";
 import SubscriptionItem from "./SubscriptionItem";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -158,6 +157,7 @@ const FeaturedSubscriptions: React.FC<FeaturedSubscriptionsProps> = ({
           addedDate={subscription.addedDate}
           subscriptionRefs={subscriptionRefs}
           featured={subscription.featured}
+          code={subscription.code} // Pass code to SubscriptionItem
         />
       ))}
     </div>

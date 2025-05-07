@@ -7,27 +7,68 @@ import { Loader2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/use-auth';
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 const UserProfile: React.FC = () => {
   const { toast } = useToast();
   const { authState } = useAuth();
-  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
   const [isSaving, setIsSaving] = useState<boolean>(false);
   const [username, setUsername] = useState<string>('');
   const [email, setEmail] = useState<string>('');
   
   useEffect(() => {
-    if (authState.user) {
-      setUsername(authState.user.username || '');
-      // Get email from the session object instead
-      if (authState.session?.user) {
-        setEmail(authState.session.user.email || '');
+    const fetchUserProfile = async () => {
+      if (!authState.session?.user?.id) {
+        setIsLoading(false);
+        return;
       }
-    }
-  }, [authState.user, authState.session]);
+
+      try {
+        setIsLoading(true);
+        
+        // Get user profile from profiles table
+        const { data: profileData, error: profileError } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', authState.session.user.id)
+          .single();
+        
+        if (profileError) {
+          console.error("Error fetching user profile:", profileError);
+          toast({
+            variant: "destructive",
+            title: "Erro ao carregar perfil",
+            description: "Não foi possível obter seus dados de perfil."
+          });
+          return;
+        }
+        
+        if (profileData) {
+          setUsername(profileData.username || '');
+        }
+        
+        // Set email from the session
+        if (authState.session?.user) {
+          setEmail(authState.session.user.email || '');
+        }
+      } catch (err: any) {
+        console.error("Error in fetchUserProfile:", err);
+        toast({
+          variant: "destructive",
+          title: "Erro ao carregar perfil",
+          description: err.message || "Ocorreu um erro ao carregar seu perfil."
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    fetchUserProfile();
+  }, [authState.session, authState.user, toast]);
 
   const handleUpdateProfile = async () => {
-    if (!authState.user) return;
+    if (!authState.session?.user?.id) return;
     
     try {
       setIsSaving(true);
@@ -37,7 +78,7 @@ const UserProfile: React.FC = () => {
         .update({
           username
         })
-        .eq('id', authState.user.id);
+        .eq('id', authState.session.user.id);
       
       if (error) throw error;
       
@@ -70,43 +111,48 @@ const UserProfile: React.FC = () => {
     <div>
       <h1 className="text-3xl font-bold mb-6">Meu Perfil</h1>
       
-      <div className="max-w-md space-y-6 bg-white p-6 rounded-lg shadow">
-        <div className="space-y-2">
-          <Label htmlFor="username">Nome de Usuário</Label>
-          <Input 
-            id="username" 
-            value={username} 
-            onChange={(e) => setUsername(e.target.value)} 
+      <Card className="max-w-md space-y-6">
+        <CardHeader>
+          <CardTitle>Informações Pessoais</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          <div className="space-y-2">
+            <Label htmlFor="username">Nome de Usuário</Label>
+            <Input 
+              id="username" 
+              value={username} 
+              onChange={(e) => setUsername(e.target.value)} 
+              className="w-full"
+              placeholder="Seu nome de usuário"
+            />
+          </div>
+          
+          <div className="space-y-2">
+            <Label htmlFor="email">Email</Label>
+            <Input 
+              id="email" 
+              type="email" 
+              value={email} 
+              disabled 
+              className="w-full bg-gray-100"
+            />
+            <p className="text-xs text-muted-foreground">O email não pode ser alterado.</p>
+          </div>
+          
+          <Button 
+            onClick={handleUpdateProfile} 
+            disabled={isSaving} 
             className="w-full"
-            placeholder="Seu nome de usuário"
-          />
-        </div>
-        
-        <div className="space-y-2">
-          <Label htmlFor="email">Email</Label>
-          <Input 
-            id="email" 
-            type="email" 
-            value={email} 
-            disabled 
-            className="w-full bg-gray-100"
-          />
-          <p className="text-xs text-muted-foreground">O email não pode ser alterado.</p>
-        </div>
-        
-        <Button 
-          onClick={handleUpdateProfile} 
-          disabled={isSaving} 
-          className="w-full"
-        >
-          {isSaving ? (
-            <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Salvando...
-            </>
-          ) : "Salvar Alterações"}
-        </Button>
-      </div>
+          >
+            {isSaving ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Salvando...
+              </>
+            ) : "Salvar Alterações"}
+          </Button>
+        </CardContent>
+      </Card>
     </div>
   );
 };
