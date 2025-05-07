@@ -11,7 +11,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useNavigate } from 'react-router-dom';
-import { Loader2, AlertTriangle, Check, X, Edit } from 'lucide-react';
+import { Loader2, AlertTriangle, Check, X, Edit, ArrowUpDown } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import {
@@ -33,6 +33,13 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { useIsMobile } from '@/hooks/use-mobile';
 
@@ -56,6 +63,7 @@ interface PendingSubscription {
   pix_qr_code?: string;
   pix_key?: string;
   payment_proof_image?: string;
+  código?: number;
 }
 
 interface Profile {
@@ -76,10 +84,12 @@ const PendingSubscriptions: React.FC = () => {
   const [rejectionReason, setRejectionReason] = useState('');
   const [approveDialogOpen, setApproveDialogOpen] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
+  const [sortBy, setSortBy] = useState<string>('status_approval');
 
   useEffect(() => {
     fetchPendingSubscriptions();
-  }, []);
+  }, [sortBy, sortOrder]);
 
   const fetchPendingSubscriptions = async () => {
     try {
@@ -100,19 +110,48 @@ const PendingSubscriptions: React.FC = () => {
       });
 
       // Fetch pending subscriptions
-      const { data: pendingSubs, error: pendingError } = await supabase
+      let query = supabase
         .from('pending_subscriptions')
         .select('*');
-
-      if (pendingError) throw pendingError;
-
-      // Combine data with usernames
-      const pendingWithUsernames = pendingSubs.map((sub: any) => ({
-        ...sub,
-        username: profilesMap.get(sub.user_id) || 'Sem nome',
-      }));
-
-      setPendingSubscriptions(pendingWithUsernames);
+      
+      // If sorting by status_approval, use a special order to put pending first
+      if (sortBy === 'status_approval') {
+        const { data, error } = await query;
+        
+        if (error) throw error;
+        
+        // Add usernames to the data
+        const pendingWithUsernames = data.map((sub: any) => ({
+          ...sub,
+          username: profilesMap.get(sub.user_id) || 'Sem nome',
+        }));
+        
+        // Sort the data manually to put pending first
+        const statusOrder = sortOrder === 'asc' 
+          ? { 'pending': 0, 'approved': 1, 'rejected': 2 }
+          : { 'pending': 2, 'approved': 1, 'rejected': 0 };
+          
+        pendingWithUsernames.sort((a: PendingSubscription, b: PendingSubscription) => {
+          const statusA = statusOrder[a.status_approval as keyof typeof statusOrder] || 3;
+          const statusB = statusOrder[b.status_approval as keyof typeof statusOrder] || 3;
+          return statusA - statusB;
+        });
+        
+        setPendingSubscriptions(pendingWithUsernames);
+      } else {
+        // Apply regular sorting for other fields
+        const { data, error } = await query.order(sortBy, { ascending: sortOrder === 'asc' });
+        
+        if (error) throw error;
+        
+        // Add usernames to the data
+        const pendingWithUsernames = data.map((sub: any) => ({
+          ...sub,
+          username: profilesMap.get(sub.user_id) || 'Sem nome',
+        }));
+        
+        setPendingSubscriptions(pendingWithUsernames);
+      }
     } catch (err: any) {
       console.error("Error fetching pending subscriptions:", err);
       setError(err.message);
@@ -135,6 +174,15 @@ const PendingSubscriptions: React.FC = () => {
   const handleOpenApproveDialog = (subscription: PendingSubscription) => {
     setSelectedSubscription(subscription);
     setApproveDialogOpen(true);
+  };
+
+  const handleToggleSort = (column: string) => {
+    if (sortBy === column) {
+      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortBy(column);
+      setSortOrder('asc');
+    }
   };
 
   const handleReject = async () => {
@@ -211,7 +259,8 @@ const PendingSubscriptions: React.FC = () => {
           pix_qr_code: subscription.pix_qr_code,
           pix_key: subscription.pix_key,
           payment_proof_image: subscription.payment_proof_image,
-          user_id: subscription.user_id // Ensure we keep the original user_id
+          user_id: subscription.user_id, // Ensure we keep the original user_id
+          código: subscription.código
         });
 
       if (insertError) throw insertError;
@@ -278,31 +327,115 @@ const PendingSubscriptions: React.FC = () => {
         </div>
       )}
       
-      <div className="mb-6">
+      <div className="mb-6 flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
         <Input
           placeholder="Pesquisar anúncios..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
           className="max-w-md"
         />
+        
+        <Select
+          value={`${sortBy}-${sortOrder}`}
+          onValueChange={(value) => {
+            const [newSortBy, newSortOrder] = value.split('-') as [string, 'asc' | 'desc'];
+            setSortBy(newSortBy);
+            setSortOrder(newSortOrder);
+          }}
+        >
+          <SelectTrigger className="w-[180px]">
+            <SelectValue placeholder="Ordenar por" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="status_approval-asc">Status (Pendentes primeiro)</SelectItem>
+            <SelectItem value="status_approval-desc">Status (Rejeitados primeiro)</SelectItem>
+            <SelectItem value="title-asc">Título (A-Z)</SelectItem>
+            <SelectItem value="title-desc">Título (Z-A)</SelectItem>
+            <SelectItem value="price-asc">Preço (Menor primeiro)</SelectItem>
+            <SelectItem value="price-desc">Preço (Maior primeiro)</SelectItem>
+            <SelectItem value="telegram_username-asc">Telegram (A-Z)</SelectItem>
+            <SelectItem value="telegram_username-desc">Telegram (Z-A)</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
       
       <div className="overflow-x-auto rounded-lg border">
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead className="w-[250px]">Título</TableHead>
-              <TableHead>Preço</TableHead>
-              <TableHead className="hidden md:table-cell">Usuário</TableHead>
-              <TableHead className="hidden lg:table-cell">Telegram</TableHead>
-              <TableHead className="hidden sm:table-cell">Status</TableHead>
+              <TableHead className="w-[250px]">
+                <div className="flex items-center">
+                  Título
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    className="ml-1 p-0" 
+                    onClick={() => handleToggleSort('title')}
+                  >
+                    <ArrowUpDown className="h-4 w-4" />
+                  </Button>
+                </div>
+              </TableHead>
+              <TableHead>
+                <div className="flex items-center">
+                  Preço
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    className="ml-1 p-0" 
+                    onClick={() => handleToggleSort('price')}
+                  >
+                    <ArrowUpDown className="h-4 w-4" />
+                  </Button>
+                </div>
+              </TableHead>
+              <TableHead className="hidden md:table-cell">
+                <div className="flex items-center">
+                  Usuário
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    className="ml-1 p-0" 
+                    onClick={() => handleToggleSort('username')}
+                  >
+                    <ArrowUpDown className="h-4 w-4" />
+                  </Button>
+                </div>
+              </TableHead>
+              <TableHead className="hidden lg:table-cell">
+                <div className="flex items-center">
+                  Telegram
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    className="ml-1 p-0" 
+                    onClick={() => handleToggleSort('telegram_username')}
+                  >
+                    <ArrowUpDown className="h-4 w-4" />
+                  </Button>
+                </div>
+              </TableHead>
+              <TableHead className="hidden sm:table-cell">
+                <div className="flex items-center">
+                  Status
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    className="ml-1 p-0" 
+                    onClick={() => handleToggleSort('status_approval')}
+                  >
+                    <ArrowUpDown className="h-4 w-4" />
+                  </Button>
+                </div>
+              </TableHead>
+              <TableHead className="hidden xl:table-cell">Código</TableHead>
               <TableHead className="text-right">Ações</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {isLoading ? (
               <TableRow>
-                <TableCell colSpan={6} className="h-24 text-center">
+                <TableCell colSpan={7} className="h-24 text-center">
                   <div className="flex flex-col items-center justify-center">
                     <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
                     <span className="mt-2 text-muted-foreground">Carregando anúncios pendentes...</span>
@@ -311,7 +444,7 @@ const PendingSubscriptions: React.FC = () => {
               </TableRow>
             ) : filteredSubscriptions.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={6} className="h-24 text-center">
+                <TableCell colSpan={7} className="h-24 text-center">
                   {searchTerm ? "Nenhum resultado encontrado" : "Nenhum anúncio pendente"}
                 </TableCell>
               </TableRow>
@@ -337,6 +470,9 @@ const PendingSubscriptions: React.FC = () => {
                       {subscription.status_approval === 'pending' ? 'Pendente' :
                        subscription.status_approval === 'approved' ? 'Aprovado' : 'Rejeitado'}
                     </span>
+                  </TableCell>
+                  <TableCell className="hidden xl:table-cell">
+                    {subscription.código || '-'}
                   </TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-2">

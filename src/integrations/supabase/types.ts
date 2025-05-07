@@ -106,6 +106,7 @@ export type Database = {
         Row: {
           access: string
           added_date: string | null
+          código: number | null
           created_at: string | null
           featured: boolean | null
           header_color: string
@@ -127,6 +128,7 @@ export type Database = {
         Insert: {
           access: string
           added_date?: string | null
+          código?: number | null
           created_at?: string | null
           featured?: boolean | null
           header_color: string
@@ -148,6 +150,7 @@ export type Database = {
         Update: {
           access?: string
           added_date?: string | null
+          código?: number | null
           created_at?: string | null
           featured?: boolean | null
           header_color?: string
