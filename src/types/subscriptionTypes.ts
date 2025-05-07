@@ -13,6 +13,9 @@ export interface SubscriptionData {
   icon?: string;
   addedDate?: string;
   pixQrCode?: string;
+  pixKey?: string;
+  paymentProofImage?: string;
+  featured?: boolean;
 }
 
 // Interfaces para os dados das tabelas do Supabase
@@ -30,6 +33,8 @@ export interface SubscriptionFromSupabase {
   icon?: string;
   added_date?: string;
   pix_qr_code?: string;
+  pix_key?: string;
+  payment_proof_image?: string;
   featured?: boolean;
 }
 
@@ -47,6 +52,8 @@ export interface PendingSubscriptionFromSupabase {
   icon?: string;
   added_date?: string;
   pix_qr_code?: string;
+  pix_key?: string;
+  payment_proof_image?: string;
   user_id: string;
   status_approval: string;
   reviewed_at?: string;

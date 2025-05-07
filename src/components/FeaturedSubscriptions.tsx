@@ -26,17 +26,45 @@ const FeaturedSubscriptions: React.FC<FeaturedSubscriptionsProps> = ({
       try {
         setIsLoading(true);
         
-        // Get the latest 6 subscriptions for featured display
-        const { data, error } = await supabase
+        // Primeiro buscar anúncios fixados
+        const { data: featuredData, error: featuredError } = await supabase
           .from('subscriptions')
           .select('*')
-          .order('added_date', { ascending: false })
-          .limit(6);
+          .eq('featured', true)
+          .order('added_date', { ascending: false });
+          
+        if (featuredError) throw featuredError;
         
-        if (error) throw error;
+        // Se não houver anúncios fixados ou houver menos de 6, busque os mais recentes
+        let regularData = [];
         
-        if (data) {
-          const formattedSubscriptions: SubscriptionData[] = data.map((item: SubscriptionFromSupabase) => ({
+        if (!featuredData || featuredData.length < 6) {
+          // Determinar quantos anúncios regulares são necessários
+          const regularCount = 6 - (featuredData?.length || 0);
+          
+          // Buscar anúncios regulares, excluindo os que já são fixados
+          let query = supabase
+            .from('subscriptions')
+            .select('*')
+            .order('added_date', { ascending: false })
+            .limit(regularCount);
+            
+          if (featuredData && featuredData.length > 0) {
+            const featuredIds = featuredData.map(item => item.id);
+            query = query.not('id', 'in', `(${featuredIds.join(',')})`);
+          }
+          
+          const { data: regData, error: regError } = await query;
+          
+          if (regError) throw regError;
+          regularData = regData || [];
+        }
+        
+        // Combinar anúncios fixados e regulares
+        const combinedData = [...(featuredData || []), ...regularData];
+        
+        if (combinedData) {
+          const formattedSubscriptions: SubscriptionData[] = combinedData.map((item: SubscriptionFromSupabase) => ({
             id: item.id,
             title: item.title,
             price: item.price,
@@ -49,7 +77,10 @@ const FeaturedSubscriptions: React.FC<FeaturedSubscriptionsProps> = ({
             telegramUsername: item.telegram_username,
             icon: item.icon,
             addedDate: item.added_date,
-            pixQrCode: item.pix_qr_code
+            pixQrCode: item.pix_qr_code,
+            pixKey: item.pix_key,
+            paymentProofImage: item.payment_proof_image,
+            featured: item.featured
           }));
           
           setAllSubscriptions(formattedSubscriptions);
@@ -125,6 +156,7 @@ const FeaturedSubscriptions: React.FC<FeaturedSubscriptionsProps> = ({
           icon={subscription.icon}
           addedDate={subscription.addedDate}
           subscriptionRefs={subscriptionRefs}
+          featured={subscription.featured}
         />
       ))}
     </div>

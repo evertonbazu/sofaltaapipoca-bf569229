@@ -25,7 +25,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     // Configurar o listener de mudança de estado de autenticação PRIMEIRO
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
+      async (event, session) => {
         console.log('Auth state changed:', event, session?.user?.id);
         
         // Atualiza o estado da sessão imediatamente (operação síncrona)
@@ -96,6 +96,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (error) throw error;
       
       console.log('Login bem-sucedido:', data?.user?.id);
+      toast({
+        title: "Login realizado com sucesso",
+        description: "Você foi autenticado com sucesso.",
+      });
+      
       // O listener onAuthStateChange irá atualizar o estado
     } catch (error: any) {
       console.error('Erro de login:', error);

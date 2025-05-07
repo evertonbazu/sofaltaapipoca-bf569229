@@ -29,11 +29,23 @@ const RegularSubscriptions: React.FC<RegularSubscriptionsProps> = ({
         const { data: featuredData } = await supabase
           .from('subscriptions')
           .select('id')
-          .order('added_date', { ascending: false })
-          .limit(6);
+          .eq('featured', true);
         
         const featuredIds = featuredData?.map((item: {id: string}) => item.id) || [];
         setFeaturedIds(featuredIds);
+        
+        // Get first 6 subscriptions to exclude them as well (these are shown in featured section)
+        const { data: topData } = await supabase
+          .from('subscriptions')
+          .select('id')
+          .not('id', 'in', featuredIds.length > 0 ? `(${featuredIds.join(',')})` : '')
+          .order('added_date', { ascending: false })
+          .limit(6);
+          
+        const topIds = topData?.map((item: {id: string}) => item.id) || [];
+        
+        // Combine IDs to exclude
+        const excludeIds = [...featuredIds, ...topIds];
         
         // Then get all remaining subscriptions
         let query = supabase
@@ -41,8 +53,8 @@ const RegularSubscriptions: React.FC<RegularSubscriptionsProps> = ({
           .select('*')
           .order('added_date', { ascending: false });
           
-        if (featuredIds.length > 0) {
-          query = query.not('id', 'in', `(${featuredIds.join(',')})`);
+        if (excludeIds.length > 0) {
+          query = query.not('id', 'in', `(${excludeIds.join(',')})`);
         }
         
         const { data, error } = await query;
@@ -63,7 +75,10 @@ const RegularSubscriptions: React.FC<RegularSubscriptionsProps> = ({
             telegramUsername: item.telegram_username,
             icon: item.icon,
             addedDate: item.added_date,
-            pixQrCode: item.pix_qr_code
+            pixQrCode: item.pix_qr_code,
+            pixKey: item.pix_key,
+            paymentProofImage: item.payment_proof_image,
+            featured: item.featured
           }));
           
           setAllSubscriptions(formattedSubscriptions);

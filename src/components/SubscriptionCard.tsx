@@ -1,6 +1,8 @@
+
 import React from 'react';
 import { Button } from "@/components/ui/button";
-import { Tv, Youtube, Apple, Monitor } from 'lucide-react';
+import { Tv, Youtube, Apple, Monitor, Star } from 'lucide-react';
+
 interface SubscriptionCardProps {
   title: string;
   price: string;
@@ -16,7 +18,9 @@ interface SubscriptionCardProps {
   isSearchResult?: boolean;
   addedDate?: string;
   version?: string;
+  featured?: boolean;
 }
+
 const SubscriptionCard = ({
   title,
   price,
@@ -31,12 +35,14 @@ const SubscriptionCard = ({
   icon = 'monitor',
   isSearchResult = false,
   addedDate,
-  version = '1.1.0'
+  version = '1.1.0',
+  featured = false
 }: SubscriptionCardProps) => {
   const handleWhatsappClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
     const whatsappUrl = `https://api.whatsapp.com/send?phone=${whatsappNumber}`;
     window.open(whatsappUrl, '_blank');
   };
+  
   const handleTelegramClick = () => {
     const telegramUrl = `https://t.me/${telegramUsername}`;
     window.open(telegramUrl, '_blank');
@@ -56,7 +62,15 @@ const SubscriptionCard = ({
         return <Monitor size={20} className="mr-2" />;
     }
   };
-  return <div className={`card bg-white rounded-xl overflow-hidden shadow-lg ${isSearchResult ? 'search-highlight' : ''}`}>
+
+  return (
+    <div className={`card bg-white rounded-xl overflow-hidden shadow-lg ${isSearchResult ? 'search-highlight' : ''} ${featured ? 'ring-2 ring-yellow-400' : ''} relative`}>
+      {featured && (
+        <div className="absolute top-0 right-0 bg-yellow-500 text-white text-xs px-2 py-1 rounded-bl-lg z-10 flex items-center">
+          <Star className="h-3 w-3 mr-1 fill-white" />
+          Destaque
+        </div>
+      )}
       <div className={`${headerColor} p-4`}>
         <h2 className={`text-xl font-bold text-white flex items-center ${centerTitle ? 'justify-center' : ''}`}>
           {renderIcon()} {title}
@@ -93,6 +107,8 @@ const SubscriptionCard = ({
         </div>
         
       </div>
-    </div>;
+    </div>
+  );
 };
+
 export default SubscriptionCard;

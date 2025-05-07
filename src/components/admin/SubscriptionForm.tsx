@@ -4,9 +4,10 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { AlertTriangle, Loader2 } from 'lucide-react';
+import { AlertTriangle, Loader2, Star } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { SubscriptionData } from '@/types/subscriptionTypes';
 import { useToast } from '@/hooks/use-toast';
@@ -28,14 +29,16 @@ const SubscriptionForm: React.FC = () => {
     telegramUsername: '',
     icon: 'monitor',
     addedDate: format(new Date(), 'dd/MM/yyyy'),
-    pixQrCode: ''
+    pixQrCode: '',
+    pixKey: '',
+    featured: false
   });
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [isFetching, setIsFetching] = useState<boolean>(!!id);
   const [error, setError] = useState<string | null>(null);
-  const [pixQrCode, setPixQrCode] = useState<File | null>(null);
+  const [paymentProofImage, setPaymentProofImage] = useState<File | null>(null);
   const [priceValue, setPriceValue] = useState('');
-  const [existingPixQrCodeUrl, setExistingPixQrCodeUrl] = useState<string | null>(null);
+  const [existingPaymentProofImageUrl, setExistingPaymentProofImageUrl] = useState<string | null>(null);
 
   useEffect(() => {
     if (id) {
@@ -63,14 +66,17 @@ const SubscriptionForm: React.FC = () => {
               telegramUsername: data.telegram_username || '',
               icon: data.icon || 'monitor',
               addedDate: data.added_date || format(new Date(), 'dd/MM/yyyy'),
-              pixQrCode: data.pix_qr_code || ''
+              pixQrCode: data.pix_qr_code || '',
+              pixKey: data.pix_key || '',
+              paymentProofImage: data.payment_proof_image || '',
+              featured: data.featured || false
             });
 
             setPriceValue(data.price || '');
             
-            // Check if there's a pix QR code
-            if (data.pix_qr_code) {
-              setExistingPixQrCodeUrl(data.pix_qr_code);
+            // Check if there's a payment proof image
+            if (data.payment_proof_image) {
+              setExistingPaymentProofImageUrl(data.payment_proof_image);
             }
           }
         } catch (err: any) {
@@ -128,7 +134,7 @@ const SubscriptionForm: React.FC = () => {
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
-      setPixQrCode(e.target.files[0]);
+      setPaymentProofImage(e.target.files[0]);
     }
   };
 
@@ -139,37 +145,44 @@ const SubscriptionForm: React.FC = () => {
     });
   };
 
+  const handleCheckboxChange = (name: string, checked: boolean) => {
+    setFormData({
+      ...formData,
+      [name]: checked
+    });
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
     setIsLoading(true);
 
     try {
-      // Upload PIX QR code if provided
-      let pixQrCodeUrl = existingPixQrCodeUrl;
-      if (pixQrCode) {
+      // Upload payment proof image if provided
+      let paymentProofImageUrl = existingPaymentProofImageUrl;
+      if (paymentProofImage) {
         // First, check if storage bucket exists and create if not
         const { data: buckets } = await supabase.storage.listBuckets();
-        if (!buckets?.some(bucket => bucket.name === 'pix-qrcodes')) {
-          await supabase.storage.createBucket('pix-qrcodes', {
+        if (!buckets?.some(bucket => bucket.name === 'payment-proofs')) {
+          await supabase.storage.createBucket('payment-proofs', {
             public: false
           });
         }
         
         // Upload the file
-        const fileName = `admin_${Date.now()}_${pixQrCode.name}`;
+        const fileName = `admin_${Date.now()}_${paymentProofImage.name}`;
         const { data, error: uploadError } = await supabase.storage
-          .from('pix-qrcodes')
-          .upload(fileName, pixQrCode);
+          .from('payment-proofs')
+          .upload(fileName, paymentProofImage);
           
         if (uploadError) throw uploadError;
         
         // Get the URL
         const { data: { publicUrl } } = supabase.storage
-          .from('pix-qrcodes')
+          .from('payment-proofs')
           .getPublicUrl(fileName);
           
-        pixQrCodeUrl = publicUrl;
+        paymentProofImageUrl = publicUrl;
       }
 
       const subscriptionData = {
@@ -184,7 +197,9 @@ const SubscriptionForm: React.FC = () => {
         telegram_username: formData.telegramUsername,
         icon: formData.icon,
         added_date: formData.addedDate,
-        pix_qr_code: pixQrCodeUrl
+        pix_key: formData.pixKey,
+        payment_proof_image: paymentProofImageUrl,
+        featured: formData.featured
       };
 
       if (id) {
@@ -254,6 +269,18 @@ const SubscriptionForm: React.FC = () => {
             <CardTitle>Informações do Anúncio</CardTitle>
           </CardHeader>
           <CardContent className="space-y-6">
+            <div className="flex items-center space-x-2">
+              <Checkbox 
+                id="featured" 
+                checked={formData.featured} 
+                onCheckedChange={(checked) => handleCheckboxChange('featured', checked as boolean)} 
+              />
+              <Label htmlFor="featured" className="font-medium flex items-center">
+                <Star className={`h-4 w-4 mr-1 ${formData.featured ? "fill-yellow-400" : ""}`} />
+                Fixar anúncio na página inicial
+              </Label>
+            </div>
+            
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
                 <Label htmlFor="title">Título</Label>
@@ -267,7 +294,7 @@ const SubscriptionForm: React.FC = () => {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="price">Preço</Label>
+                <Label htmlFor="price">Valor</Label>
                 <Input
                   id="price"
                   name="price"
@@ -377,13 +404,13 @@ const SubscriptionForm: React.FC = () => {
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label>Cor do Preço</Label>
+                <Label>Cor do Valor</Label>
                 <Select 
                   value={formData.priceColor} 
                   onValueChange={(value) => handleSelectChange('priceColor', value)}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Selecione a cor do preço" />
+                    <SelectValue placeholder="Selecione a cor do valor" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="text-blue-600">Azul</SelectItem>
@@ -425,26 +452,38 @@ const SubscriptionForm: React.FC = () => {
             </div>
             
             <div className="space-y-2">
-              <Label htmlFor="pixQrCode">QR Code PIX (opcional)</Label>
+              <Label htmlFor="pixKey">Chave PIX</Label>
               <Input
-                id="pixQrCode"
-                name="pixQrCode"
+                id="pixKey"
+                name="pixKey"
+                placeholder="Ex: seu@email.com"
+                value={formData.pixKey || ''}
+                onChange={handleChange}
+              />
+              <p className="text-xs text-gray-500 mt-1">Informe a chave PIX para facilitar o pagamento.</p>
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="paymentProofImage">Comprovante de Assinatura</Label>
+              <Input
+                id="paymentProofImage"
+                name="paymentProofImage"
                 type="file"
                 accept="image/*"
                 onChange={handleFileChange}
               />
-              {existingPixQrCodeUrl && !pixQrCode && (
+              {existingPaymentProofImageUrl && !paymentProofImage && (
                 <div className="mt-2">
-                  <p className="text-sm mb-2">QR Code atual:</p>
+                  <p className="text-sm mb-2">Comprovante atual:</p>
                   <img 
-                    src={existingPixQrCodeUrl} 
-                    alt="QR Code PIX" 
+                    src={existingPaymentProofImageUrl} 
+                    alt="Comprovante de Assinatura" 
                     className="max-h-32 border rounded-md"
                   />
                 </div>
               )}
               <p className="text-xs text-gray-500 mt-1">
-                {existingPixQrCodeUrl ? "Envie um novo arquivo para substituir o QR Code atual." : "Envie o QR Code do PIX para facilitar o pagamento."}
+                {existingPaymentProofImageUrl ? "Envie um novo arquivo para substituir o comprovante atual." : "Envie uma imagem que comprove a assinatura ativa."}
               </p>
             </div>
             
