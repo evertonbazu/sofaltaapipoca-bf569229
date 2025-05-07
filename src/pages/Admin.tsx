@@ -11,7 +11,7 @@ import SubscriptionForm from '@/components/admin/SubscriptionForm';
 import SubscriptionList from '@/components/admin/SubscriptionList';
 import UserManagement from '@/components/admin/UserManagement';
 import PendingSubscriptions from '@/components/admin/PendingSubscriptions';
-import ImportExcel from '@/components/admin/ImportExcel';
+import ImportSubscriptions from '@/components/admin/ImportSubscriptions';
 import ExportSubscriptionsTxt from '@/components/admin/ExportSubscriptionsTxt';
 
 const Admin: React.FC = () => {
@@ -89,8 +89,8 @@ const Admin: React.FC = () => {
               </SidebarMenuItem>
               <SidebarMenuItem>
                 <SidebarMenuButton 
-                  onClick={() => navigate('/admin/subscriptions/pending')}
-                  isActive={isActive('/admin/subscriptions/pending')}
+                  onClick={() => navigate('/admin/pending')}
+                  isActive={isActive('/admin/pending')}
                 >
                   <Bell className="mr-2 h-5 w-5" />
                   Anúncios Pendentes
@@ -98,17 +98,17 @@ const Admin: React.FC = () => {
               </SidebarMenuItem>
               <SidebarMenuItem>
                 <SidebarMenuButton 
-                  onClick={() => navigate('/admin/subscriptions/import-excel')}
-                  isActive={isActive('/admin/subscriptions/import-excel')}
+                  onClick={() => navigate('/admin/import')}
+                  isActive={isActive('/admin/import')}
                 >
                   <FileSpreadsheet className="mr-2 h-5 w-5" />
-                  Importar Excel
+                  Importar TXT
                 </SidebarMenuButton>
               </SidebarMenuItem>
               <SidebarMenuItem>
                 <SidebarMenuButton 
-                  onClick={() => navigate('/admin/subscriptions/export-txt')}
-                  isActive={isActive('/admin/subscriptions/export-txt')}
+                  onClick={() => navigate('/admin/export')}
+                  isActive={isActive('/admin/export')}
                 >
                   <FileText className="mr-2 h-5 w-5" />
                   Exportar TXT
@@ -156,9 +156,9 @@ const Admin: React.FC = () => {
               <Route path="/subscriptions" element={<SubscriptionList />} />
               <Route path="/subscriptions/new" element={<SubscriptionForm />} />
               <Route path="/subscriptions/edit/:id" element={<SubscriptionForm />} />
-              <Route path="/subscriptions/pending" element={<PendingSubscriptions />} />
-              <Route path="/subscriptions/import-excel" element={<ImportExcel />} />
-              <Route path="/subscriptions/export-txt" element={<ExportSubscriptionsTxt />} />
+              <Route path="/pending" element={<PendingSubscriptions />} />
+              <Route path="/import" element={<ImportSubscriptions />} />
+              <Route path="/export" element={<ExportSubscriptionsTxt />} />
               <Route path="/users" element={<UserManagement />} />
             </Routes>
           </div>

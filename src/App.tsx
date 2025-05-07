@@ -1,8 +1,8 @@
+
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-dom';
-import { AuthProvider } from './context/AuthContext';
-import { ToastProvider } from '@/hooks/use-toast';
-import { useAuth } from './context/AuthContext';
+import { AuthProvider, useAuth } from './context/AuthContext';
+import { Toaster } from "@/components/ui/toaster";
 import Auth from './pages/Auth';
 import Admin from './pages/Admin';
 import AdminDashboard from './components/admin/AdminDashboard';
@@ -14,8 +14,20 @@ import ExportSubscriptions from './components/admin/ExportSubscriptions';
 import ImportSubscriptions from './components/admin/ImportSubscriptions';
 import UserManagement from './components/admin/UserManagement';
 import NewSubscription from './pages/NewSubscription';
-import Home from './pages/Home';
-import Profile from './pages/Profile';
+
+const HomePage = () => (
+  <div className="container mx-auto py-8">
+    <h1 className="text-3xl font-bold mb-6">Só Falta a Pipoca</h1>
+    <p className="text-lg mb-4">Bem-vindo à plataforma de anúncios de assinaturas.</p>
+  </div>
+);
+
+const ProfilePage = () => (
+  <div className="container mx-auto py-8">
+    <h1 className="text-3xl font-bold mb-6">Perfil do Usuário</h1>
+    <p className="text-lg mb-4">Página de perfil em desenvolvimento.</p>
+  </div>
+);
 
 const App = () => {
   const [loading, setLoading] = useState(true);
@@ -29,18 +41,18 @@ const App = () => {
   }, []);
 
   return (
-    <ToastProvider>
+    <>
       <AuthProvider>
         <Router>
           <Routes>
             <Route path="/auth" element={<Auth />} />
             <Route path="/new" element={<NewSubscription />} />
-            <Route path="/profile" element={<Profile />} />
-            <Route path="/" element={<Home />} />
+            <Route path="/profile" element={<ProfilePage />} />
+            <Route path="/" element={<HomePage />} />
             <Route
               path="/admin"
               element={
-                authState?.isAdmin ? (
+                authState?.user?.role === 'admin' ? (
                   <Admin />
                 ) : (
                   <Navigate to="/" replace />
@@ -54,13 +66,14 @@ const App = () => {
               <Route path="pending" element={<PendingSubscriptions />} />
               <Route path="export" element={<ExportSubscriptionsTxt />} />
               <Route path="export-all" element={<ExportSubscriptions />} />
-              <Route path="import" element={<ImportSubscriptions />} /> {/* Updated to ImportSubscriptions */}
+              <Route path="import" element={<ImportSubscriptions />} />
               <Route path="users" element={<UserManagement />} />
             </Route>
           </Routes>
         </Router>
       </AuthProvider>
-    </ToastProvider>
+      <Toaster />
+    </>
   );
 };
 
