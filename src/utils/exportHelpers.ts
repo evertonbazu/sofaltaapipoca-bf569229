@@ -25,25 +25,23 @@ export const generateTxtContent = (selectedSubs: Subscription[]) => {
   let content = '';
   
   selectedSubs.forEach((sub, index) => {
-    content += `=== ASSINATURA ${index + 1} ===\n`;
+    if (index > 0) {
+      // Add double line break between subscriptions
+      content += '\n\n';
+    }
+    
     content += `🖥 ${sub.title}\n`;
     content += `🏦 ${sub.price} - ${sub.payment_method}\n`;
     content += `📌 ${sub.status}\n`;
     content += `🔐 ${sub.access}\n`;
-    content += `📱 ${sub.whatsapp_number}\n`;
     content += `📩 ${sub.telegram_username}\n`;
-    if (sub.pix_qr_code) {
-      content += `QR Code PIX: ${sub.pix_qr_code}\n`;
-    }
+    content += `📱 ${sub.whatsapp_number}\n`;
+    
     if (sub.código) {
-      content += `Código: ${sub.código}\n`;
+      content += `\nCódigo: ${sub.código}\n`;
     }
     
-    if (sub.added_date) {
-      content += `\n📅 Adicionado em:\n${sub.added_date}\n`;
-    }
-    
-    content += ';\n\n';
+    content += `\n📅 Adicionado em: ${sub.added_date || new Date().toLocaleDateString('pt-BR')}`;
   });
   
   return content;
@@ -97,70 +95,88 @@ export const exportSubscriptionsAsTxt = (selectedSubs: Subscription[]) => {
 export const parseTxtContent = (txtContent: string): any[] => {
   const subscriptions: any[] = [];
   
-  // Split by subscription blocks
-  const blocks = txtContent.split('=== ASSINATURA');
+  // Split by double line breaks to separate subscriptions
+  const blocks = txtContent.split('\n\n');
   
-  blocks.forEach(block => {
-    if (!block.trim()) return;
+  let currentSubscription: any = {
+    header_color: 'bg-blue-600',
+    price_color: 'text-blue-600',
+    icon: 'monitor'
+  };
+  
+  for (let i = 0; i < blocks.length; i++) {
+    const block = blocks[i].trim();
+    if (!block) continue;
     
-    // Create a new subscription object
-    const subscription: any = {
-      header_color: 'bg-blue-600',
-      price_color: 'text-blue-600',
-      icon: 'monitor'
-    };
+    // Process each line of the subscription block
+    const lines = block.split('\n');
     
-    // Match title (🖥)
-    const titleMatch = block.match(/🖥\s+(.+)/);
-    if (titleMatch) subscription.title = titleMatch[1].trim();
-    
-    // Match price (🏦)
-    const priceMatch = block.match(/🏦\s+(.+)/);
-    if (priceMatch) {
-      const priceParts = priceMatch[1].split('-');
-      if (priceParts.length > 1) {
-        subscription.price = priceParts[0].trim();
-        subscription.payment_method = priceParts[1].trim();
-      } else {
-        subscription.price = priceMatch[1].trim();
-        subscription.payment_method = 'Não especificado';
+    lines.forEach(line => {
+      line = line.trim();
+      if (!line) return;
+      
+      // Match title (🖥)
+      if (line.startsWith('🖥')) {
+        if (Object.keys(currentSubscription).length > 3) {
+          // Save previous subscription if it has required fields
+          if (currentSubscription.title && currentSubscription.price) {
+            subscriptions.push({...currentSubscription});
+          }
+          
+          // Reset for new subscription
+          currentSubscription = {
+            header_color: 'bg-blue-600',
+            price_color: 'text-blue-600',
+            icon: 'monitor'
+          };
+        }
+        currentSubscription.title = line.replace('🖥', '').trim();
       }
-    }
-    
-    // Match status (📌)
-    const statusMatch = block.match(/📌\s+(.+)/);
-    if (statusMatch) subscription.status = statusMatch[1].trim();
-    
-    // Match access (🔐)
-    const accessMatch = block.match(/🔐\s+(.+)/);
-    if (accessMatch) subscription.access = accessMatch[1].trim();
-    
-    // Match WhatsApp (📱)
-    const whatsappMatch = block.match(/📱\s+(.+)/);
-    if (whatsappMatch) subscription.whatsapp_number = whatsappMatch[1].trim();
-    
-    // Match Telegram (📩)
-    const telegramMatch = block.match(/📩\s+(.+)/);
-    if (telegramMatch) subscription.telegram_username = telegramMatch[1].trim();
-    
-    // Match QR Code
-    const qrCodeMatch = block.match(/QR Code PIX:\s+(.+)/);
-    if (qrCodeMatch) subscription.pix_qr_code = qrCodeMatch[1].trim();
-    
-    // Match Code
-    const codeMatch = block.match(/Código:\s+(\d+)/);
-    if (codeMatch) subscription.código = parseInt(codeMatch[1].trim());
-    
-    // Match date (📅)
-    const dateMatch = block.match(/📅 Adicionado em:\s*\n*(.+?)\n/);
-    if (dateMatch) subscription.added_date = dateMatch[1].trim();
-    
-    // Only add subscription if at least title and price are defined
-    if (subscription.title && subscription.price) {
-      subscriptions.push(subscription);
-    }
-  });
+      // Match price (🏦)
+      else if (line.startsWith('🏦')) {
+        const priceParts = line.replace('🏦', '').trim().split('-');
+        if (priceParts.length > 1) {
+          currentSubscription.price = priceParts[0].trim();
+          currentSubscription.payment_method = priceParts[1].trim();
+        } else {
+          currentSubscription.price = priceParts[0].trim();
+          currentSubscription.payment_method = 'PIX';
+        }
+      }
+      // Match status (📌)
+      else if (line.startsWith('📌')) {
+        currentSubscription.status = line.replace('📌', '').trim();
+      }
+      // Match access (🔐)
+      else if (line.startsWith('🔐')) {
+        currentSubscription.access = line.replace('🔐', '').trim();
+      }
+      // Match WhatsApp (📱)
+      else if (line.startsWith('📱')) {
+        currentSubscription.whatsapp_number = line.replace('📱', '').trim();
+      }
+      // Match Telegram (📩)
+      else if (line.startsWith('📩')) {
+        currentSubscription.telegram_username = line.replace('📩', '').trim();
+      }
+      // Match date (📅)
+      else if (line.startsWith('📅')) {
+        currentSubscription.added_date = line.replace('📅 Adicionado em:', '').trim();
+      }
+      // Match code (Código)
+      else if (line.toLowerCase().startsWith('código:')) {
+        const codeMatch = line.match(/Código:\s*(\d+)/i);
+        if (codeMatch && codeMatch[1]) {
+          currentSubscription.código = parseInt(codeMatch[1].trim());
+        }
+      }
+    });
+  }
+  
+  // Add the last subscription if it has required fields
+  if (currentSubscription.title && currentSubscription.price) {
+    subscriptions.push(currentSubscription);
+  }
   
   return subscriptions;
 };
-

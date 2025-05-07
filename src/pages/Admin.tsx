@@ -5,7 +5,7 @@ import { useAuth } from '@/hooks/use-auth';
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { SidebarProvider, Sidebar, SidebarMenu, SidebarMenuItem, SidebarMenuButton } from "@/components/ui/sidebar";
-import { Home, ListPlus, Edit, LogOut, Users, Bell, FileSpreadsheet, User, FileText } from 'lucide-react';
+import { Home, ListPlus, Edit, LogOut, Users, Bell, FileText, User } from 'lucide-react';
 import AdminDashboard from '@/components/admin/AdminDashboard';
 import SubscriptionForm from '@/components/admin/SubscriptionForm';
 import SubscriptionList from '@/components/admin/SubscriptionList';
@@ -101,7 +101,7 @@ const Admin: React.FC = () => {
                   onClick={() => navigate('/admin/import')}
                   isActive={isActive('/admin/import')}
                 >
-                  <FileSpreadsheet className="mr-2 h-5 w-5" />
+                  <FileText className="mr-2 h-5 w-5" />
                   Importar TXT
                 </SidebarMenuButton>
               </SidebarMenuItem>

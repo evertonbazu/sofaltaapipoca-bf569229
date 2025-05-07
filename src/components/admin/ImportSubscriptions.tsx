@@ -1,16 +1,12 @@
 
 import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
-import { AlertTriangle, FileSpreadsheet, Upload, Check, Loader2, FileText } from 'lucide-react';
+import { AlertTriangle, FileText, Upload, Check, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { SubscriptionData } from '@/types/subscriptionTypes';
-import * as XLSX from 'xlsx';
-import { useIsMobile } from '@/hooks/use-mobile';
-import { parseTxtContent } from '@/utils/exportHelpers';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 
-interface ExcelSubscription {
+interface TxtSubscription {
   title: string;
   price: string;
   payment_method: string;
@@ -28,13 +24,11 @@ interface ExcelSubscription {
 
 const ImportSubscriptions: React.FC = () => {
   const { toast } = useToast();
-  const isMobile = useIsMobile();
   const [file, setFile] = useState<File | null>(null);
-  const [previewData, setPreviewData] = useState<ExcelSubscription[]>([]);
+  const [previewData, setPreviewData] = useState<TxtSubscription[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [importType, setImportType] = useState<'excel' | 'txt'>('excel');
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     setError(null);
@@ -46,14 +40,7 @@ const ImportSubscriptions: React.FC = () => {
       return;
     }
     
-    if (importType === 'excel' && !selectedFile.name.endsWith('.xlsx') && !selectedFile.name.endsWith('.xls')) {
-      setError('Por favor, selecione um arquivo Excel válido (.xlsx ou .xls)');
-      setFile(null);
-      setPreviewData([]);
-      return;
-    }
-    
-    if (importType === 'txt' && !selectedFile.name.endsWith('.txt')) {
+    if (!selectedFile.name.endsWith('.txt')) {
       setError('Por favor, selecione um arquivo de texto válido (.txt)');
       setFile(null);
       setPreviewData([]);
@@ -64,12 +51,7 @@ const ImportSubscriptions: React.FC = () => {
     setIsLoading(true);
     
     try {
-      let data;
-      if (importType === 'excel') {
-        data = await readExcelFile(selectedFile);
-      } else {
-        data = await readTxtFile(selectedFile);
-      }
+      const data = await readTxtFile(selectedFile);
       setPreviewData(data);
     } catch (err: any) {
       setError(err.message || 'Erro ao processar o arquivo');
@@ -79,58 +61,7 @@ const ImportSubscriptions: React.FC = () => {
     }
   };
 
-  const readExcelFile = (file: File): Promise<ExcelSubscription[]> => {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      
-      reader.onload = (e) => {
-        try {
-          const data = e.target?.result;
-          const workbook = XLSX.read(data, { type: 'binary' });
-          const sheetName = workbook.SheetNames[0];
-          const worksheet = workbook.Sheets[sheetName];
-          const jsonData = XLSX.utils.sheet_to_json(worksheet);
-          
-          // Validate data structure
-          const subscriptions = jsonData.map((row: any) => {
-            // Map Excel columns to our data structure
-            if (!row.title || !row.price || !row.payment_method || !row.status || 
-                !row.access || !row.whatsapp_number || !row.telegram_username) {
-              throw new Error('Formato do arquivo inválido. Verifique se todas as colunas necessárias estão presentes.');
-            }
-            
-            return {
-              title: row.title,
-              price: row.price,
-              payment_method: row.payment_method,
-              status: row.status,
-              access: row.access,
-              whatsapp_number: row.whatsapp_number,
-              telegram_username: row.telegram_username,
-              header_color: row.header_color || 'bg-blue-600',
-              price_color: row.price_color || 'text-blue-600',
-              icon: row.icon || 'monitor',
-              added_date: row.added_date || new Date().toLocaleDateString('pt-BR'),
-              pix_qr_code: row.pix_qr_code || null,
-              código: row.código || null
-            };
-          });
-          
-          resolve(subscriptions);
-        } catch (err) {
-          reject(err);
-        }
-      };
-      
-      reader.onerror = (err) => {
-        reject(err);
-      };
-      
-      reader.readAsBinaryString(file);
-    });
-  };
-
-  const readTxtFile = (file: File): Promise<ExcelSubscription[]> => {
+  const readTxtFile = (file: File): Promise<TxtSubscription[]> => {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
       
@@ -138,7 +69,7 @@ const ImportSubscriptions: React.FC = () => {
         try {
           const content = e.target?.result as string;
           
-          // Parse the TXT content using the utility function
+          // Parse the TXT content
           const subscriptions = parseTxtContent(content);
           
           // Validate if any subscriptions were found
@@ -158,6 +89,86 @@ const ImportSubscriptions: React.FC = () => {
       
       reader.readAsText(file);
     });
+  };
+  
+  const parseTxtContent = (txtContent: string): TxtSubscription[] => {
+    const subscriptions: TxtSubscription[] = [];
+    const blocks = txtContent.split('\n\n');
+    
+    let currentSubscription: Partial<TxtSubscription> = {
+      header_color: 'bg-blue-600',
+      price_color: 'text-blue-600',
+      icon: 'monitor'
+    };
+    
+    for (let i = 0; i < blocks.length; i++) {
+      const block = blocks[i].trim();
+      
+      if (!block) continue;
+      
+      // Title (🖥)
+      if (block.startsWith('🖥')) {
+        // Start a new subscription
+        if (Object.keys(currentSubscription).length > 3) {
+          if (currentSubscription.title && currentSubscription.price) {
+            subscriptions.push(currentSubscription as TxtSubscription);
+          }
+          currentSubscription = {
+            header_color: 'bg-blue-600',
+            price_color: 'text-blue-600',
+            icon: 'monitor'
+          };
+        }
+        currentSubscription.title = block.replace('🖥', '').trim();
+      }
+      // Price (🏦)
+      else if (block.startsWith('🏦')) {
+        const priceParts = block.replace('🏦', '').trim().split('-');
+        if (priceParts.length > 1) {
+          currentSubscription.price = priceParts[0].trim();
+          currentSubscription.payment_method = priceParts[1].trim();
+        } else {
+          currentSubscription.price = priceParts[0].trim();
+          currentSubscription.payment_method = 'PIX';
+        }
+      }
+      // Status (📌)
+      else if (block.startsWith('📌')) {
+        currentSubscription.status = block.replace('📌', '').trim();
+      }
+      // Access (🔐)
+      else if (block.startsWith('🔐')) {
+        currentSubscription.access = block.replace('🔐', '').trim();
+      }
+      // WhatsApp (📱)
+      else if (block.startsWith('📱')) {
+        currentSubscription.whatsapp_number = block.replace('📱', '').trim();
+      }
+      // Telegram (📩)
+      else if (block.startsWith('📩')) {
+        currentSubscription.telegram_username = block.replace('📩', '').trim();
+      }
+      // Date (📅)
+      else if (block.startsWith('📅')) {
+        currentSubscription.added_date = block.replace('📅 Adicionado em:', '').trim();
+      }
+      // Code (Código)
+      else if (block.toLowerCase().startsWith('código:')) {
+        const codeMatch = block.match(/Código:\s*(\d+)/i);
+        if (codeMatch && codeMatch[1]) {
+          currentSubscription.código = parseInt(codeMatch[1].trim());
+        }
+      }
+      
+      // If at the end of the file, add the current subscription if it has required fields
+      if (i === blocks.length - 1) {
+        if (currentSubscription.title && currentSubscription.price) {
+          subscriptions.push(currentSubscription as TxtSubscription);
+        }
+      }
+    }
+    
+    return subscriptions;
   };
 
   const handleImport = async () => {
@@ -244,9 +255,9 @@ const ImportSubscriptions: React.FC = () => {
   return (
     <div className="space-y-6 max-w-full">
       <div>
-        <h1 className="text-3xl font-bold">Importar Anúncios</h1>
+        <h1 className="text-3xl font-bold">Importar Anúncios (TXT)</h1>
         <p className="text-muted-foreground mt-2">
-          Faça upload de um arquivo Excel (.xlsx ou .xls) ou texto (.txt) para importar novos anúncios.
+          Faça upload de um arquivo TXT para importar novos anúncios no formato especificado.
         </p>
       </div>
       
@@ -257,55 +268,26 @@ const ImportSubscriptions: React.FC = () => {
         </div>
       )}
       
-      <Tabs defaultValue="excel" onValueChange={(value) => setImportType(value as 'excel' | 'txt')}>
-        <TabsList className="mb-4">
-          <TabsTrigger value="excel">Arquivo Excel</TabsTrigger>
-          <TabsTrigger value="txt">Arquivo TXT</TabsTrigger>
-        </TabsList>
-        
-        <TabsContent value="excel" className="border rounded-lg p-4 sm:p-6">
-          <div className="flex flex-col items-center justify-center gap-4">
-            <FileSpreadsheet className="h-16 w-16 text-green-500" />
-            <h2 className="text-xl font-semibold">Selecione um arquivo Excel</h2>
-            <p className="text-sm text-center text-muted-foreground max-w-md">
-              O arquivo deve conter as colunas: title, price, payment_method, status, access, 
-              whatsapp_number e telegram_username. Opcionalmente: header_color, price_color, icon, added_date, pix_qr_code e código.
-            </p>
-            
-            <div className="w-full max-w-sm">
-              <div className="relative mt-4">
-                <input
-                  type="file"
-                  id="import-file"
-                  accept=".xlsx, .xls"
-                  onChange={handleFileChange}
-                  className="absolute inset-0 w-full h-full opacity-0 z-10 cursor-pointer"
-                  disabled={importType !== 'excel'}
-                />
-                <Button
-                  variant="outline"
-                  className="w-full border-dashed border-2 h-24 sm:h-32"
-                >
-                  <div className="flex flex-col items-center">
-                    <Upload className="h-6 w-6 mb-2" />
-                    <span>Clique para selecionar ou arraste o arquivo</span>
-                    <span className="text-xs text-muted-foreground mt-1">
-                      Apenas arquivos .xlsx ou .xls
-                    </span>
-                  </div>
-                </Button>
-              </div>
-            </div>
-          </div>
-        </TabsContent>
-        
-        <TabsContent value="txt" className="border rounded-lg p-4 sm:p-6">
+      <Card className="border rounded-lg">
+        <CardHeader>
+          <CardTitle>Selecione um arquivo TXT</CardTitle>
+          <CardDescription>
+            O arquivo deve seguir o formato:
+            <pre className="mt-2 p-2 bg-slate-50 rounded text-xs overflow-x-auto">
+{`🖥 TÍTULO DO ANÚNCIO
+🏦 PREÇO - MÉTODO
+📌 STATUS
+🔐 TIPO DE ACESSO
+📱 WHATSAPP
+📩 @TELEGRAM
+
+📅 Adicionado em: DD/MM/AAAA`}
+            </pre>
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
           <div className="flex flex-col items-center justify-center gap-4">
             <FileText className="h-16 w-16 text-blue-500" />
-            <h2 className="text-xl font-semibold">Selecione um arquivo TXT</h2>
-            <p className="text-sm text-center text-muted-foreground max-w-md">
-              O arquivo deve estar no formato exportado pelo sistema. Cada anúncio deve começar com "=== ASSINATURA X ===" e terminar com ";".
-            </p>
             
             <div className="w-full max-w-sm">
               <div className="relative mt-4">
@@ -315,7 +297,6 @@ const ImportSubscriptions: React.FC = () => {
                   accept=".txt"
                   onChange={handleFileChange}
                   className="absolute inset-0 w-full h-full opacity-0 z-10 cursor-pointer"
-                  disabled={importType !== 'txt'}
                 />
                 <Button
                   variant="outline"
@@ -332,22 +313,22 @@ const ImportSubscriptions: React.FC = () => {
               </div>
             </div>
           </div>
-        </TabsContent>
-      </Tabs>
-      
-      {file && (
-        <div className="flex items-center gap-2 text-sm">
-          <Check className="h-4 w-4 text-green-500" />
-          <span>Arquivo selecionado: {file.name}</span>
-        </div>
-      )}
-      
-      {isLoading && (
-        <div className="flex flex-col items-center justify-center p-8">
-          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-          <span className="mt-2 text-muted-foreground">Processando arquivo...</span>
-        </div>
-      )}
+          
+          {file && (
+            <div className="flex items-center gap-2 text-sm mt-4">
+              <Check className="h-4 w-4 text-green-500" />
+              <span>Arquivo selecionado: {file.name}</span>
+            </div>
+          )}
+          
+          {isLoading && (
+            <div className="flex flex-col items-center justify-center p-8">
+              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+              <span className="mt-2 text-muted-foreground">Processando arquivo...</span>
+            </div>
+          )}
+        </CardContent>
+      </Card>
       
       {previewData.length > 0 && (
         <div className="space-y-4">

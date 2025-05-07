@@ -61,6 +61,7 @@ interface Subscription {
   pix_qr_code?: string;
   pix_key?: string;
   payment_proof_image?: string;
+  código?: number;
 }
 
 const SubscriptionList: React.FC = () => {
@@ -246,9 +247,15 @@ const SubscriptionList: React.FC = () => {
       // If already sorting by this column, toggle order
       setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
     } else {
-      // If sorting by a new column, set it as the sort column and default to descending
+      // If sorting by a new column, set it as the sort column and set order based on column
       setSortBy(column);
-      setSortOrder('desc');
+      
+      // Default to desc for dates, asc for other fields
+      if (column === 'added_date') {
+        setSortOrder('desc');
+      } else {
+        setSortOrder('asc');
+      }
     }
   };
 
@@ -351,6 +358,8 @@ const SubscriptionList: React.FC = () => {
                 <SelectItem value="added_date-asc">Data (mais antigo)</SelectItem>
                 <SelectItem value="title-asc">Título (A-Z)</SelectItem>
                 <SelectItem value="title-desc">Título (Z-A)</SelectItem>
+                <SelectItem value="código-asc">Código (crescente)</SelectItem>
+                <SelectItem value="código-desc">Código (decrescente)</SelectItem>
               </SelectContent>
             </Select>
             <Button
@@ -393,6 +402,19 @@ const SubscriptionList: React.FC = () => {
                       onCheckedChange={handleSelectAll}
                       aria-label="Selecionar todos"
                     />
+                  </TableHead>
+                  <TableHead className="w-16">
+                    <div className="flex items-center">
+                      Código
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        className="ml-1 p-0" 
+                        onClick={() => handleToggleSort('código')}
+                      >
+                        <ArrowUpDown className="h-4 w-4" />
+                      </Button>
+                    </div>
                   </TableHead>
                   <TableHead className="w-[250px]">
                     <div className="flex items-center">
@@ -452,6 +474,9 @@ const SubscriptionList: React.FC = () => {
                           onClick={(e) => e.stopPropagation()}
                           aria-label={`Selecionar ${subscription.title}`}
                         />
+                      </TableCell>
+                      <TableCell className="font-medium">
+                        {subscription.código || '-'}
                       </TableCell>
                       <TableCell className="font-medium">
                         {subscription.title}
