@@ -46,7 +46,8 @@ const Auth: React.FC = () => {
       // Usar um console.log para depuração
       console.log('Tentando login com:', loginEmail);
       await signIn(loginEmail, loginPassword);
-      // Se o login for bem-sucedido, o hook useAuth irá atualizar o estado e redirecionar
+      // Após login bem-sucedido, redirecionar para a página principal
+      navigate('/');
     } catch (error: any) {
       console.error('Erro de login:', error);
       setError(error.message || 'Falha no login. Verifique suas credenciais.');
@@ -68,7 +69,8 @@ const Auth: React.FC = () => {
     try {
       console.log('Tentando cadastrar:', signupEmail, username);
       await signUp(signupEmail, signupPassword, username);
-      // Se o cadastro for bem-sucedido, o hook useAuth já fará login automático e redirecionará
+      // Após cadastro bem-sucedido, redirecionar para a página principal
+      navigate('/');
     } catch (error: any) {
       console.error('Erro de cadastro:', error);
       setError(error.message || 'Falha no cadastro. Tente novamente mais tarde.');
