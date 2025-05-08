@@ -1,16 +1,8 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { AuthState, UserProfile } from '@/types/authTypes';
+import { AuthState, UserProfile, LoginCredentials, SignupCredentials, ResetPasswordCredentials, UpdatePasswordCredentials, UpdateProfileCredentials } from '@/types/authTypes';
 import { useToast } from '@/hooks/use-toast';
-
-interface AuthContextType {
-  authState: AuthState;
-  signIn: (email: string, password: string) => Promise<void>;
-  signUp: (email: string, password: string, username: string) => Promise<void>;
-  signOut: () => Promise<void>;
-  isAdmin: () => boolean;
-}
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
@@ -64,7 +56,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       const { data, error } = await supabase
         .from('profiles')
-        .select('id, username, role')
+        .select('id, username, role, email')
         .eq('id', userId)
         .maybeSingle();
 
@@ -85,12 +77,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const signIn = async (email: string, password: string) => {
+  const signIn = async (credentials: LoginCredentials) => {
     try {
-      console.log('Starting login for:', email);
+      console.log('Starting login for:', credentials.email);
       const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
+        email: credentials.email,
+        password: credentials.password,
       });
       
       if (error) {
@@ -107,7 +99,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         description: "You have been successfully authenticated.",
       });
       
-      // No need to return data, the onAuthStateChange listener will update the state
+      return { success: true };
     } catch (error: any) {
       console.error('Login error:', error);
       toast({
@@ -115,20 +107,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         description: error.message || "Could not log in. Please try again.",
         variant: "destructive",
       });
-      throw error;
+      return { success: false, message: error.message };
     }
   };
 
-  const signUp = async (email: string, password: string, username: string) => {
+  const signUp = async (credentials: SignupCredentials) => {
     try {
-      console.log('Starting registration for:', email, username);
+      console.log('Starting registration for:', credentials.email, credentials.username);
       
       // Set up user data, including username in metadata
       const { data, error } = await supabase.auth.signUp({
-        email,
-        password,
+        email: credentials.email,
+        password: credentials.password,
         options: {
-          data: { username },
+          data: { username: credentials.username },
         }
       });
       
@@ -143,6 +135,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       // We no longer auto-login after registration since email needs to be confirmed
       // The user will be redirected to the main page but will need to confirm their email
+      return { success: true };
     } catch (error: any) {
       console.error('Registration error:', error);
       toast({
@@ -150,7 +143,107 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         description: error.message || "Could not create account. Please try again.",
         variant: "destructive",
       });
-      throw error;
+      return { success: false, message: error.message };
+    }
+  };
+
+  const updateProfile = async (credentials: UpdateProfileCredentials) => {
+    try {
+      if (!authState.user) {
+        throw new Error("You must be logged in to update your profile");
+      }
+
+      // First, try to update the username in the profiles table
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .update({
+          username: credentials.username,
+          email: credentials.email,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', authState.user.id);
+
+      if (profileError) throw profileError;
+
+      // If we need to update the email in auth.users too, we'd do that here
+      if (credentials.email && credentials.email !== authState.user.email) {
+        const { error: authError } = await supabase.auth.updateUser({
+          email: credentials.email,
+        });
+
+        if (authError) throw authError;
+      }
+
+      // Refetch user profile to update the authState
+      fetchUserProfile(authState.user.id);
+
+      toast({
+        title: "Profile updated",
+        description: "Your profile has been updated successfully.",
+      });
+
+      return { success: true };
+    } catch (error: any) {
+      console.error('Error updating profile:', error);
+      toast({
+        title: "Error updating profile",
+        description: error.message || "Could not update profile. Please try again.",
+        variant: "destructive",
+      });
+      return { success: false, message: error.message };
+    }
+  };
+
+  const updatePassword = async (credentials: UpdatePasswordCredentials) => {
+    try {
+      const { error } = await supabase.auth.updateUser({
+        password: credentials.password,
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: "Password updated",
+        description: "Your password has been updated successfully.",
+      });
+
+      return { success: true };
+    } catch (error: any) {
+      console.error('Error updating password:', error);
+      toast({
+        title: "Error updating password",
+        description: error.message || "Could not update password. Please try again.",
+        variant: "destructive",
+      });
+      return { success: false, message: error.message };
+    }
+  };
+
+  const resetPassword = async (credentials: ResetPasswordCredentials) => {
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(
+        credentials.email,
+        {
+          redirectTo: window.location.origin + '/reset-password',
+        }
+      );
+
+      if (error) throw error;
+
+      toast({
+        title: "Password reset email sent",
+        description: "Check your email for a link to reset your password.",
+      });
+
+      return { success: true };
+    } catch (error: any) {
+      console.error('Error resetting password:', error);
+      toast({
+        title: "Error resetting password",
+        description: error.message || "Could not send password reset email. Please try again.",
+        variant: "destructive",
+      });
+      return { success: false, message: error.message };
     }
   };
 
@@ -180,7 +273,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   return (
-    <AuthContext.Provider value={{ authState, signIn, signUp, signOut, isAdmin }}>
+    <AuthContext.Provider value={{ 
+      authState, 
+      signIn, 
+      signUp, 
+      signOut, 
+      resetPassword,
+      updatePassword,
+      updateProfile,
+      isAdmin 
+    }}>
       {children}
     </AuthContext.Provider>
   );

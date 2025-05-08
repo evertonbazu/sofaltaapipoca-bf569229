@@ -4,19 +4,14 @@ project_id = "cylrmgrxawqdrwrqvenw"
 [api]
 enabled = true
 port = 54321
-schemas = ["public"]
-extra_schemas = ["extensions", "pg_catalog", "pg_net"]
-max_rows = 1000
+schemas = ["public", "storage"]
 
 [db]
-shadow_port = 54320
 port = 54322
-major_version = 15
 
 [studio]
 enabled = true
 port = 54323
-api_url = "http://localhost"
 
 [inbucket]
 enabled = true
@@ -24,17 +19,13 @@ port = 54324
 
 [storage]
 enabled = true
-file_size_limit = 50000000
 
 [auth]
 enabled = true
-site_url = "http://localhost:3000"
-additional_redirect_urls = ["https://localhost:3000"]
-jwt_expiry = 3600
-enable_signup = true
+
+[realtime]
+enabled = true
 
 [functions]
-port = 54325
-
 [functions.send-contact-email]
-verify_jwt = false
+verify_jwt = true
