@@ -1,35 +1,52 @@
 
 import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { Label } from '@/components/ui/label';
-import { useToast } from '@/hooks/use-toast';
+import { z } from 'zod';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Loader2, Mail } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/hooks/use-auth';
-import { Loader2, CheckCircle2, AlertCircle } from 'lucide-react';
+import { useAuth } from '@/context/AuthContext';
+import { useToast } from '@/hooks/use-toast';
 
-interface ContactFormData {
-  name: string;
-  email: string;
-  subject: string;
-  message: string;
-}
+// Form validation schema
+const contactFormSchema = z.object({
+  name: z.string().min(1, 'O nome é obrigatório'),
+  email: z.string().email('Email inválido'),
+  subject: z.string().min(1, 'O assunto é obrigatório'),
+  message: z.string().min(10, 'A mensagem deve ter pelo menos 10 caracteres'),
+});
+
+type ContactFormValues = z.infer<typeof contactFormSchema>;
 
 const ContactForm: React.FC = () => {
-  const { register, handleSubmit, formState: { errors }, reset } = useForm<ContactFormData>();
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [submitSuccess, setSubmitSuccess] = useState(false);
   const { toast } = useToast();
   const { authState } = useAuth();
-
-  const onSubmit = async (data: ContactFormData) => {
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<boolean>(false);
+  
+  const { register, handleSubmit, formState: { errors }, reset } = useForm<ContactFormValues>({
+    resolver: zodResolver(contactFormSchema),
+    defaultValues: {
+      name: authState.user?.username || '',
+      email: authState.user?.email || '',
+      subject: '',
+      message: '',
+    }
+  });
+  
+  const onSubmit = async (data: ContactFormValues) => {
     setIsSubmitting(true);
-    setSubmitSuccess(false);
-
+    setError(null);
+    setSuccess(false);
+    
     try {
-      // Store message in database
+      // First store the message in the database
       const { error: dbError } = await supabase
         .from('contact_messages')
         .insert({
@@ -37,128 +54,133 @@ const ContactForm: React.FC = () => {
           email: data.email,
           subject: data.subject,
           message: data.message,
-          user_id: authState.user?.id
+          user_id: authState.user?.id || null
         });
-
+      
       if (dbError) throw new Error(dbError.message);
-
-      // Send email via edge function
+      
+      // Then send the email using the edge function
       const { error: emailError } = await supabase.functions.invoke('send-contact-email', {
         body: {
-          ...data,
-          userId: authState.user?.id
+          name: data.name,
+          email: data.email,
+          subject: data.subject,
+          message: data.message
         }
       });
-
+      
       if (emailError) throw new Error(emailError.message);
-
-      // Success
-      setSubmitSuccess(true);
+      
+      // Show success message
+      setSuccess(true);
       toast({
-        title: "Mensagem enviada com sucesso!",
-        description: "Retornaremos seu contato em breve.",
+        title: "Mensagem enviada",
+        description: "Sua mensagem foi enviada com sucesso. Agradecemos seu contato!"
       });
-      reset();
-    } catch (error: any) {
-      console.error("Error submitting contact form:", error);
+      
+      // Reset the form
+      reset({
+        name: authState.user?.username || '',
+        email: authState.user?.email || '',
+        subject: '',
+        message: ''
+      });
+      
+    } catch (err: any) {
+      console.error('Error submitting contact form:', err);
+      setError(err.message || 'Ocorreu um erro ao enviar sua mensagem. Por favor, tente novamente.');
       toast({
         variant: "destructive",
         title: "Erro ao enviar mensagem",
-        description: error.message || "Ocorreu um erro ao enviar sua mensagem. Tente novamente mais tarde.",
+        description: err.message || 'Ocorreu um erro ao enviar sua mensagem. Por favor, tente novamente.'
       });
     } finally {
       setIsSubmitting(false);
     }
   };
-
+  
   return (
-    <div className="bg-white rounded-lg shadow-md p-6">
-      {submitSuccess ? (
-        <div className="flex flex-col items-center justify-center py-8 text-center space-y-4">
-          <CheckCircle2 className="h-16 w-16 text-green-500" />
-          <h3 className="text-2xl font-bold">Mensagem Enviada!</h3>
-          <p className="text-gray-600 max-w-md">
-            Obrigado por entrar em contato conosco. Retornaremos sua mensagem o mais breve possível.
-          </p>
-          <Button onClick={() => setSubmitSuccess(false)}>Enviar nova mensagem</Button>
-        </div>
-      ) : (
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="name">Nome *</Label>
-            <Input
-              id="name"
-              {...register("name", { required: "Nome é obrigatório" })}
-              className={errors.name ? "border-red-500" : ""}
-            />
-            {errors.name && (
-              <p className="text-sm text-red-500 flex items-center">
-                <AlertCircle className="h-3 w-3 mr-1" /> {errors.name.message}
-              </p>
-            )}
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="email">Email *</Label>
-            <Input
-              id="email"
-              type="email"
-              {...register("email", { 
-                required: "Email é obrigatório",
-                pattern: {
-                  value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
-                  message: "Endereço de email inválido"
-                }
-              })}
-              className={errors.email ? "border-red-500" : ""}
-            />
-            {errors.email && (
-              <p className="text-sm text-red-500 flex items-center">
-                <AlertCircle className="h-3 w-3 mr-1" /> {errors.email.message}
-              </p>
-            )}
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="subject">Assunto *</Label>
-            <Input
-              id="subject"
-              {...register("subject", { required: "Assunto é obrigatório" })}
-              className={errors.subject ? "border-red-500" : ""}
-            />
-            {errors.subject && (
-              <p className="text-sm text-red-500 flex items-center">
-                <AlertCircle className="h-3 w-3 mr-1" /> {errors.subject.message}
-              </p>
-            )}
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="message">Mensagem *</Label>
-            <Textarea
-              id="message"
-              {...register("message", { required: "Mensagem é obrigatória" })}
-              rows={5}
-              className={errors.message ? "border-red-500" : ""}
-            />
-            {errors.message && (
-              <p className="text-sm text-red-500 flex items-center">
-                <AlertCircle className="h-3 w-3 mr-1" /> {errors.message.message}
-              </p>
-            )}
-          </div>
-
-          <Button type="submit" className="w-full" disabled={isSubmitting}>
-            {isSubmitting ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Enviando...
-              </>
-            ) : "Enviar Mensagem"}
-          </Button>
-        </form>
+    <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 bg-white p-6 rounded-lg shadow-md">
+      {error && (
+        <Alert variant="destructive">
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
       )}
-    </div>
+      
+      {success && (
+        <Alert className="bg-green-50 text-green-800 border-green-200">
+          <AlertDescription>Sua mensagem foi enviada com sucesso. Agradecemos seu contato!</AlertDescription>
+        </Alert>
+      )}
+      
+      <div className="space-y-2">
+        <Label htmlFor="name">Nome</Label>
+        <Input 
+          id="name" 
+          {...register('name')} 
+          className={errors.name ? 'border-red-500' : ''}
+        />
+        {errors.name && (
+          <p className="text-red-500 text-sm">{errors.name.message}</p>
+        )}
+      </div>
+      
+      <div className="space-y-2">
+        <Label htmlFor="email">Email</Label>
+        <Input 
+          id="email" 
+          type="email" 
+          {...register('email')} 
+          className={errors.email ? 'border-red-500' : ''}
+        />
+        {errors.email && (
+          <p className="text-red-500 text-sm">{errors.email.message}</p>
+        )}
+      </div>
+      
+      <div className="space-y-2">
+        <Label htmlFor="subject">Assunto</Label>
+        <Input 
+          id="subject" 
+          {...register('subject')} 
+          className={errors.subject ? 'border-red-500' : ''}
+        />
+        {errors.subject && (
+          <p className="text-red-500 text-sm">{errors.subject.message}</p>
+        )}
+      </div>
+      
+      <div className="space-y-2">
+        <Label htmlFor="message">Mensagem</Label>
+        <Textarea 
+          id="message" 
+          rows={5} 
+          {...register('message')} 
+          className={errors.message ? 'border-red-500' : ''}
+        />
+        {errors.message && (
+          <p className="text-red-500 text-sm">{errors.message.message}</p>
+        )}
+      </div>
+      
+      <Button 
+        type="submit" 
+        className="w-full" 
+        disabled={isSubmitting}
+      >
+        {isSubmitting ? (
+          <>
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            Enviando...
+          </>
+        ) : (
+          <>
+            <Mail className="mr-2 h-4 w-4" />
+            Enviar Mensagem
+          </>
+        )}
+      </Button>
+    </form>
   );
 };
 

@@ -49,30 +49,6 @@ const ContactPage: React.FC = () => {
           </p>
           
           <ContactForm />
-          
-          <div className="mt-8 bg-white rounded-lg shadow-md p-6">
-            <h2 className="text-xl font-bold mb-4">Informações de Contato</h2>
-            <div className="space-y-2">
-              <p className="flex items-center">
-                <span className="font-medium mr-2">📱 WhatsApp:</span>
-                <a href="https://wa.me/5513992077804" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
-                  +55 (13) 99207-7804
-                </a>
-              </p>
-              <p className="flex items-center">
-                <span className="font-medium mr-2">📧 Email:</span>
-                <a href="mailto:sr.bazu@gmail.com" className="text-blue-600 hover:underline">
-                  sr.bazu@gmail.com
-                </a>
-              </p>
-              <p className="flex items-center">
-                <span className="font-medium mr-2">📌 Telegram:</span>
-                <a href="https://t.me/evertonbazu" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
-                  @evertonbazu
-                </a>
-              </p>
-            </div>
-          </div>
         </div>
       </div>
     </div>
