@@ -1,393 +1,297 @@
 
 import React, { useState } from 'react';
+import * as XLSX from 'xlsx';
 import { Button } from "@/components/ui/button";
-import { AlertTriangle, FileText, Upload, Check, Loader2 } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
+import { Input } from "@/components/ui/input";
+import { Card, CardContent } from "@/components/ui/card";
+import { Download, Upload, Check, AlertCircle } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { useToast } from '@/hooks/use-toast';
+import { generateSubscriptionCode } from '@/utils/codeGenerator';
 
-interface TxtSubscription {
-  title: string;
-  price: string;
-  payment_method: string;
-  status: string;
-  access: string;
-  whatsapp_number: string;
-  telegram_username: string;
-  header_color?: string;
-  price_color?: string;
-  icon?: string;
-  added_date: string;
-  pix_qr_code?: string;
-  código?: number;
-}
-
-const ImportSubscriptions: React.FC = () => {
-  const { toast } = useToast();
+const ImportSubscriptions = () => {
   const [file, setFile] = useState<File | null>(null);
-  const [previewData, setPreviewData] = useState<TxtSubscription[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [isImporting, setIsImporting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [results, setResults] = useState<{
+    total: number;
+    success: number;
+    errors: Array<{ row: number; error: string }>;
+  } | null>(null);
+  const { toast } = useToast();
 
-  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    setError(null);
-    const selectedFile = e.target.files?.[0];
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
+      setFile(e.target.files[0]);
+      setResults(null);
+    }
+  };
+
+  const downloadTemplate = () => {
+    const template = [
+      {
+        title: 'NETFLIX PREMIUM',
+        price: 'R$ 25,00 - PIX (Mensal)',
+        payment_method: 'PIX (Mensal)',
+        status: 'Assinado (2 vagas)',
+        access: 'LOGIN E SENHA',
+        header_color: 'bg-red-600',
+        price_color: 'text-red-600',
+        whatsapp_number: '5511999999999',
+        telegram_username: '@usuario_telegram',
+        icon: 'tv',
+        added_date: '01/05/2025',
+        featured: 'false',
+      },
+      {
+        title: 'SPOTIFY PREMIUM',
+        price: 'R$ 7,50 - PIX (Mensal)',
+        payment_method: 'PIX (Mensal)',
+        status: 'Assinado (1 vaga)',
+        access: 'CONVITE POR E-MAIL',
+        header_color: 'bg-green-600',
+        price_color: 'text-green-600',
+        whatsapp_number: '5511888888888',
+        telegram_username: '@outro_usuario',
+        icon: 'music',
+        added_date: '02/05/2025',
+        featured: 'true',
+      }
+    ];
+
+    const ws = XLSX.utils.json_to_sheet(template);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Modelo");
     
-    if (!selectedFile) {
-      setFile(null);
-      setPreviewData([]);
+    // Generate file and trigger download
+    XLSX.writeFile(wb, "modelo_importacao_anuncios.xlsx");
+  };
+
+  const handleImport = async () => {
+    if (!file) {
+      toast({
+        variant: "destructive",
+        title: "Nenhum arquivo selecionado",
+        description: "Por favor, selecione um arquivo Excel para importar."
+      });
       return;
     }
-    
-    if (!selectedFile.name.endsWith('.txt')) {
-      setError('Por favor, selecione um arquivo de texto válido (.txt)');
-      setFile(null);
-      setPreviewData([]);
-      return;
-    }
-    
-    setFile(selectedFile);
+
     setIsLoading(true);
-    
+    setResults(null);
+
     try {
-      const data = await readTxtFile(selectedFile);
-      setPreviewData(data);
-    } catch (err: any) {
-      setError(err.message || 'Erro ao processar o arquivo');
-      setPreviewData([]);
+      const data = await file.arrayBuffer();
+      const wb = XLSX.read(data);
+      const ws = wb.Sheets[wb.SheetNames[0]];
+      const jsonData = XLSX.utils.sheet_to_json(ws);
+
+      if (jsonData.length === 0) {
+        throw new Error("O arquivo não contém dados para importar.");
+      }
+
+      const results = {
+        total: jsonData.length,
+        success: 0,
+        errors: [] as Array<{ row: number; error: string }>
+      };
+
+      for (let i = 0; i < jsonData.length; i++) {
+        try {
+          const row = jsonData[i] as any;
+
+          // Basic validation
+          if (!row.title || !row.price || !row.status || !row.access) {
+            results.errors.push({
+              row: i + 2, // Excel rows start at 1, and there's a header
+              error: "Campos obrigatórios ausentes (título, preço, status ou acesso)"
+            });
+            continue;
+          }
+
+          // Process date
+          let dateValue;
+          if (row.added_date) {
+            if (typeof row.added_date === 'string' && row.added_date.match(/^\d{2}\/\d{2}\/\d{4}$/)) {
+              // Convert DD/MM/YYYY to YYYY-MM-DD
+              const parts = row.added_date.split('/');
+              dateValue = `${parts[2]}-${parts[1]}-${parts[0]}`;
+            } else {
+              // Try to handle Excel date number
+              try {
+                const excelDate = XLSX.SSF.parse_date_code(row.added_date);
+                dateValue = `${excelDate.y}-${String(excelDate.m).padStart(2, '0')}-${String(excelDate.d).padStart(2, '0')}`;
+              } catch {
+                // Use current date if can't parse
+                dateValue = new Date().toISOString().split('T')[0];
+              }
+            }
+          } else {
+            // Default to current date if no date provided
+            dateValue = new Date().toISOString().split('T')[0];
+          }
+
+          // Generate unique code
+          const code = row.code || generateSubscriptionCode('SF', 5, Math.floor(Math.random() * 999) + 1);
+
+          // Format featured as boolean
+          const featured = row.featured === 'true' || row.featured === true;
+
+          const { error } = await supabase.from('subscriptions').insert({
+            title: row.title,
+            price: row.price,
+            payment_method: row.payment_method || row.price.split(' - ')[1] || 'PIX (Mensal)',
+            status: row.status,
+            access: row.access,
+            header_color: row.header_color || 'bg-blue-600',
+            price_color: row.price_color || 'text-blue-600',
+            whatsapp_number: row.whatsapp_number,
+            telegram_username: row.telegram_username,
+            icon: row.icon || 'tv',
+            added_date: dateValue,
+            featured: featured,
+            code: code
+          });
+
+          if (error) {
+            results.errors.push({
+              row: i + 2,
+              error: error.message
+            });
+          } else {
+            results.success++;
+          }
+        } catch (error: any) {
+          results.errors.push({
+            row: i + 2,
+            error: error.message || "Erro desconhecido"
+          });
+        }
+      }
+
+      setResults(results);
+
+      if (results.errors.length === 0) {
+        toast({
+          title: "Importação concluída",
+          description: `${results.success} anúncios foram importados com sucesso.`,
+        });
+      } else {
+        toast({
+          variant: "warning",
+          title: "Importação concluída com avisos",
+          description: `${results.success} de ${results.total} anúncios foram importados. ${results.errors.length} erros encontrados.`,
+        });
+      }
+    } catch (error: any) {
+      console.error("Import error:", error);
+      toast({
+        variant: "destructive",
+        title: "Erro na importação",
+        description: error.message || "Ocorreu um erro ao processar o arquivo."
+      });
     } finally {
       setIsLoading(false);
     }
   };
 
-  const readTxtFile = (file: File): Promise<TxtSubscription[]> => {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      
-      reader.onload = (e) => {
-        try {
-          const content = e.target?.result as string;
-          
-          // Parse the TXT content
-          const subscriptions = parseTxtContent(content);
-          
-          // Validate if any subscriptions were found
-          if (subscriptions.length === 0) {
-            throw new Error('Nenhum anúncio encontrado no arquivo. Verifique se o formato está correto.');
-          }
-          
-          resolve(subscriptions);
-        } catch (err) {
-          reject(err);
-        }
-      };
-      
-      reader.onerror = (err) => {
-        reject(err);
-      };
-      
-      reader.readAsText(file);
-    });
-  };
-  
-  const parseTxtContent = (txtContent: string): TxtSubscription[] => {
-    const subscriptions: TxtSubscription[] = [];
-    const blocks = txtContent.split('\n\n');
-    
-    let currentSubscription: Partial<TxtSubscription> = {
-      header_color: 'bg-blue-600',
-      price_color: 'text-blue-600',
-      icon: 'monitor'
-    };
-    
-    for (let i = 0; i < blocks.length; i++) {
-      const block = blocks[i].trim();
-      
-      if (!block) continue;
-      
-      // Title (🖥)
-      if (block.startsWith('🖥')) {
-        // Start a new subscription
-        if (Object.keys(currentSubscription).length > 3) {
-          if (currentSubscription.title && currentSubscription.price) {
-            subscriptions.push(currentSubscription as TxtSubscription);
-          }
-          currentSubscription = {
-            header_color: 'bg-blue-600',
-            price_color: 'text-blue-600',
-            icon: 'monitor'
-          };
-        }
-        currentSubscription.title = block.replace('🖥', '').trim();
-      }
-      // Price (🏦)
-      else if (block.startsWith('🏦')) {
-        const priceParts = block.replace('🏦', '').trim().split('-');
-        if (priceParts.length > 1) {
-          currentSubscription.price = priceParts[0].trim();
-          currentSubscription.payment_method = priceParts[1].trim();
-        } else {
-          currentSubscription.price = priceParts[0].trim();
-          currentSubscription.payment_method = 'PIX';
-        }
-      }
-      // Status (📌)
-      else if (block.startsWith('📌')) {
-        currentSubscription.status = block.replace('📌', '').trim();
-      }
-      // Access (🔐)
-      else if (block.startsWith('🔐')) {
-        currentSubscription.access = block.replace('🔐', '').trim();
-      }
-      // WhatsApp (📱)
-      else if (block.startsWith('📱')) {
-        currentSubscription.whatsapp_number = block.replace('📱', '').trim();
-      }
-      // Telegram (📩)
-      else if (block.startsWith('📩')) {
-        currentSubscription.telegram_username = block.replace('📩', '').trim();
-      }
-      // Date (📅)
-      else if (block.startsWith('📅')) {
-        currentSubscription.added_date = block.replace('📅 Adicionado em:', '').trim();
-      }
-      // Code (Código)
-      else if (block.toLowerCase().startsWith('código:')) {
-        const codeMatch = block.match(/Código:\s*(\d+)/i);
-        if (codeMatch && codeMatch[1]) {
-          currentSubscription.código = parseInt(codeMatch[1].trim());
-        }
-      }
-      
-      // If at the end of the file, add the current subscription if it has required fields
-      if (i === blocks.length - 1) {
-        if (currentSubscription.title && currentSubscription.price) {
-          subscriptions.push(currentSubscription as TxtSubscription);
-        }
-      }
-    }
-    
-    return subscriptions;
-  };
-
-  const handleImport = async () => {
-    if (!previewData.length) return;
-    
-    try {
-      setIsImporting(true);
-      setError(null);
-      
-      // First get existing subscriptions
-      const { data: existingSubscriptions, error: fetchError } = await supabase
-        .from('subscriptions')
-        .select('title, telegram_username');
-      
-      if (fetchError) throw fetchError;
-      
-      // Filter out duplicates
-      const existingTitlesMap = new Map();
-      existingSubscriptions.forEach((sub: any) => {
-        const key = `${sub.title}-${sub.telegram_username}`.toLowerCase();
-        existingTitlesMap.set(key, true);
-      });
-      
-      const newSubscriptions = previewData.filter(sub => {
-        const key = `${sub.title}-${sub.telegram_username}`.toLowerCase();
-        return !existingTitlesMap.has(key);
-      });
-      
-      if (newSubscriptions.length === 0) {
-        toast({
-          title: "Nenhum anúncio novo",
-          description: "Todos os anúncios do arquivo já existem no sistema.",
-        });
-        setIsImporting(false);
-        return;
-      }
-
-      // Insert new subscriptions one by one to generate unique codes
-      for (const sub of newSubscriptions) {
-        // Generate a unique code for each subscription
-        const code = 'SF' + Math.floor(1000 + Math.random() * 9000).toString();
-        
-        const { error: insertError } = await supabase
-          .from('subscriptions')
-          .insert({
-            title: sub.title,
-            price: sub.price,
-            payment_method: sub.payment_method,
-            status: sub.status,
-            access: sub.access,
-            whatsapp_number: sub.whatsapp_number,
-            telegram_username: sub.telegram_username,
-            header_color: sub.header_color || 'bg-blue-600',
-            price_color: sub.price_color || 'text-blue-600',
-            icon: sub.icon || 'monitor',
-            added_date: sub.added_date,
-            pix_qr_code: sub.pix_qr_code,
-            código: sub.código,
-            code: code // Add required code field
-          });
-        
-        if (insertError) throw insertError;
-      }
-      
-      toast({
-        title: "Importação bem-sucedida",
-        description: `${newSubscriptions.length} anúncios foram importados com sucesso.`,
-      });
-      
-      // Reset the form
-      setFile(null);
-      setPreviewData([]);
-      
-      // Reset the file input
-      const fileInput = document.getElementById('import-file') as HTMLInputElement;
-      if (fileInput) fileInput.value = '';
-      
-    } catch (err: any) {
-      setError(err.message);
-      toast({
-        variant: "destructive",
-        title: "Erro na importação",
-        description: err.message,
-      });
-    } finally {
-      setIsImporting(false);
-    }
-  };
-
   return (
-    <div className="space-y-6 max-w-full">
-      <div>
-        <h1 className="text-3xl font-bold">Importar Anúncios (TXT)</h1>
-        <p className="text-muted-foreground mt-2">
-          Faça upload de um arquivo TXT para importar novos anúncios no formato especificado.
-        </p>
+    <div className="space-y-6">
+      <div className="flex justify-between items-center">
+        <h1 className="text-2xl font-bold">Importar Anúncios</h1>
+        <Button onClick={downloadTemplate} variant="outline" className="flex items-center gap-2">
+          <Download className="h-4 w-4" />
+          Download Modelo
+        </Button>
       </div>
       
-      {error && (
-        <div className="bg-red-50 border border-red-200 p-4 rounded-md flex items-center gap-3">
-          <AlertTriangle className="text-red-500" />
-          <span className="text-red-600">{error}</span>
-        </div>
-      )}
-      
-      <Card className="border rounded-lg">
-        <CardHeader>
-          <CardTitle>Selecione um arquivo TXT</CardTitle>
-          <CardDescription>
-            O arquivo deve seguir o formato:
-            <pre className="mt-2 p-2 bg-slate-50 rounded text-xs overflow-x-auto">
-{`🖥 TÍTULO DO ANÚNCIO
-🏦 PREÇO - MÉTODO
-📌 STATUS
-🔐 TIPO DE ACESSO
-📱 WHATSAPP
-📩 @TELEGRAM
-
-📅 Adicionado em: DD/MM/AAAA`}
-            </pre>
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="flex flex-col items-center justify-center gap-4">
-            <FileText className="h-16 w-16 text-blue-500" />
-            
-            <div className="w-full max-w-sm">
-              <div className="relative mt-4">
-                <input
-                  type="file"
-                  id="import-file"
-                  accept=".txt"
-                  onChange={handleFileChange}
-                  className="absolute inset-0 w-full h-full opacity-0 z-10 cursor-pointer"
-                />
-                <Button
-                  variant="outline"
-                  className="w-full border-dashed border-2 h-24 sm:h-32"
-                >
-                  <div className="flex flex-col items-center">
-                    <Upload className="h-6 w-6 mb-2" />
-                    <span>Clique para selecionar ou arraste o arquivo</span>
-                    <span className="text-xs text-muted-foreground mt-1">
-                      Apenas arquivos .txt
-                    </span>
-                  </div>
-                </Button>
-              </div>
-            </div>
-          </div>
-          
-          {file && (
-            <div className="flex items-center gap-2 text-sm mt-4">
-              <Check className="h-4 w-4 text-green-500" />
-              <span>Arquivo selecionado: {file.name}</span>
-            </div>
-          )}
-          
-          {isLoading && (
-            <div className="flex flex-col items-center justify-center p-8">
-              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-              <span className="mt-2 text-muted-foreground">Processando arquivo...</span>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-      
-      {previewData.length > 0 && (
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <h3 className="text-lg font-semibold">Anúncios a serem importados</h3>
-            <Button
+      <Card>
+        <CardContent className="p-6 space-y-4">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+            <Input
+              type="file"
+              accept=".xlsx,.xls"
+              onChange={handleFileChange}
+              className="max-w-md"
+            />
+            <Button 
               onClick={handleImport}
-              disabled={isImporting}
+              disabled={!file || isLoading}
+              className="flex items-center gap-2"
             >
-              {isImporting ? (
+              {isLoading ? (
                 <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
                   Importando...
                 </>
               ) : (
                 <>
-                  <Upload className="mr-2 h-4 w-4" />
-                  Importar {previewData.length} Anúncios
+                  <Upload className="h-4 w-4" />
+                  Importar
                 </>
               )}
             </Button>
           </div>
           
-          <div className="border rounded-lg overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Título</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Preço</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Método</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Telegram</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Código</th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {previewData.map((item, index) => (
-                    <tr key={index}>
-                      <td className="px-4 py-3 text-sm text-gray-900">{item.title}</td>
-                      <td className="px-4 py-3 text-sm text-gray-900">{item.price}</td>
-                      <td className="px-4 py-3 text-sm text-gray-900">{item.payment_method}</td>
-                      <td className="px-4 py-3 text-sm text-gray-900">{item.status}</td>
-                      <td className="px-4 py-3 text-sm text-gray-900">{item.telegram_username}</td>
-                      <td className="px-4 py-3 text-sm text-gray-900">{item.código || '-'}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+          {file && (
+            <p className="text-sm text-gray-500">
+              Arquivo selecionado: {file.name}
+            </p>
+          )}
+          
+          {results && (
+            <div className="mt-6 space-y-4">
+              <div className="flex items-center gap-2 text-lg font-medium">
+                <Check className="h-5 w-5 text-green-500" />
+                Importação concluída
+              </div>
+              
+              <div className="grid grid-cols-3 gap-4">
+                <div className="bg-gray-50 p-4 rounded-md">
+                  <div className="text-gray-500 text-sm">Total de anúncios</div>
+                  <div className="text-xl font-medium">{results.total}</div>
+                </div>
+                <div className="bg-green-50 p-4 rounded-md">
+                  <div className="text-green-700 text-sm">Importados com sucesso</div>
+                  <div className="text-xl font-medium text-green-600">{results.success}</div>
+                </div>
+                <div className={`${results.errors.length > 0 ? 'bg-red-50' : 'bg-gray-50'} p-4 rounded-md`}>
+                  <div className={`${results.errors.length > 0 ? 'text-red-600' : 'text-gray-500'} text-sm`}>Erros</div>
+                  <div className={`text-xl font-medium ${results.errors.length > 0 ? 'text-red-600' : ''}`}>
+                    {results.errors.length}
+                  </div>
+                </div>
+              </div>
+              
+              {results.errors.length > 0 && (
+                <div className="border border-red-200 rounded-md overflow-hidden mt-4">
+                  <div className="bg-red-50 p-3 flex items-center gap-2">
+                    <AlertCircle className="h-4 w-4 text-red-500" />
+                    <h3 className="font-medium text-red-800">Erros encontrados</h3>
+                  </div>
+                  <div className="divide-y">
+                    {results.errors.map((error, index) => (
+                      <div key={index} className="p-3 text-sm">
+                        <strong>Linha {error.row}:</strong> {error.error}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
+          )}
+          
+          <div className="bg-blue-50 p-4 rounded-md border border-blue-100 mt-6">
+            <h3 className="font-medium text-blue-800 mb-2">Instruções</h3>
+            <ul className="list-disc pl-5 space-y-1 text-blue-700 text-sm">
+              <li>O arquivo deve estar no formato Excel (.xlsx ou .xls)</li>
+              <li>A primeira linha deve conter os nomes das colunas</li>
+              <li>Colunas obrigatórias: título, preço, status e acesso</li>
+              <li>Baixe o modelo para ver o formato esperado</li>
+              <li>As datas devem estar no formato DD/MM/AAAA</li>
+            </ul>
           </div>
-        </div>
-      )}
+        </CardContent>
+      </Card>
     </div>
   );
 };

@@ -1,56 +1,68 @@
 
 import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
-import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
+import * as z from 'zod';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Loader2, Mail } from 'lucide-react';
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
 import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/hooks/use-auth';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/context/AuthContext';
 
-// Form validation schema
-const contactFormSchema = z.object({
-  name: z.string().min(1, 'O nome é obrigatório'),
-  email: z.string().email('Email inválido'),
-  subject: z.string().min(1, 'O assunto é obrigatório'),
-  message: z.string().min(10, 'A mensagem deve ter pelo menos 10 caracteres'),
+const formSchema = z.object({
+  name: z.string().min(2, {
+    message: "O nome deve ter pelo menos 2 caracteres.",
+  }),
+  email: z.string().email({
+    message: "Por favor, insira um email válido.",
+  }),
+  subject: z.string().min(3, {
+    message: "O assunto deve ter pelo menos 3 caracteres.",
+  }),
+  message: z.string().min(10, {
+    message: "A mensagem deve ter pelo menos 10 caracteres.",
+  }),
 });
 
-type ContactFormValues = z.infer<typeof contactFormSchema>;
+type FormData = z.infer<typeof formSchema>;
 
-const ContactForm: React.FC = () => {
+const ContactForm = () => {
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
   const { authState } = useAuth();
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<boolean>(false);
   
-  // Get user email safely from the session or profiles
-  const userEmail = authState.user?.email || authState.session?.user?.email || '';
-  const userName = authState.user?.username || '';
-  
-  const { register, handleSubmit, formState: { errors }, reset } = useForm<ContactFormValues>({
-    resolver: zodResolver(contactFormSchema),
+  const form = useForm<FormData>({
+    resolver: zodResolver(formSchema),
     defaultValues: {
-      name: userName,
-      email: userEmail,
-      subject: '',
-      message: '',
-    }
+      name: "",
+      email: "",
+      subject: "",
+      message: "",
+    },
   });
-  
-  const onSubmit = async (data: ContactFormValues) => {
+
+  React.useEffect(() => {
+    // Pre-fill form if user is logged in
+    if (authState.user) {
+      form.setValue('name', authState.user.username || '');
+      form.setValue('email', authState.user.email || '');
+    }
+  }, [authState.user, form]);
+
+  const onSubmit = async (data: FormData) => {
     setIsSubmitting(true);
-    setError(null);
-    setSuccess(false);
     
     try {
-      // First store the message in the database
+      // First save to database
       const { error: dbError } = await supabase
         .from('contact_messages')
         .insert({
@@ -58,13 +70,13 @@ const ContactForm: React.FC = () => {
           email: data.email,
           subject: data.subject,
           message: data.message,
-          user_id: authState.user?.id || null
+          user_id: authState.user?.id
         });
       
-      if (dbError) throw new Error(dbError.message);
+      if (dbError) throw dbError;
       
-      // Then send the email using the edge function
-      const { error: emailError } = await supabase.functions.invoke('send-contact-email', {
+      // Then send email via the edge function
+      const response = await supabase.functions.invoke('send-contact-email', {
         body: {
           name: data.name,
           email: data.email,
@@ -72,119 +84,104 @@ const ContactForm: React.FC = () => {
           message: data.message
         }
       });
+
+      if (response.error) throw new Error(response.error.message);
       
-      if (emailError) throw new Error(emailError.message);
-      
-      // Show success message
-      setSuccess(true);
       toast({
         title: "Mensagem enviada",
-        description: "Sua mensagem foi enviada com sucesso. Agradecemos seu contato!"
+        description: "Agradecemos o seu contato! Responderemos em breve.",
       });
       
-      // Reset the form
-      reset({
-        name: userName,
-        email: userEmail,
-        subject: '',
-        message: ''
-      });
-      
-    } catch (err: any) {
-      console.error('Error submitting contact form:', err);
-      setError(err.message || 'Ocorreu um erro ao enviar sua mensagem. Por favor, tente novamente.');
+      // Reset form
+      form.reset();
+    } catch (error: any) {
+      console.error("Error sending message:", error);
       toast({
         variant: "destructive",
         title: "Erro ao enviar mensagem",
-        description: err.message || 'Ocorreu um erro ao enviar sua mensagem. Por favor, tente novamente.'
+        description: error.message || "Ocorreu um erro ao enviar sua mensagem. Por favor, tente novamente.",
       });
     } finally {
       setIsSubmitting(false);
     }
   };
-  
+
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 bg-white p-6 rounded-lg shadow-md">
-      {error && (
-        <Alert variant="destructive">
-          <AlertDescription>{error}</AlertDescription>
-        </Alert>
-      )}
-      
-      {success && (
-        <Alert className="bg-green-50 text-green-800 border-green-200">
-          <AlertDescription>Sua mensagem foi enviada com sucesso. Agradecemos seu contato!</AlertDescription>
-        </Alert>
-      )}
-      
-      <div className="space-y-2">
-        <Label htmlFor="name">Nome</Label>
-        <Input 
-          id="name" 
-          {...register('name')} 
-          className={errors.name ? 'border-red-500' : ''}
-        />
-        {errors.name && (
-          <p className="text-red-500 text-sm">{errors.name.message}</p>
-        )}
-      </div>
-      
-      <div className="space-y-2">
-        <Label htmlFor="email">Email</Label>
-        <Input 
-          id="email" 
-          type="email" 
-          {...register('email')} 
-          className={errors.email ? 'border-red-500' : ''}
-        />
-        {errors.email && (
-          <p className="text-red-500 text-sm">{errors.email.message}</p>
-        )}
-      </div>
-      
-      <div className="space-y-2">
-        <Label htmlFor="subject">Assunto</Label>
-        <Input 
-          id="subject" 
-          {...register('subject')} 
-          className={errors.subject ? 'border-red-500' : ''}
-        />
-        {errors.subject && (
-          <p className="text-red-500 text-sm">{errors.subject.message}</p>
-        )}
-      </div>
-      
-      <div className="space-y-2">
-        <Label htmlFor="message">Mensagem</Label>
-        <Textarea 
-          id="message" 
-          rows={5} 
-          {...register('message')} 
-          className={errors.message ? 'border-red-500' : ''}
-        />
-        {errors.message && (
-          <p className="text-red-500 text-sm">{errors.message.message}</p>
-        )}
-      </div>
-      
-      <Button 
-        type="submit" 
-        className="w-full" 
-        disabled={isSubmitting}
-      >
-        {isSubmitting ? (
-          <>
-            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            Enviando...
-          </>
-        ) : (
-          <>
-            <Mail className="mr-2 h-4 w-4" />
-            Enviar Mensagem
-          </>
-        )}
-      </Button>
-    </form>
+    <Form {...form}>
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+        <div className="grid gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <FormField
+              control={form.control}
+              name="name"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Nome</FormLabel>
+                  <FormControl>
+                    <Input placeholder="Seu nome" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            
+            <FormField
+              control={form.control}
+              name="email"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Email</FormLabel>
+                  <FormControl>
+                    <Input placeholder="Seu email" type="email" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
+          
+          <FormField
+            control={form.control}
+            name="subject"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Assunto</FormLabel>
+                <FormControl>
+                  <Input placeholder="Assunto da mensagem" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          
+          <FormField
+            control={form.control}
+            name="message"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Mensagem</FormLabel>
+                <FormControl>
+                  <Textarea 
+                    placeholder="Digite sua mensagem aqui..." 
+                    className="min-h-[150px] resize-y"
+                    {...field}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
+        
+        <Button 
+          type="submit" 
+          className="w-full sm:w-auto"
+          disabled={isSubmitting}
+        >
+          {isSubmitting ? "Enviando..." : "Enviar Mensagem"}
+        </Button>
+      </form>
+    </Form>
   );
 };
 

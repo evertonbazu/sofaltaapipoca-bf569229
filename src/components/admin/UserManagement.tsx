@@ -1,20 +1,32 @@
 
 import React, { useState, useEffect } from 'react';
+import { supabase } from '@/integrations/supabase/client';
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
-import { 
+import { useToast } from '@/hooks/use-toast';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
-  DialogClose
 } from "@/components/ui/dialog";
-import { 
+import {
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -22,43 +34,36 @@ import {
   AlertDialogDescription,
   AlertDialogFooter,
   AlertDialogHeader,
-  AlertDialogTitle
+  AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { supabase } from '@/integrations/supabase/client';
-import { Loader2, Pencil, Trash2, Search, Users } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { ProfileFromSupabase } from '@/types/subscriptionTypes';
+import { Edit, Trash, MoreVertical, User, Mail } from 'lucide-react';
 
-const UserManagement: React.FC = () => {
+const UserManagement = () => {
   const [users, setUsers] = useState<ProfileFromSupabase[]>([]);
-  const [isLoading, setIsLoading] = useState<boolean>(true);
-  const [searchTerm, setSearchTerm] = useState<string>('');
-  const [error, setError] = useState<string | null>(null);
-  
-  // Edit user state
-  const [editingUser, setEditingUser] = useState<ProfileFromSupabase | null>(null);
-  const [editUsername, setEditUsername] = useState<string>('');
-  const [editRole, setEditRole] = useState<string>('');
-  const [isEditing, setIsEditing] = useState<boolean>(false);
-  
-  // Delete user state
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState<boolean>(false);
-  const [userToDelete, setUserToDelete] = useState<ProfileFromSupabase | null>(null);
-  const [isDeleting, setIsDeleting] = useState<boolean>(false);
-  
+  const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [currentUser, setCurrentUser] = useState<ProfileFromSupabase | null>(null);
+  const [editedRole, setEditedRole] = useState<string>('');
+  const [editedUsername, setEditedUsername] = useState<string>('');
   const { toast } = useToast();
-  
+
   useEffect(() => {
     fetchUsers();
   }, []);
-  
+
   const fetchUsers = async () => {
+    setLoading(true);
     try {
-      setIsLoading(true);
-      setError(null);
-      
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
@@ -67,320 +72,263 @@ const UserManagement: React.FC = () => {
       if (error) throw error;
       
       setUsers(data || []);
-    } catch (err: any) {
-      console.error('Error fetching users:', err);
-      setError(err.message);
+    } catch (error: any) {
+      console.error("Error fetching users:", error);
       toast({
         variant: "destructive",
         title: "Erro ao carregar usuários",
-        description: err.message || "Não foi possível carregar a lista de usuários."
+        description: error.message
       });
     } finally {
-      setIsLoading(false);
+      setLoading(false);
     }
   };
-  
-  const handleEditUser = (user: ProfileFromSupabase) => {
-    setEditingUser(user);
-    setEditUsername(user.username || '');
-    setEditRole(user.role || 'user');
-    setIsEditing(false);
+
+  const handleEdit = (user: ProfileFromSupabase) => {
+    setCurrentUser(user);
+    setEditedRole(user.role || '');
+    setEditedUsername(user.username || '');
+    setEditDialogOpen(true);
   };
-  
-  const handleSaveEdit = async () => {
-    if (!editingUser) return;
+
+  const handleDelete = (user: ProfileFromSupabase) => {
+    setCurrentUser(user);
+    setDeleteDialogOpen(true);
+  };
+
+  const confirmEdit = async () => {
+    if (!currentUser) return;
     
     try {
-      setIsEditing(true);
-      
       const { error } = await supabase
         .from('profiles')
         .update({
-          username: editUsername,
-          role: editRole
+          role: editedRole,
+          username: editedUsername,
+          updated_at: new Date().toISOString()
         })
-        .eq('id', editingUser.id);
+        .eq('id', currentUser.id);
       
       if (error) throw error;
+      
+      // Update local state
+      setUsers(prev => 
+        prev.map(user => 
+          user.id === currentUser.id 
+            ? { ...user, role: editedRole, username: editedUsername } 
+            : user
+        )
+      );
       
       toast({
         title: "Usuário atualizado",
         description: "As informações do usuário foram atualizadas com sucesso."
       });
       
-      // Update local state
-      setUsers(users.map(user => 
-        user.id === editingUser.id 
-          ? { ...user, username: editUsername, role: editRole } 
-          : user
-      ));
-      
-      setEditingUser(null);
-    } catch (err: any) {
-      console.error('Error updating user:', err);
+      setEditDialogOpen(false);
+    } catch (error: any) {
+      console.error("Error updating user:", error);
       toast({
         variant: "destructive",
         title: "Erro ao atualizar usuário",
-        description: err.message || "Não foi possível atualizar as informações do usuário."
+        description: error.message
       });
-    } finally {
-      setIsEditing(false);
     }
   };
-  
-  const handleDeleteClick = (user: ProfileFromSupabase) => {
-    setUserToDelete(user);
-    setDeleteDialogOpen(true);
-  };
-  
-  const handleDeleteConfirm = async () => {
-    if (!userToDelete) return;
+
+  const confirmDelete = async () => {
+    if (!currentUser) return;
     
     try {
-      setIsDeleting(true);
+      // First delete any subscriptions associated with the user
+      const { error: subsError } = await supabase
+        .from('subscriptions')
+        .delete()
+        .eq('user_id', currentUser.id);
+        
+      if (subsError) throw subsError;
       
-      const { error } = await supabase
+      // Delete any pending subscriptions
+      const { error: pendingError } = await supabase
+        .from('pending_subscriptions')
+        .delete()
+        .eq('user_id', currentUser.id);
+        
+      if (pendingError) throw pendingError;
+      
+      // Delete the profile
+      const { error: profileError } = await supabase
         .from('profiles')
         .delete()
-        .eq('id', userToDelete.id);
+        .eq('id', currentUser.id);
+        
+      if (profileError) throw profileError;
       
-      if (error) throw error;
+      // Update local state
+      setUsers(prev => prev.filter(user => user.id !== currentUser.id));
       
       toast({
         title: "Usuário excluído",
-        description: "O usuário foi excluído com sucesso."
+        description: "O usuário e todos os seus anúncios foram excluídos com sucesso."
       });
       
-      // Update local state
-      setUsers(users.filter(user => user.id !== userToDelete.id));
-      
       setDeleteDialogOpen(false);
-      setUserToDelete(null);
-    } catch (err: any) {
-      console.error('Error deleting user:', err);
+    } catch (error: any) {
+      console.error("Error deleting user:", error);
       toast({
         variant: "destructive",
         title: "Erro ao excluir usuário",
-        description: err.message || "Não foi possível excluir o usuário. Note que usuários com dados associados não podem ser excluídos."
+        description: error.message
       });
-    } finally {
-      setIsDeleting(false);
     }
   };
-  
-  const filteredUsers = users.filter(user => {
-    const searchLower = searchTerm.toLowerCase();
-    return (
-      (user.username?.toLowerCase().includes(searchLower) || '') ||
-      (user.email?.toLowerCase().includes(searchLower) || '') ||
-      (user.role?.toLowerCase().includes(searchLower) || '')
-    );
-  });
-  
+
+  const filteredUsers = users.filter(user => 
+    (user.username?.toLowerCase() || '').includes(searchTerm.toLowerCase()) || 
+    (user.email?.toLowerCase() || '').includes(searchTerm.toLowerCase())
+  );
+
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold">Gerenciar Usuários</h1>
-          <p className="text-muted-foreground">Gerencie os usuários cadastrados na plataforma</p>
-        </div>
+    <div className="space-y-4">
+      <div className="flex justify-between items-center">
+        <h1 className="text-2xl font-bold">Gerenciar Usuários</h1>
       </div>
       
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Users className="h-5 w-5 text-primary" />
-            Lista de Usuários
-          </CardTitle>
-          <CardDescription>
-            Visualize e gerencie todos os usuários cadastrados na plataforma.
-          </CardDescription>
-          <div className="relative mt-2">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-            <Input
-              className="pl-10"
-              placeholder="Buscar por nome, email ou função..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-          </div>
-        </CardHeader>
-        <CardContent>
-          {isLoading ? (
-            <div className="flex justify-center items-center h-64">
-              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-            </div>
-          ) : error ? (
-            <div className="bg-red-50 border border-red-200 rounded-md p-4 text-red-600">
-              {error}
-            </div>
-          ) : filteredUsers.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">
-              {searchTerm ? "Nenhum usuário encontrado com essa busca." : "Nenhum usuário cadastrado."}
-            </div>
-          ) : (
-            <div className="rounded-md border overflow-hidden">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Usuário</TableHead>
-                    <TableHead>Email</TableHead>
-                    <TableHead>Função</TableHead>
-                    <TableHead>Data de Cadastro</TableHead>
-                    <TableHead className="text-right">Ações</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredUsers.map((user) => (
-                    <TableRow key={user.id}>
-                      <TableCell className="font-medium">{user.username || 'Sem nome'}</TableCell>
-                      <TableCell>{user.email || 'N/A'}</TableCell>
-                      <TableCell>
-                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                          user.role === 'admin' ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-800'
-                        }`}>
-                          {user.role === 'admin' ? 'Administrador' : 'Usuário'}
-                        </span>
-                      </TableCell>
-                      <TableCell>
-                        {user.created_at ? new Date(user.created_at).toLocaleDateString('pt-BR') : 'N/A'}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex justify-end gap-2">
-                          <Dialog>
-                            <DialogTrigger asChild>
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => handleEditUser(user)}
-                              >
-                                <Pencil className="h-4 w-4" />
-                              </Button>
-                            </DialogTrigger>
-                            <DialogContent className="sm:max-w-[425px]">
-                              <DialogHeader>
-                                <DialogTitle>Editar Usuário</DialogTitle>
-                                <DialogDescription>
-                                  Edite as informações do usuário abaixo.
-                                </DialogDescription>
-                              </DialogHeader>
-                              <div className="grid gap-4 py-4">
-                                <div className="grid grid-cols-4 items-center gap-4">
-                                  <Label htmlFor="username" className="text-right">
-                                    Nome
-                                  </Label>
-                                  <Input
-                                    id="username"
-                                    value={editUsername}
-                                    onChange={(e) => setEditUsername(e.target.value)}
-                                    className="col-span-3"
-                                  />
-                                </div>
-                                <div className="grid grid-cols-4 items-center gap-4">
-                                  <Label htmlFor="email" className="text-right">
-                                    Email
-                                  </Label>
-                                  <Input
-                                    id="email"
-                                    value={editingUser?.email || ''}
-                                    disabled
-                                    className="col-span-3 bg-gray-50"
-                                  />
-                                </div>
-                                <div className="grid grid-cols-4 items-center gap-4">
-                                  <Label htmlFor="role" className="text-right">
-                                    Função
-                                  </Label>
-                                  <Select
-                                    value={editRole}
-                                    onValueChange={setEditRole}
-                                  >
-                                    <SelectTrigger className="col-span-3">
-                                      <SelectValue placeholder="Selecione uma função" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                      <SelectItem value="user">Usuário</SelectItem>
-                                      <SelectItem value="admin">Administrador</SelectItem>
-                                    </SelectContent>
-                                  </Select>
-                                </div>
-                              </div>
-                              <DialogFooter>
-                                <DialogClose asChild>
-                                  <Button variant="outline">Cancelar</Button>
-                                </DialogClose>
-                                <Button 
-                                  onClick={handleSaveEdit} 
-                                  disabled={isEditing}
-                                >
-                                  {isEditing ? (
-                                    <>
-                                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                      Salvando...
-                                    </>
-                                  ) : 'Salvar'}
-                                </Button>
-                              </DialogFooter>
-                            </DialogContent>
-                          </Dialog>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="bg-red-50 border-red-200 hover:bg-red-100"
-                            onClick={() => handleDeleteClick(user)}
-                          >
-                            <Trash2 className="h-4 w-4 text-red-500" />
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-          )}
-        </CardContent>
-        <CardFooter className="flex justify-between">
-          <div className="text-sm text-muted-foreground">
-            Total: {filteredUsers.length} usuário(s)
-          </div>
-          <Button
-            variant="outline"
-            onClick={fetchUsers}
-            disabled={isLoading}
-          >
-            {isLoading ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Carregando...
-              </>
-            ) : 'Atualizar Lista'}
-          </Button>
-        </CardFooter>
-      </Card>
+      <div className="w-full max-w-sm">
+        <Input 
+          placeholder="Buscar por nome ou email..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+        />
+      </div>
       
+      {loading ? (
+        <div className="flex justify-center py-8">
+          <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-blue-500"></div>
+        </div>
+      ) : (
+        <div className="border rounded-md overflow-hidden">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Usuário</TableHead>
+                <TableHead>Email</TableHead>
+                <TableHead>Função</TableHead>
+                <TableHead>Data de Criação</TableHead>
+                <TableHead className="text-right">Ações</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {filteredUsers.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={5} className="text-center py-6 text-gray-500">
+                    Nenhum usuário encontrado
+                  </TableCell>
+                </TableRow>
+              ) : (
+                filteredUsers.map((user) => (
+                  <TableRow key={user.id}>
+                    <TableCell className="flex items-center gap-2">
+                      <User className="h-4 w-4 text-gray-400" />
+                      {user.username || 'Sem nome'}
+                    </TableCell>
+                    <TableCell className="flex items-center gap-2">
+                      <Mail className="h-4 w-4 text-gray-400" />
+                      {user.email || 'Sem email'}
+                    </TableCell>
+                    <TableCell>
+                      <span className={
+                        user.role === 'admin' 
+                          ? 'bg-purple-100 text-purple-800 px-2 py-1 rounded text-xs font-medium'
+                          : 'bg-gray-100 text-gray-800 px-2 py-1 rounded text-xs font-medium'
+                      }>
+                        {user.role === 'admin' ? 'Administrador' : 'Usuário'}
+                      </span>
+                    </TableCell>
+                    <TableCell>
+                      {user.created_at 
+                        ? new Date(user.created_at).toLocaleDateString() 
+                        : 'N/A'}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="sm">
+                            <MoreVertical className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={() => handleEdit(user)}>
+                            <Edit className="mr-2 h-4 w-4" /> Editar
+                          </DropdownMenuItem>
+                          <DropdownMenuItem 
+                            onClick={() => handleDelete(user)}
+                            className="text-red-600"
+                          >
+                            <Trash className="mr-2 h-4 w-4" /> Excluir
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </div>
+      )}
+
+      {/* Edit Dialog */}
+      <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Editar Usuário</DialogTitle>
+            <DialogDescription>
+              Altere as informações do usuário abaixo.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Nome de Usuário</label>
+              <Input 
+                value={editedUsername} 
+                onChange={(e) => setEditedUsername(e.target.value)}
+                placeholder="Nome de usuário"
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Função</label>
+              <Select value={editedRole} onValueChange={setEditedRole}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione uma função" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="admin">Administrador</SelectItem>
+                  <SelectItem value="user">Usuário</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditDialogOpen(false)}>Cancelar</Button>
+            <Button onClick={confirmEdit}>Salvar</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Dialog */}
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Você tem certeza?</AlertDialogTitle>
+            <AlertDialogTitle>Confirmar exclusão</AlertDialogTitle>
             <AlertDialogDescription>
-              Essa ação não pode ser desfeita. Isso excluirá permanentemente o usuário{' '}
-              <span className="font-bold">{userToDelete?.username || userToDelete?.email || 'sem nome'}</span>.
+              Tem certeza que deseja excluir este usuário? Esta ação também excluirá todos os anúncios associados a este usuário e não pode ser desfeita.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleDeleteConfirm}
-              disabled={isDeleting}
-              className="bg-red-600 hover:bg-red-700"
-            >
-              {isDeleting ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Excluindo...
-                </>
-              ) : 'Excluir'}
+            <AlertDialogAction onClick={confirmDelete} className="bg-red-500 hover:bg-red-600">
+              Excluir
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

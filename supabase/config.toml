@@ -1,48 +1,40 @@
 
 project_id = "cylrmgrxawqdrwrqvenw"
-name = "app"
 
 [api]
-node_version = "18"
-enabled_apis = ["rest", "graphql", "realtime"]
+enabled = true
 port = 54321
-
-[api.headers]
-x-default = "some value"
+schemas = ["public"]
+extra_schemas = ["extensions", "pg_catalog", "pg_net"]
+max_rows = 1000
 
 [db]
-port = 54322
 shadow_port = 54320
+port = 54322
 major_version = 15
 
-[realtime]
-enabled = true
-log_level = "INFO"
-webhook_event_cb = "supabase_functions.relay_realtime_websocket_events"
-
 [studio]
+enabled = true
 port = 54323
 api_url = "http://localhost"
 
 [inbucket]
+enabled = true
 port = 54324
 
+[storage]
+enabled = true
+file_size_limit = 50000000
+
 [auth]
-port = 54325
-uri = "http://localhost:54321/auth/v1"
-enable_pwd_confirmation = false
-enable_auto_pwd_recovery = false
-enable_auto_pwd_reset = false
-enable_pwd_strength = false
-email_templates_base_path = "/var/lib/supabase/storage/templates"
+enabled = true
+site_url = "http://localhost:3000"
+additional_redirect_urls = ["https://localhost:3000"]
+jwt_expiry = 3600
+enable_signup = true
 
 [functions]
-port = 54326
-function_timeout_seconds = 30
+port = 54325
 
 [functions.send-contact-email]
 verify_jwt = false
-
-[storage]
-port = 54327
-file_size_limit = 52428800

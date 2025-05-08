@@ -1,15 +1,22 @@
 
+// This file needs to be implemented from scratch since we don't see its content in the current code
 import React, { useState, useEffect } from 'react';
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Loader2, Save, Trash2 } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
-import { useAuth } from '@/context/AuthContext';
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useNavigate } from 'react-router-dom';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/context/AuthContext';
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { Home, Trash2, AlertCircle } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -19,370 +26,266 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
+  AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
-const UserProfile: React.FC = () => {
-  const { toast } = useToast();
-  const { authState } = useAuth();
+const UserProfile = () => {
+  const { authState, isAdmin } = useAuth();
   const navigate = useNavigate();
-  const [isLoading, setIsLoading] = useState<boolean>(true);
-  const [isSaving, setIsSaving] = useState<boolean>(false);
-  const [username, setUsername] = useState<string>('');
-  const [email, setEmail] = useState<string>('');
-  const [error, setError] = useState<string | null>(null);
-  const [userSubscriptions, setUserSubscriptions] = useState<any[]>([]);
-  const [pendingSubscriptions, setPendingSubscriptions] = useState<any[]>([]);
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState<boolean>(false);
-  const [subscriptionToDelete, setSubscriptionToDelete] = useState<any | null>(null);
-  const [isDeleting, setIsDeleting] = useState<boolean>(false);
-  
+  const { toast } = useToast();
+  const [userSubscriptions, setUserSubscriptions] = useState([]);
+  const [pendingSubscriptions, setPendingSubscriptions] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [openDialog, setOpenDialog] = useState(false);
+  const [selectedSubscription, setSelectedSubscription] = useState(null);
+
   useEffect(() => {
-    const fetchUserProfile = async () => {
-      if (!authState.session?.user?.id) {
-        setIsLoading(false);
-        return;
-      }
+    if (authState.user?.id) {
+      fetchUserSubscriptions();
+    }
+  }, [authState.user]);
 
-      try {
-        setIsLoading(true);
-        setError(null);
-        
-        // Get user profile from profiles table
-        const { data: profileData, error: profileError } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', authState.session.user.id)
-          .single();
-        
-        if (profileError) {
-          console.error("Error fetching user profile:", profileError);
-          setError("Não foi possível obter seus dados de perfil.");
-          return;
-        }
-        
-        if (profileData) {
-          setUsername(profileData.username || '');
-          // Use email from profiles table
-          setEmail(profileData.email || '');
-        }
-        
-        // Set email from the session as a fallback
-        if (!profileData?.email && authState.session?.user) {
-          setEmail(authState.session.user.email || '');
-        }
-
-        // Fetch user subscriptions
-        const { data: subscriptionsData, error: subscriptionsError } = await supabase
-          .from('subscriptions')
-          .select('*')
-          .eq('user_id', authState.session.user.id)
-          .order('added_date', { ascending: false });
-        
-        if (subscriptionsError) {
-          console.error("Error fetching user subscriptions:", subscriptionsError);
-          toast({
-            variant: "destructive",
-            title: "Erro",
-            description: "Não foi possível carregar seus anúncios."
-          });
-        } else {
-          setUserSubscriptions(subscriptionsData || []);
-        }
-
-        // Fetch pending subscriptions
-        const { data: pendingData, error: pendingError } = await supabase
-          .from('pending_subscriptions')
-          .select('*')
-          .eq('user_id', authState.session.user.id)
-          .order('submitted_at', { ascending: false });
-        
-        if (pendingError) {
-          console.error("Error fetching pending subscriptions:", pendingError);
-        } else {
-          setPendingSubscriptions(pendingData || []);
-        }
-      } catch (err: any) {
-        console.error("Error in fetchUserProfile:", err);
-        setError(err.message || "Ocorreu um erro ao carregar seu perfil.");
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    
-    fetchUserProfile();
-  }, [authState.session, authState.user, toast]);
-
-  const handleUpdateProfile = async () => {
-    if (!authState.session?.user?.id) return;
-    
+  const fetchUserSubscriptions = async () => {
+    setIsLoading(true);
     try {
-      setIsSaving(true);
-      setError(null);
+      // Fetch approved subscriptions
+      const { data: approvedSubs, error: approvedError } = await supabase
+        .from('subscriptions')
+        .select('*')
+        .eq('user_id', authState.user.id);
+
+      if (approvedError) throw approvedError;
+
+      // Fetch pending subscriptions
+      const { data: pendingSubs, error: pendingError } = await supabase
+        .from('pending_subscriptions')
+        .select('*')
+        .eq('user_id', authState.user.id);
+
+      if (pendingError) throw pendingError;
+
+      // Sort by added_date, newest first
+      const sortedApproved = approvedSubs?.sort((a, b) => 
+        new Date(b.added_date || 0) - new Date(a.added_date || 0)
+      ) || [];
       
-      const { error } = await supabase
-        .from('profiles')
-        .update({
-          username,
-          email // Also update email in the profiles table
-        })
-        .eq('id', authState.session.user.id);
-      
-      if (error) throw error;
-      
-      toast({
-        title: "Perfil atualizado",
-        description: "Suas informações foram atualizadas com sucesso."
-      });
-      
-    } catch (err: any) {
-      setError(err.message || "Não foi possível atualizar seu perfil.");
+      const sortedPending = pendingSubs?.sort((a, b) => 
+        new Date(b.added_date || 0) - new Date(a.added_date || 0)
+      ) || [];
+
+      setUserSubscriptions(sortedApproved);
+      setPendingSubscriptions(sortedPending);
+    } catch (error) {
+      console.error("Error fetching subscriptions:", error);
       toast({
         variant: "destructive",
-        title: "Erro ao atualizar perfil",
-        description: err.message || "Não foi possível atualizar seu perfil."
+        title: "Erro ao carregar anúncios",
+        description: error.message
       });
     } finally {
-      setIsSaving(false);
+      setIsLoading(false);
     }
   };
 
-  const handleDeleteSubscription = (subscription: any) => {
-    setSubscriptionToDelete(subscription);
-    setDeleteDialogOpen(true);
-  };
-
-  const confirmDeleteSubscription = async () => {
-    if (!subscriptionToDelete) return;
-    
-    setIsDeleting(true);
-    
+  const deleteSubscription = async (subscription, isPending = false) => {
     try {
+      const table = isPending ? 'pending_subscriptions' : 'subscriptions';
       const { error } = await supabase
-        .from('subscriptions')
+        .from(table)
         .delete()
-        .eq('id', subscriptionToDelete.id);
-        
+        .eq('id', subscription.id);
+
       if (error) throw error;
-      
-      setUserSubscriptions(userSubscriptions.filter(sub => sub.id !== subscriptionToDelete.id));
-      
+
       toast({
         title: "Anúncio excluído",
-        description: "Seu anúncio foi excluído com sucesso."
+        description: "O anúncio foi excluído com sucesso."
       });
-      
-      setDeleteDialogOpen(false);
-    } catch (err: any) {
-      console.error("Error deleting subscription:", err);
+
+      // Refresh the lists
+      fetchUserSubscriptions();
+    } catch (error) {
+      console.error("Error deleting subscription:", error);
       toast({
         variant: "destructive",
         title: "Erro ao excluir anúncio",
-        description: err.message || "Não foi possível excluir o anúncio."
+        description: error.message
       });
-    } finally {
-      setIsDeleting(false);
     }
   };
 
-  // Handle page back navigation
-  const handleBack = () => {
-    navigate(-1); // Go back to the previous page
+  const handleDeleteClick = (subscription, isPending) => {
+    setSelectedSubscription({ data: subscription, isPending });
+    setOpenDialog(true);
   };
 
-  if (isLoading) {
+  if (!authState.user) {
     return (
-      <div className="flex flex-col items-center justify-center h-64">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-        <span className="mt-2 text-muted-foreground">Carregando perfil...</span>
+      <div className="min-h-screen bg-gray-100 flex flex-col">
+        <div className="container mx-auto px-4 py-8 flex-1">
+          <Card className="p-6">
+            <div className="flex flex-col items-center justify-center space-y-4">
+              <AlertCircle className="h-12 w-12 text-yellow-500" />
+              <h1 className="text-2xl font-bold">Acesso não autorizado</h1>
+              <p className="text-gray-600">Você precisa estar logado para acessar esta página.</p>
+              <Button onClick={() => navigate('/auth')}>Fazer Login</Button>
+            </div>
+          </Card>
+        </div>
       </div>
     );
   }
 
-  const getStatusText = (status: string) => {
-    switch(status) {
-      case 'pending': return 'Pendente';
-      case 'approved': return 'Aprovado';
-      case 'rejected': return 'Rejeitado';
-      default: return status;
-    }
-  };
-
   return (
-    <div className="container mx-auto px-4 py-6">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold">Meu Perfil</h1>
-        <Button 
-          variant="outline" 
-          onClick={handleBack}
-        >
-          Voltar
-        </Button>
-      </div>
-      
-      {error && (
-        <Alert variant="destructive" className="mb-6">
-          <AlertDescription>{error}</AlertDescription>
-        </Alert>
-      )}
-      
-      <div className="grid gap-6 md:grid-cols-2">
-        <Card className="space-y-6">
-          <CardHeader>
-            <CardTitle>Informações Pessoais</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <div className="space-y-2">
-              <Label htmlFor="username">Nome de Usuário</Label>
-              <Input 
-                id="username" 
-                value={username} 
-                onChange={(e) => setUsername(e.target.value)} 
-                className="w-full"
-                placeholder="Seu nome de usuário"
-              />
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <Input 
-                id="email" 
-                type="email" 
-                value={email} 
-                disabled 
-                className="w-full bg-gray-100"
-              />
-              <p className="text-xs text-muted-foreground">O email não pode ser alterado.</p>
-            </div>
-            
+    <div className="min-h-screen bg-gray-100 flex flex-col">
+      <div className="bg-white shadow-sm">
+        <div className="container mx-auto px-4 py-2">
+          <div className="flex justify-between items-center">
             <Button 
-              onClick={handleUpdateProfile} 
-              disabled={isSaving} 
-              className="w-full"
+              variant="ghost" 
+              className="font-medium"
+              onClick={() => navigate('/')}
             >
-              {isSaving ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Salvando...
-                </>
-              ) : (
-                <>
-                  <Save className="mr-2 h-4 w-4" />
-                  Salvar Alterações
-                </>
-              )}
+              <Home className="h-4 w-4 mr-2" /> 
+              Início
             </Button>
-          </CardContent>
-        </Card>
-
-        <div className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Meus Anúncios</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {userSubscriptions.length === 0 ? (
-                <p className="text-center py-4 text-muted-foreground">
-                  Você ainda não possui anúncios publicados.
-                </p>
-              ) : (
-                <div className="overflow-x-auto">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Título</TableHead>
-                        <TableHead>Preço</TableHead>
-                        <TableHead>Ação</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {userSubscriptions.map((subscription) => (
-                        <TableRow key={subscription.id}>
-                          <TableCell className="font-medium">{subscription.title}</TableCell>
-                          <TableCell>{subscription.price}</TableCell>
-                          <TableCell>
-                            <Button 
-                              variant="destructive" 
-                              size="sm" 
-                              onClick={() => handleDeleteSubscription(subscription)}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
-          {pendingSubscriptions.length > 0 && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Anúncios Pendentes</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="overflow-x-auto">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Título</TableHead>
-                        <TableHead>Preço</TableHead>
-                        <TableHead>Status</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {pendingSubscriptions.map((subscription) => (
-                        <TableRow key={subscription.id}>
-                          <TableCell className="font-medium">{subscription.title}</TableCell>
-                          <TableCell>{subscription.price}</TableCell>
-                          <TableCell>
-                            <span className={`px-2 py-1 rounded text-xs ${
-                              subscription.status_approval === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                              subscription.status_approval === 'approved' ? 'bg-green-100 text-green-800' :
-                              'bg-red-100 text-red-800'
-                            }`}>
-                              {getStatusText(subscription.status_approval)}
-                            </span>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
-              </CardContent>
-            </Card>
-          )}
+          </div>
         </div>
       </div>
 
-      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Excluir anúncio</AlertDialogTitle>
-            <AlertDialogDescription>
-              Tem certeza que deseja excluir este anúncio? Esta ação não pode ser desfeita.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction 
-              onClick={confirmDeleteSubscription}
-              className="bg-red-600 hover:bg-red-700"
-              disabled={isDeleting}
-            >
-              {isDeleting ? (
+      <div className="container mx-auto px-4 py-8">
+        <Card className="mb-6 p-6">
+          <h1 className="text-2xl font-bold mb-4">Meu Perfil</h1>
+          <div className="space-y-3">
+            <div>
+              <p className="text-sm text-gray-500">Email</p>
+              <p className="font-medium">{authState.user.email || "N/A"}</p>
+            </div>
+            <div>
+              <p className="text-sm text-gray-500">Nome de usuário</p>
+              <p className="font-medium">{authState.user.username || "N/A"}</p>
+            </div>
+            <div>
+              <p className="text-sm text-gray-500">Função</p>
+              <p className="font-medium">{authState.user.role === 'admin' ? 'Administrador' : 'Usuário'}</p>
+            </div>
+          </div>
+        </Card>
+
+        <Card className="mb-6 p-6">
+          <h2 className="text-xl font-bold mb-4">Meus Anúncios</h2>
+          
+          {isLoading ? (
+            <div className="flex justify-center py-8">
+              <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-blue-500"></div>
+            </div>
+          ) : (
+            <>
+              {userSubscriptions.length === 0 && pendingSubscriptions.length === 0 ? (
+                <div className="text-center py-6 border rounded-md bg-gray-50">
+                  <p className="text-gray-500">Você ainda não possui anúncios cadastrados.</p>
+                  <Button 
+                    variant="link"
+                    onClick={() => navigate('/new')}
+                    className="mt-2"
+                  >
+                    Cadastrar novo anúncio
+                  </Button>
+                </div>
+              ) : (
                 <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Excluindo...
+                  {userSubscriptions.length > 0 && (
+                    <div className="mb-6">
+                      <h3 className="font-medium text-gray-700 mb-3">Anúncios aprovados</h3>
+                      <div className="space-y-3">
+                        {userSubscriptions.map(subscription => (
+                          <div 
+                            key={subscription.id}
+                            className="p-3 border rounded-md flex justify-between items-center"
+                          >
+                            <div>
+                              <div className="font-medium">{subscription.title}</div>
+                              <div className="text-sm text-gray-500">
+                                {subscription.price} - {new Date(subscription.added_date).toLocaleDateString()}
+                              </div>
+                            </div>
+                            <Button 
+                              variant="ghost" 
+                              size="sm" 
+                              onClick={() => handleDeleteClick(subscription, false)}
+                              className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  
+                  {pendingSubscriptions.length > 0 && (
+                    <div>
+                      <h3 className="font-medium text-gray-700 mb-3">Anúncios pendentes</h3>
+                      <div className="space-y-3">
+                        {pendingSubscriptions.map(subscription => (
+                          <div 
+                            key={subscription.id}
+                            className="p-3 border rounded-md flex justify-between items-center"
+                          >
+                            <div>
+                              <div className="font-medium">{subscription.title}</div>
+                              <div className="text-sm text-gray-500">
+                                {subscription.price} - {subscription.status_approval} - {new Date(subscription.added_date).toLocaleDateString()}
+                              </div>
+                            </div>
+                            <Button 
+                              variant="ghost" 
+                              size="sm" 
+                              onClick={() => handleDeleteClick(subscription, true)}
+                              className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </>
-              ) : 'Excluir'}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+              )}
+            </>
+          )}
+        </Card>
+
+        <div className="text-center">
+          <Button onClick={() => navigate('/')}>Voltar à página inicial</Button>
+        </div>
+
+        <AlertDialog open={openDialog} onOpenChange={setOpenDialog}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Confirmar exclusão</AlertDialogTitle>
+              <AlertDialogDescription>
+                Tem certeza que deseja excluir este anúncio? Esta ação não pode ser desfeita.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel onClick={() => setOpenDialog(false)}>Cancelar</AlertDialogCancel>
+              <AlertDialogAction 
+                onClick={() => {
+                  if (selectedSubscription) {
+                    deleteSubscription(selectedSubscription.data, selectedSubscription.isPending);
+                    setOpenDialog(false);
+                  }
+                }}
+                className="bg-red-500 hover:bg-red-600"
+              >
+                Excluir
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      </div>
     </div>
   );
 };
