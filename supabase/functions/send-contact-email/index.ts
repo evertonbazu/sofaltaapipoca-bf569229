@@ -1,95 +1,125 @@
 
-import { serve } from "https://deno.land/std@0.177.0/http/server.ts"
+import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { SmtpClient } from "https://deno.land/x/smtp@v0.7.0/mod.ts";
 
 const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+};
+
+interface ContactRequest {
+  name: string;
+  email: string;
+  subject: string;
+  message: string;
 }
 
 serve(async (req) => {
-  // Handle CORS preflight requests
-  if (req.method === 'OPTIONS') {
+  // Handle CORS preflight request
+  if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const { name, email, subject, message } = await req.json();
-    
-    if (!name || !email || !subject || !message) {
-      return new Response(
-        JSON.stringify({ error: 'Todos os campos são obrigatórios' }),
-        { 
-          status: 400, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-        }
-      );
+    // Get environment variables for SMTP configuration
+    const SMTP_HOSTNAME = Deno.env.get("SMTP_HOSTNAME");
+    const SMTP_PORT = Number(Deno.env.get("SMTP_PORT"));
+    const SMTP_USERNAME = Deno.env.get("SMTP_USERNAME");
+    const SMTP_PASSWORD = Deno.env.get("SMTP_PASSWORD");
+    const ADMIN_EMAIL = Deno.env.get("ADMIN_EMAIL");
+
+    // Check if all required environment variables are set
+    if (!SMTP_HOSTNAME || !SMTP_PORT || !SMTP_USERNAME || !SMTP_PASSWORD || !ADMIN_EMAIL) {
+      throw new Error("Missing SMTP configuration environment variables");
     }
 
+    // Parse the request body to get contact form data
+    const { name, email, subject, message }: ContactRequest = await req.json();
+
+    // Validate the required fields
+    if (!name || !email || !subject || !message) {
+      throw new Error("Missing required fields");
+    }
+
+    // Create a new SMTP client
     const client = new SmtpClient();
 
-    // Get SMTP configuration from environment variables
-    const SMTP_HOST = Deno.env.get("SMTP_HOST") || "";
-    const SMTP_PORT = parseInt(Deno.env.get("SMTP_PORT") || "465");
-    const SMTP_USERNAME = Deno.env.get("SMTP_USERNAME") || "";
-    const SMTP_PASSWORD = Deno.env.get("SMTP_PASSWORD") || "";
-    const ADMIN_EMAIL = Deno.env.get("ADMIN_EMAIL") || "sr.bazu@gmail.com";
+    // Connect to the SMTP server
+    await client.connectTLS({
+      hostname: SMTP_HOSTNAME,
+      port: SMTP_PORT,
+      username: SMTP_USERNAME,
+      password: SMTP_PASSWORD,
+    });
 
-    try {
-      await client.connectTLS({
-        hostname: SMTP_HOST,
-        port: SMTP_PORT,
-        username: SMTP_USERNAME,
-        password: SMTP_PASSWORD,
-      });
-  
-      // Send email to admin
-      await client.send({
-        from: SMTP_USERNAME,
-        to: ADMIN_EMAIL,
-        subject: `Contato do Site: ${subject}`,
-        content: `
-          <h2>Nova mensagem de contato</h2>
-          <p><strong>Nome:</strong> ${name}</p>
-          <p><strong>Email:</strong> ${email}</p>
-          <p><strong>Assunto:</strong> ${subject}</p>
-          <p><strong>Mensagem:</strong></p>
-          <p>${message.replace(/\n/g, '<br>')}</p>
-        `,
-        html: `
-          <h2>Nova mensagem de contato</h2>
-          <p><strong>Nome:</strong> ${name}</p>
-          <p><strong>Email:</strong> ${email}</p>
-          <p><strong>Assunto:</strong> ${subject}</p>
-          <p><strong>Mensagem:</strong></p>
-          <p>${message.replace(/\n/g, '<br>')}</p>
-        `,
-      });
-  
-      await client.close();
-      
-      console.log("Email sent successfully to:", ADMIN_EMAIL);
-    } catch (error) {
-      console.error("Error sending contact email:", error);
-      throw error;
-    }
+    // Send email to admin
+    await client.send({
+      from: SMTP_USERNAME,
+      to: ADMIN_EMAIL,
+      subject: `Nova mensagem de contato: ${subject}`,
+      content: `
+        <h1>Nova mensagem de contato</h1>
+        <p><strong>Nome:</strong> ${name}</p>
+        <p><strong>Email:</strong> ${email}</p>
+        <p><strong>Assunto:</strong> ${subject}</p>
+        <p><strong>Mensagem:</strong></p>
+        <p>${message.replace(/\n/g, "<br>")}</p>
+      `,
+      html: `
+        <h1>Nova mensagem de contato</h1>
+        <p><strong>Nome:</strong> ${name}</p>
+        <p><strong>Email:</strong> ${email}</p>
+        <p><strong>Assunto:</strong> ${subject}</p>
+        <p><strong>Mensagem:</strong></p>
+        <p>${message.replace(/\n/g, "<br>")}</p>
+      `,
+    });
+
+    // Send confirmation email to the user
+    await client.send({
+      from: SMTP_USERNAME,
+      to: email,
+      subject: `Recebemos sua mensagem: ${subject}`,
+      content: `
+        <h1>Obrigado por entrar em contato!</h1>
+        <p>Olá ${name},</p>
+        <p>Recebemos sua mensagem e entraremos em contato em breve.</p>
+        <p><strong>Assunto:</strong> ${subject}</p>
+        <p><strong>Sua mensagem:</strong></p>
+        <p>${message.replace(/\n/g, "<br>")}</p>
+        <p>Atenciosamente,</p>
+        <p>Equipe Só Falta a Pipoca</p>
+      `,
+      html: `
+        <h1>Obrigado por entrar em contato!</h1>
+        <p>Olá ${name},</p>
+        <p>Recebemos sua mensagem e entraremos em contato em breve.</p>
+        <p><strong>Assunto:</strong> ${subject}</p>
+        <p><strong>Sua mensagem:</strong></p>
+        <p>${message.replace(/\n/g, "<br>")}</p>
+        <p>Atenciosamente,</p>
+        <p>Equipe Só Falta a Pipoca</p>
+      `,
+    });
+
+    // Close the connection
+    await client.close();
 
     return new Response(
-      JSON.stringify({ success: true, message: 'Email enviado com sucesso!' }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      JSON.stringify({ success: true, message: "Email sent successfully" }),
+      {
+        headers: { "Content-Type": "application/json", ...corsHeaders },
+        status: 200,
+      }
     );
-  } catch (error: any) {
+  } catch (error) {
     console.error("Error in send-contact-email function:", error);
-    
     return new Response(
-      JSON.stringify({ 
-        error: 'Erro ao enviar email. Por favor, tente novamente mais tarde.',
-        details: error.message 
-      }),
-      { 
-        status: 500, 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+      JSON.stringify({ success: false, error: error.message }),
+      {
+        headers: { "Content-Type": "application/json", ...corsHeaders },
+        status: 500,
       }
     );
   }
-})
+});

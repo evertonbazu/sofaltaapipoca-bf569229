@@ -107,18 +107,50 @@ const ContactForm = () => {
   };
 
   return (
-    <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-        <div className="grid gap-6">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+    <div className="max-w-3xl mx-auto bg-white p-6 rounded-lg shadow-sm">
+      <h2 className="text-2xl font-bold mb-6 text-center">Fale Conosco</h2>
+      
+      <Form {...form}>
+        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+          <div className="grid gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="name"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Nome</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Seu nome" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={form.control}
+                name="email"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Email</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Seu email" type="email" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+            
             <FormField
               control={form.control}
-              name="name"
+              name="subject"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Nome</FormLabel>
+                  <FormLabel>Assunto</FormLabel>
                   <FormControl>
-                    <Input placeholder="Seu nome" {...field} />
+                    <Input placeholder="Assunto da mensagem" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -127,12 +159,16 @@ const ContactForm = () => {
             
             <FormField
               control={form.control}
-              name="email"
+              name="message"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Email</FormLabel>
+                  <FormLabel>Mensagem</FormLabel>
                   <FormControl>
-                    <Input placeholder="Seu email" type="email" {...field} />
+                    <Textarea 
+                      placeholder="Digite sua mensagem aqui..." 
+                      className="min-h-[150px] resize-y"
+                      {...field}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -140,48 +176,18 @@ const ContactForm = () => {
             />
           </div>
           
-          <FormField
-            control={form.control}
-            name="subject"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Assunto</FormLabel>
-                <FormControl>
-                  <Input placeholder="Assunto da mensagem" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          
-          <FormField
-            control={form.control}
-            name="message"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Mensagem</FormLabel>
-                <FormControl>
-                  <Textarea 
-                    placeholder="Digite sua mensagem aqui..." 
-                    className="min-h-[150px] resize-y"
-                    {...field}
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        </div>
-        
-        <Button 
-          type="submit" 
-          className="w-full sm:w-auto"
-          disabled={isSubmitting}
-        >
-          {isSubmitting ? "Enviando..." : "Enviar Mensagem"}
-        </Button>
-      </form>
-    </Form>
+          <div className="flex justify-center">
+            <Button 
+              type="submit" 
+              className="w-full sm:w-auto"
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? "Enviando..." : "Enviar Mensagem"}
+            </Button>
+          </div>
+        </form>
+      </Form>
+    </div>
   );
 };
 

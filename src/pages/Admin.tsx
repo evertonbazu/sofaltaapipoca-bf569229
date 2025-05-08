@@ -5,7 +5,7 @@ import { useAuth } from '@/hooks/use-auth';
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { SidebarProvider, Sidebar, SidebarMenu, SidebarMenuItem, SidebarMenuButton } from "@/components/ui/sidebar";
-import { Home, ListPlus, Edit, LogOut, Users, Bell, FileText, User } from 'lucide-react';
+import { Home, ListPlus, Edit, LogOut, Users, Bell, FileText, User, MessageSquare } from 'lucide-react';
 import AdminDashboard from '@/components/admin/AdminDashboard';
 import SubscriptionForm from '@/components/admin/SubscriptionForm';
 import SubscriptionList from '@/components/admin/SubscriptionList';
@@ -14,6 +14,8 @@ import PendingSubscriptions from '@/components/admin/PendingSubscriptions';
 import ImportSubscriptions from '@/components/admin/ImportSubscriptions';
 import ExportSubscriptionsTxt from '@/components/admin/ExportSubscriptionsTxt';
 import UserProfile from '@/components/admin/UserProfile';
+import ContactMessages from '@/components/admin/ContactMessages';
+import { APP_VERSION } from '@/App';
 
 const Admin: React.FC = () => {
   const { authState, isAdmin, signOut } = useAuth();
@@ -95,6 +97,15 @@ const Admin: React.FC = () => {
               </SidebarMenuItem>
               <SidebarMenuItem>
                 <SidebarMenuButton 
+                  onClick={() => navigate('/admin/messages')}
+                  isActive={isActive('/admin/messages')}
+                >
+                  <MessageSquare className="mr-2 h-5 w-5" />
+                  Mensagens de Contato
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              <SidebarMenuItem>
+                <SidebarMenuButton 
                   onClick={() => navigate('/admin/import')}
                   isActive={isActive('/admin/import')}
                 >
@@ -154,6 +165,8 @@ const Admin: React.FC = () => {
               Logado como {authState.user.username || authState.user.id}
               <br />
               <span className="font-semibold">{isAdmin() ? 'Administrador' : 'Membro'}</span>
+              <br />
+              <span className="text-xs">versão {APP_VERSION}</span>
             </p>
           </div>
         </Sidebar>
@@ -167,6 +180,7 @@ const Admin: React.FC = () => {
               <Route path="/pending" element={<PendingSubscriptions />} />
               <Route path="/import" element={<ImportSubscriptions />} />
               <Route path="/export" element={<ExportSubscriptionsTxt />} />
+              <Route path="/messages" element={<ContactMessages />} />
               {isAdmin() && (
                 <Route path="/users" element={<UserManagement />} />
               )}

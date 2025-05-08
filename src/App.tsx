@@ -13,10 +13,14 @@ import ExportSubscriptionsTxt from './components/admin/ExportSubscriptionsTxt';
 import ExportSubscriptions from './components/admin/ExportSubscriptions';
 import ImportSubscriptions from './components/admin/ImportSubscriptions';
 import UserManagement from './components/admin/UserManagement';
+import ContactMessages from './components/admin/ContactMessages';
 import NewSubscription from './pages/NewSubscription';
 import Index from './pages/Index';
 import UserProfile from './components/admin/UserProfile';
 import Contact from './pages/Contact';
+
+// Version information
+export const APP_VERSION = '1.2.0'; // Update this with each significant change
 
 // Create a separate component for the authenticated routes
 const AppRoutes = () => {
@@ -65,8 +69,18 @@ const AppRoutes = () => {
         <Route path="export-all" element={<ExportSubscriptions />} />
         <Route path="import" element={<ImportSubscriptions />} />
         <Route path="users" element={<UserManagement />} />
+        <Route path="messages" element={<ContactMessages />} />
       </Route>
     </Routes>
+  );
+};
+
+// Component for the Footer with version info
+export const Footer = () => {
+  return (
+    <footer className="py-4 px-6 text-center text-gray-500 text-sm border-t mt-auto">
+      <p>&copy; {new Date().getFullYear()} Só Falta a Pipoca - versão {APP_VERSION}</p>
+    </footer>
   );
 };
 
@@ -76,7 +90,12 @@ const App = () => {
     <>
       <AuthProvider>
         <Router>
-          <AppRoutes />
+          <div className="flex flex-col min-h-screen">
+            <div className="flex-grow">
+              <AppRoutes />
+            </div>
+            <Footer />
+          </div>
         </Router>
       </AuthProvider>
       <Toaster />

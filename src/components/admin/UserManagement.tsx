@@ -13,12 +13,6 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import {
   Dialog,
   DialogContent,
   DialogDescription,
@@ -44,7 +38,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { ProfileFromSupabase } from '@/types/subscriptionTypes';
-import { Edit, Trash, MoreVertical, User, Mail } from 'lucide-react';
+import { Edit, Trash, User, Mail } from 'lucide-react';
 
 const UserManagement = () => {
   const [users, setUsers] = useState<ProfileFromSupabase[]>([]);
@@ -55,6 +49,8 @@ const UserManagement = () => {
   const [currentUser, setCurrentUser] = useState<ProfileFromSupabase | null>(null);
   const [editedRole, setEditedRole] = useState<string>('');
   const [editedUsername, setEditedUsername] = useState<string>('');
+  const [sortColumn, setSortColumn] = useState('created_at');
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
   const { toast } = useToast();
 
   useEffect(() => {
@@ -66,8 +62,7 @@ const UserManagement = () => {
     try {
       const { data, error } = await supabase
         .from('profiles')
-        .select('*')
-        .order('created_at', { ascending: false });
+        .select('*');
       
       if (error) throw error;
       
@@ -156,6 +151,14 @@ const UserManagement = () => {
         
       if (pendingError) throw pendingError;
       
+      // Delete any contact messages
+      const { error: contactError } = await supabase
+        .from('contact_messages')
+        .delete()
+        .eq('user_id', currentUser.id);
+        
+      if (contactError) throw contactError;
+      
       // Delete the profile
       const { error: profileError } = await supabase
         .from('profiles')
@@ -169,7 +172,7 @@ const UserManagement = () => {
       
       toast({
         title: "Usuário excluído",
-        description: "O usuário e todos os seus anúncios foram excluídos com sucesso."
+        description: "O usuário e todos os seus dados foram excluídos com sucesso."
       });
       
       setDeleteDialogOpen(false);
@@ -183,10 +186,39 @@ const UserManagement = () => {
     }
   };
 
-  const filteredUsers = users.filter(user => 
-    (user.username?.toLowerCase() || '').includes(searchTerm.toLowerCase()) || 
-    (user.email?.toLowerCase() || '').includes(searchTerm.toLowerCase())
-  );
+  const handleSort = (column: string) => {
+    if (sortColumn === column) {
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortColumn(column);
+      setSortDirection('asc');
+    }
+  };
+
+  const getSortedUsers = () => {
+    const filtered = users.filter(user => 
+      (user.username?.toLowerCase() || '').includes(searchTerm.toLowerCase()) || 
+      (user.email?.toLowerCase() || '').includes(searchTerm.toLowerCase())
+    );
+    
+    return [...filtered].sort((a, b) => {
+      // Handle date columns differently
+      if (sortColumn === 'created_at' || sortColumn === 'updated_at') {
+        const dateA = a[sortColumn] ? new Date(a[sortColumn]).getTime() : 0;
+        const dateB = b[sortColumn] ? new Date(b[sortColumn]).getTime() : 0;
+        
+        return sortDirection === 'asc' ? dateA - dateB : dateB - dateA;
+      }
+      
+      // Handle string columns
+      const valA = a[sortColumn]?.toString().toLowerCase() || '';
+      const valB = b[sortColumn]?.toString().toLowerCase() || '';
+      
+      if (valA < valB) return sortDirection === 'asc' ? -1 : 1;
+      if (valA > valB) return sortDirection === 'asc' ? 1 : -1;
+      return 0;
+    });
+  };
 
   return (
     <div className="space-y-4">
@@ -194,12 +226,49 @@ const UserManagement = () => {
         <h1 className="text-2xl font-bold">Gerenciar Usuários</h1>
       </div>
       
-      <div className="w-full max-w-sm">
-        <Input 
-          placeholder="Buscar por nome ou email..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-        />
+      <div className="flex flex-wrap gap-2 justify-between items-center">
+        <div className="w-full max-w-sm">
+          <Input 
+            placeholder="Buscar por nome ou email..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+        </div>
+        
+        <div className="flex flex-wrap gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => handleSort('username')}
+            className={sortColumn === 'username' ? 'border-blue-500' : ''}
+          >
+            Nome {sortColumn === 'username' && (sortDirection === 'asc' ? '↑' : '↓')}
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => handleSort('email')}
+            className={sortColumn === 'email' ? 'border-blue-500' : ''}
+          >
+            Email {sortColumn === 'email' && (sortDirection === 'asc' ? '↑' : '↓')}
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => handleSort('role')}
+            className={sortColumn === 'role' ? 'border-blue-500' : ''}
+          >
+            Função {sortColumn === 'role' && (sortDirection === 'asc' ? '↑' : '↓')}
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => handleSort('created_at')}
+            className={sortColumn === 'created_at' ? 'border-blue-500' : ''}
+          >
+            Data Criação {sortColumn === 'created_at' && (sortDirection === 'asc' ? '↑' : '↓')}
+          </Button>
+        </div>
       </div>
       
       {loading ? (
@@ -215,18 +284,19 @@ const UserManagement = () => {
                 <TableHead>Email</TableHead>
                 <TableHead>Função</TableHead>
                 <TableHead>Data de Criação</TableHead>
+                <TableHead>Última Atualização</TableHead>
                 <TableHead className="text-right">Ações</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredUsers.length === 0 ? (
+              {getSortedUsers().length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={5} className="text-center py-6 text-gray-500">
+                  <TableCell colSpan={6} className="text-center py-6 text-gray-500">
                     Nenhum usuário encontrado
                   </TableCell>
                 </TableRow>
               ) : (
-                filteredUsers.map((user) => (
+                getSortedUsers().map((user) => (
                   <TableRow key={user.id}>
                     <TableCell className="flex items-center gap-2">
                       <User className="h-4 w-4 text-gray-400" />
@@ -250,25 +320,30 @@ const UserManagement = () => {
                         ? new Date(user.created_at).toLocaleDateString() 
                         : 'N/A'}
                     </TableCell>
+                    <TableCell>
+                      {user.updated_at 
+                        ? new Date(user.updated_at).toLocaleDateString() 
+                        : 'N/A'}
+                    </TableCell>
                     <TableCell className="text-right">
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="sm">
-                            <MoreVertical className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => handleEdit(user)}>
-                            <Edit className="mr-2 h-4 w-4" /> Editar
-                          </DropdownMenuItem>
-                          <DropdownMenuItem 
-                            onClick={() => handleDelete(user)}
-                            className="text-red-600"
-                          >
-                            <Trash className="mr-2 h-4 w-4" /> Excluir
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
+                      <div className="flex justify-end gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleEdit(user)}
+                          className="flex gap-1 items-center"
+                        >
+                          <Edit className="h-4 w-4" /> Editar
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm" 
+                          onClick={() => handleDelete(user)}
+                          className="flex gap-1 items-center text-red-600 hover:text-red-700 hover:border-red-300"
+                        >
+                          <Trash className="h-4 w-4" /> Excluir
+                        </Button>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))
@@ -322,7 +397,7 @@ const UserManagement = () => {
           <AlertDialogHeader>
             <AlertDialogTitle>Confirmar exclusão</AlertDialogTitle>
             <AlertDialogDescription>
-              Tem certeza que deseja excluir este usuário? Esta ação também excluirá todos os anúncios associados a este usuário e não pode ser desfeita.
+              Tem certeza que deseja excluir este usuário? Esta ação também excluirá todos os anúncios e mensagens associados a este usuário e não pode ser desfeita.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
