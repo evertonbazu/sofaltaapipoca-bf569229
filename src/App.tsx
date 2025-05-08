@@ -46,7 +46,7 @@ const AppRoutes = () => {
       <Route path="/contact" element={<Contact />} />
       <Route path="/" element={<Index />} />
       <Route
-        path="/admin"
+        path="/admin/*"
         element={
           authState?.user?.role === 'admin' ? (
             <Admin />

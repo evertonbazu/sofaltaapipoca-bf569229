@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
@@ -32,15 +33,19 @@ const SubscriptionList: React.FC = () => {
 
   useEffect(() => {
     fetchSubscriptions();
-  }, []);
+  }, [sortColumn, sortDirection]);
 
   const fetchSubscriptions = async () => {
     setLoading(true);
     try {
-      const { data, error } = await supabase
+      let query = supabase
         .from('subscriptions')
-        .select('*')
-        .order(sortColumn, { ascending: sortDirection });
+        .select('*');
+        
+      // Handle sorting
+      query = query.order(sortColumn, { ascending: sortDirection === 'asc' });
+
+      const { data, error } = await query;
 
       if (error) {
         console.error('Error fetching subscriptions:', error);
@@ -52,7 +57,7 @@ const SubscriptionList: React.FC = () => {
       } else {
         setSubscriptions(data || []);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error fetching subscriptions:', error);
       toast({
         variant: "destructive",
@@ -76,10 +81,6 @@ const SubscriptionList: React.FC = () => {
       setSortDirection('asc');
     }
   };
-
-  useEffect(() => {
-    fetchSubscriptions();
-  }, [sortColumn, sortDirection]);
 
   const handleEditClick = (id: string) => {
     navigate(`/admin/subscriptions/edit/${id}`);
@@ -114,7 +115,7 @@ const SubscriptionList: React.FC = () => {
         });
         fetchSubscriptions();
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error deleting subscription:', error);
       toast({
         variant: "destructive",
@@ -176,117 +177,115 @@ const SubscriptionList: React.FC = () => {
         </CardHeader>
         <CardContent>
           <div className="rounded-md border overflow-x-auto">
-            
-<TableHeader>
-  <TableRow>
-    <TableHead className="w-[250px]" onClick={() => handleSortChange('title')}>
-      <div className="flex items-center">
-        Título
-        {renderSortIcon('title')}
-      </div>
-    </TableHead>
-    <TableHead onClick={() => handleSortChange('price')}>
-      <div className="flex items-center">
-        Preço
-        {renderSortIcon('price')}
-      </div>
-    </TableHead>
-    <TableHead className="hidden md:table-cell" onClick={() => handleSortChange('status')}>
-      <div className="flex items-center">
-        Status
-        {renderSortIcon('status')}
-      </div>
-    </TableHead>
-    <TableHead className="hidden md:table-cell" onClick={() => handleSortChange('telegram_username')}>
-      <div className="flex items-center">
-        Telegram
-        {renderSortIcon('telegram_username')}
-      </div>
-    </TableHead>
-    <TableHead className="hidden lg:table-cell" onClick={() => handleSortChange('whatsapp_number')}>
-      <div className="flex items-center">
-        WhatsApp
-        {renderSortIcon('whatsapp_number')}
-      </div>
-    </TableHead>
-    <TableHead className="hidden lg:table-cell" onClick={() => handleSortChange('added_date')}>
-      <div className="flex items-center">
-        Data
-        {renderSortIcon('added_date')}
-      </div>
-    </TableHead>
-    <TableHead className="text-right">Ações</TableHead>
-  </TableRow>
-</TableHeader>
-
-            
-<TableBody>
-  {loading ? (
-    <TableRow>
-      <TableCell colSpan={7} className="h-32 text-center">
-        <div className="flex flex-col items-center justify-center">
-          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-          <span className="mt-2 text-muted-foreground">Carregando anúncios...</span>
-        </div>
-      </TableCell>
-    </TableRow>
-  ) : filteredSubscriptions.length === 0 ? (
-    <TableRow>
-      <TableCell colSpan={7} className="h-32 text-center">
-        {searchTerm ? (
-          <div className="text-muted-foreground">Nenhum resultado encontrado para "{searchTerm}"</div>
-        ) : (
-          <div className="text-muted-foreground">Nenhum anúncio cadastrado</div>
-        )}
-      </TableCell>
-    </TableRow>
-  ) : (
-    filteredSubscriptions.map((subscription) => (
-      <TableRow key={subscription.id}>
-        <TableCell className="font-medium">{subscription.title}</TableCell>
-        <TableCell>{subscription.price}</TableCell>
-        <TableCell className="hidden md:table-cell">
-          <span
-            className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-              getStatusColor(subscription.status)
-            }`}
-          >
-            {subscription.status}
-          </span>
-        </TableCell>
-        <TableCell className="hidden md:table-cell">
-          {subscription.telegram_username}
-        </TableCell>
-        <TableCell className="hidden lg:table-cell">
-          {subscription.whatsapp_number}
-        </TableCell>
-        <TableCell className="hidden lg:table-cell">
-          {subscription.added_date ? new Date(subscription.added_date).toLocaleDateString('pt-BR') : 'N/A'}
-        </TableCell>
-        <TableCell className="text-right">
-          <div className="flex justify-end gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => handleEditClick(subscription.id)}
-            >
-              <Pencil className="h-4 w-4" />
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              className="bg-red-50 border-red-200 hover:bg-red-100"
-              onClick={() => handleDeleteClick(subscription.id)}
-            >
-              <Trash2 className="h-4 w-4 text-red-500" />
-            </Button>
-          </div>
-        </TableCell>
-      </TableRow>
-    ))
-  )}
-</TableBody>
-
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="w-[250px]" onClick={() => handleSortChange('title')}>
+                    <div className="flex items-center">
+                      Título
+                      {renderSortIcon('title')}
+                    </div>
+                  </TableHead>
+                  <TableHead onClick={() => handleSortChange('price')}>
+                    <div className="flex items-center">
+                      Preço
+                      {renderSortIcon('price')}
+                    </div>
+                  </TableHead>
+                  <TableHead className="hidden md:table-cell" onClick={() => handleSortChange('status')}>
+                    <div className="flex items-center">
+                      Status
+                      {renderSortIcon('status')}
+                    </div>
+                  </TableHead>
+                  <TableHead className="hidden md:table-cell" onClick={() => handleSortChange('telegram_username')}>
+                    <div className="flex items-center">
+                      Telegram
+                      {renderSortIcon('telegram_username')}
+                    </div>
+                  </TableHead>
+                  <TableHead className="hidden lg:table-cell" onClick={() => handleSortChange('whatsapp_number')}>
+                    <div className="flex items-center">
+                      WhatsApp
+                      {renderSortIcon('whatsapp_number')}
+                    </div>
+                  </TableHead>
+                  <TableHead className="hidden lg:table-cell" onClick={() => handleSortChange('added_date')}>
+                    <div className="flex items-center">
+                      Data
+                      {renderSortIcon('added_date')}
+                    </div>
+                  </TableHead>
+                  <TableHead className="text-right">Ações</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {loading ? (
+                  <TableRow>
+                    <TableCell colSpan={7} className="h-32 text-center">
+                      <div className="flex flex-col items-center justify-center">
+                        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+                        <span className="mt-2 text-muted-foreground">Carregando anúncios...</span>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ) : filteredSubscriptions.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={7} className="h-32 text-center">
+                      {searchTerm ? (
+                        <div className="text-muted-foreground">Nenhum resultado encontrado para "{searchTerm}"</div>
+                      ) : (
+                        <div className="text-muted-foreground">Nenhum anúncio cadastrado</div>
+                      )}
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  filteredSubscriptions.map((subscription) => (
+                    <TableRow key={subscription.id}>
+                      <TableCell className="font-medium">{subscription.title}</TableCell>
+                      <TableCell>{subscription.price}</TableCell>
+                      <TableCell className="hidden md:table-cell">
+                        <span
+                          className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                            getStatusColor(subscription.status)
+                          }`}
+                        >
+                          {subscription.status}
+                        </span>
+                      </TableCell>
+                      <TableCell className="hidden md:table-cell">
+                        {subscription.telegram_username}
+                      </TableCell>
+                      <TableCell className="hidden lg:table-cell">
+                        {subscription.whatsapp_number}
+                      </TableCell>
+                      <TableCell className="hidden lg:table-cell">
+                        {subscription.added_date ? new Date(subscription.added_date).toLocaleDateString('pt-BR') : 'N/A'}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex justify-end gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleEditClick(subscription.id)}
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="bg-red-50 border-red-200 hover:bg-red-100"
+                            onClick={() => handleDeleteClick(subscription.id)}
+                          >
+                            <Trash2 className="h-4 w-4 text-red-500" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
           </div>
         </CardContent>
         <CardFooter className="flex justify-between">

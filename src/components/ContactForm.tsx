@@ -10,7 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Loader2, Mail } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/context/AuthContext';
+import { useAuth } from '@/hooks/use-auth';
 import { useToast } from '@/hooks/use-toast';
 
 // Form validation schema
@@ -30,11 +30,15 @@ const ContactForm: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<boolean>(false);
   
+  // Get user email safely from the session or profiles
+  const userEmail = authState.user?.email || authState.session?.user?.email || '';
+  const userName = authState.user?.username || '';
+  
   const { register, handleSubmit, formState: { errors }, reset } = useForm<ContactFormValues>({
     resolver: zodResolver(contactFormSchema),
     defaultValues: {
-      name: authState.user?.username || '',
-      email: authState.user?.email || '',
+      name: userName,
+      email: userEmail,
       subject: '',
       message: '',
     }
@@ -80,8 +84,8 @@ const ContactForm: React.FC = () => {
       
       // Reset the form
       reset({
-        name: authState.user?.username || '',
-        email: authState.user?.email || '',
+        name: userName,
+        email: userEmail,
         subject: '',
         message: ''
       });

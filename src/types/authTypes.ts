@@ -2,7 +2,8 @@
 export interface UserProfile {
   id: string;
   username?: string;
-  role: 'admin' | 'member';
+  email?: string;
+  role: 'admin' | 'member' | 'user';
 }
 
 export interface AuthState {

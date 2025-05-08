@@ -67,6 +67,8 @@ serve(async (req) => {
       });
   
       await client.close();
+      
+      console.log("Email sent successfully to:", ADMIN_EMAIL);
     } catch (error) {
       console.error("Error sending contact email:", error);
       throw error;
@@ -76,8 +78,8 @@ serve(async (req) => {
       JSON.stringify({ success: true, message: 'Email enviado com sucesso!' }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
-  } catch (error) {
-    console.error("Error sending contact email:", error);
+  } catch (error: any) {
+    console.error("Error in send-contact-email function:", error);
     
     return new Response(
       JSON.stringify({ 
