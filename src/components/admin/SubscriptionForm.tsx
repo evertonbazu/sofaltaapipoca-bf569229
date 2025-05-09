@@ -33,7 +33,7 @@ const SubscriptionForm: React.FC = () => {
     added_date: format(new Date(), 'dd/MM/yyyy'),
     pix_key: '',
     code: '',
-    pix_qr_code: null, // Add these missing required properties
+    pix_qr_code: null,
     payment_proof_image: null,
     
     // Add camelCase aliases
@@ -248,17 +248,44 @@ const SubscriptionForm: React.FC = () => {
       const completeSubscription: Subscription = {
         ...formData,
         payment_proof_image: paymentProofImageUrl,
-        code: subscriptionCode
+        code: subscriptionCode || ''
       };
       
       // Convert to proper format for DB
       const subscriptionData = prepareSubscriptionForDB(completeSubscription);
 
+      // Ensure that all required fields are present before sending to Supabase
+      // The keys that are required by Supabase according to the error
+      const requiredKeys = {
+        access: subscriptionData.access || formData.access,
+        header_color: subscriptionData.header_color || formData.header_color,
+        code: subscriptionCode || formData.code || '',
+        payment_method: subscriptionData.payment_method || formData.payment_method,
+        price: subscriptionData.price || formData.price,
+        price_color: subscriptionData.price_color || formData.price_color,
+        status: subscriptionData.status || formData.status,
+        telegram_username: subscriptionData.telegram_username || formData.telegram_username,
+        title: subscriptionData.title || formData.title,
+        whatsapp_number: subscriptionData.whatsapp_number || formData.whatsapp_number
+      };
+      
+      // Combine with the rest of the data
+      const finalSubscriptionData = {
+        ...subscriptionData,
+        ...requiredKeys,
+        payment_proof_image: paymentProofImageUrl,
+        // Include any other non-required fields
+        pix_key: subscriptionData.pix_key,
+        icon: subscriptionData.icon || formData.icon,
+        added_date: subscriptionData.added_date || formData.added_date,
+        featured: formData.featured
+      };
+
       if (id) {
         // Update existing subscription
         const { error } = await supabase
           .from('subscriptions')
-          .update(subscriptionData)
+          .update(finalSubscriptionData)
           .eq('id', id);
         
         if (error) throw error;
@@ -271,7 +298,7 @@ const SubscriptionForm: React.FC = () => {
         // Create new subscription
         const { error } = await supabase
           .from('subscriptions')
-          .insert(subscriptionData);
+          .insert(finalSubscriptionData);
         
         if (error) throw error;
         

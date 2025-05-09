@@ -93,8 +93,14 @@ export function adaptSubscriptions(subs: Subscription[]): Subscription[] {
 }
 
 // Helper function to convert from camelCase (UI) to snake_case (DB)
-export function prepareSubscriptionForDB(sub: any): Partial<Subscription> {
-  const result: Partial<Subscription> = { ...sub };
+// Modified to ensure required fields are always present
+export function prepareSubscriptionForDB(sub: any): Record<string, any> {
+  // Create a new object to avoid mutating the original
+  const result: Record<string, any> = { ...sub };
+  
+  // Ensure all required fields are present
+  const requiredFields = ['title', 'price', 'payment_method', 'status', 'access', 
+                        'header_color', 'price_color', 'whatsapp_number', 'telegram_username', 'code'];
   
   // Map camelCase properties to snake_case if they exist
   if (sub.paymentMethod !== undefined) result.payment_method = sub.paymentMethod;
@@ -117,6 +123,13 @@ export function prepareSubscriptionForDB(sub: any): Partial<Subscription> {
   delete result.pixKey;
   delete result.pixQrCode;
   delete result.paymentProofImage;
+  
+  // For each required field, ensure it has a value
+  requiredFields.forEach(field => {
+    if (result[field] === undefined || result[field] === null) {
+      console.warn(`Required field "${field}" is missing in subscription data`);
+    }
+  });
   
   return result;
 }
