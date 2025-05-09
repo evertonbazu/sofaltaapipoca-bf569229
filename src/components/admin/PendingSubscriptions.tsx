@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -56,6 +57,8 @@ interface PendingSubscription {
   payment_method: string;
   submitted_at: string;
   status_approval: string | null;
+  reviewed_at: string | null; // Add the missing property
+  rejection_reason?: string | null; // Add this property as well for completeness
 }
 
 const PendingSubscriptions: React.FC = () => {

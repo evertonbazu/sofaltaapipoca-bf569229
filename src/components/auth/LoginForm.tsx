@@ -23,7 +23,10 @@ const LoginForm: React.FC<LoginFormProps> = ({ setShowVerifyMessage }) => {
     
     try {
       console.log('Tentando login com:', email);
-      const result = await signIn(email, password);
+      const result = await signIn({
+        email,
+        password
+      });
       if (!result.success && result.message) {
         setError(result.message);
       }

@@ -31,7 +31,12 @@ const SignupForm: React.FC<SignupFormProps> = ({ setShowVerifyMessage, setActive
     setIsLoading(true);
     try {
       console.log('Tentando registrar:', email, username);
-      const result = await signUp(email, password, username);
+      const result = await signUp({
+        email,
+        password,
+        username
+      });
+      
       if (result.success) {
         // Show verification message
         setShowVerifyMessage(true);
