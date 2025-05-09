@@ -1,6 +1,6 @@
 
 import { supabase } from '@/integrations/supabase/client';
-import { parseSubscriptionText } from './importSubscriptions';
+import { parseSubscription } from './importSubscriptions';
 
 // This is the list of subscriptions from the user message
 const subscriptionsText = `ANÚNCIOS SÓ FALTA A PIPOCA 🍿, [09/04/2025 09:21]
@@ -295,17 +295,37 @@ export const importAllSubscriptions = async () => {
   const featuredSubs = [0, 2, 7, 13, 20, 27]; // Indexes of subscriptions to feature (will make these featured)
   
   for (let i = 0; i < subscriptionTexts.length; i++) {
-    const parsed = parseSubscriptionText(subscriptionTexts[i]);
+    const parsed = parseSubscription(subscriptionTexts[i]);
     
     if (parsed) {
       try {
         // Make certain subscriptions featured based on index
         const featured = featuredSubs.includes(i);
         
+        // Make sure all required fields are present
+        const requiredFields = ['title', 'price', 'status', 'access', 'header_color', 'price_color', 'whatsapp_number', 'telegram_username', 'code'];
+        const missingFields = requiredFields.filter(field => !parsed[field]);
+        
+        if (missingFields.length > 0) {
+          console.error(`Missing required fields: ${missingFields.join(', ')}`, parsed);
+          errorCount++;
+          continue;
+        }
+        
         const { error } = await supabase
           .from('subscriptions')
           .insert({
-            ...parsed,
+            title: parsed.title,
+            price: parsed.price,
+            status: parsed.status,
+            access: parsed.access,
+            header_color: parsed.header_color || '#3b82f6',
+            price_color: parsed.price_color || '#10b981',
+            whatsapp_number: parsed.whatsapp_number,
+            telegram_username: parsed.telegram_username,
+            code: parsed.code || generateCode(),
+            payment_method: parsed.payment_method || 'PIX',
+            added_date: parsed.added_date || new Date().toLocaleDateString('pt-BR'),
             featured
           });
           

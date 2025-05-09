@@ -54,19 +54,42 @@ export const parseSubscription = (text: string): Partial<Subscription> => {
   };
 };
 
+// Parse a subscription from a Telegram text block
+export const parseSubscriptionText = (text: string): Partial<Subscription> | null => {
+  try {
+    return parseSubscription(text);
+  } catch (error) {
+    console.error('Error parsing subscription text:', error);
+    return null;
+  }
+};
+
 // Function to add a single subscription
 export const addSubscription = async (subscription: Partial<Subscription>): Promise<{ success: boolean, error?: any }> => {
   try {
-    const preparedSubscription = prepareSubscriptionForDB({
-      ...subscription,
-      header_color: subscription.header_color || '#3b82f6',
-      price_color: subscription.price_color || '#10b981',
-      code: subscription.code || generateCode(),
-    });
+    // Make sure all required fields are present
+    const requiredFields = ['title', 'price', 'status', 'access', 'header_color', 'price_color', 'whatsapp_number', 'telegram_username', 'code'];
+    const missingFields = requiredFields.filter(field => !subscription[field]);
+    
+    if (missingFields.length > 0) {
+      throw new Error(`Missing required fields: ${missingFields.join(', ')}`);
+    }
     
     const { error } = await supabase
       .from('subscriptions')
-      .insert(preparedSubscription);
+      .insert({
+        title: subscription.title,
+        price: subscription.price,
+        status: subscription.status,
+        access: subscription.access,
+        header_color: subscription.header_color || '#3b82f6',
+        price_color: subscription.price_color || '#10b981',
+        whatsapp_number: subscription.whatsapp_number,
+        telegram_username: subscription.telegram_username,
+        code: subscription.code || generateCode(),
+        payment_method: subscription.payment_method || 'PIX',
+        added_date: subscription.added_date || new Date().toLocaleDateString('pt-BR')
+      });
     
     if (error) throw error;
     
@@ -102,6 +125,12 @@ export const bulkImportSubscriptions = async (text: string): Promise<{ success: 
   }
   
   return { success: added > 0, added, errors };
+};
+
+// Adding the missing function that was imported but not defined
+export const importSubscriptionsFromText = async (text: string): Promise<{ success: number; errors: number }> => {
+  const result = await bulkImportSubscriptions(text);
+  return { success: result.added, errors: result.errors };
 };
 
 // Function to add the sample subscriptions from the user's input

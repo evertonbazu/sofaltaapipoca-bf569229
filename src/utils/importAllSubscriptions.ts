@@ -1,6 +1,4 @@
-
 import { supabase } from '@/integrations/supabase/client';
-import { prepareSubscriptionForDB } from '@/types/subscriptionTypes';
 
 // Function to generate a subscription code
 const generateCode = () => `SF${Math.floor(1000 + Math.random() * 9000)}`;
@@ -366,16 +364,21 @@ export const importAllSubscriptions = async () => {
     // Process each subscription
     for (const subscription of subscriptionsData) {
       try {
-        const preparedData = prepareSubscriptionForDB({
-          ...subscription,
-          header_color: '#3b82f6', // Default blue
-          price_color: '#10b981', // Default green
-          code: generateCode(),
-        });
-        
         const { error } = await supabase
           .from('subscriptions')
-          .insert(preparedData);
+          .insert({
+            title: subscription.title,
+            price: subscription.price,
+            status: subscription.status,
+            access: subscription.access,
+            header_color: subscription.header_color || '#3b82f6',
+            price_color: subscription.price_color || '#10b981',
+            whatsapp_number: subscription.whatsapp_number,
+            telegram_username: subscription.telegram_username,
+            code: subscription.code || generateCode(),
+            payment_method: subscription.payment_method || 'PIX',
+            added_date: subscription.added_date || new Date().toLocaleDateString('pt-BR')
+          });
         
         if (error) {
           console.error('Error adding subscription:', error);

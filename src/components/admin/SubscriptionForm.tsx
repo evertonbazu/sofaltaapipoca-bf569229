@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -24,7 +23,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { useToast } from '@/hooks/use-toast';
 import { Subscription } from '@/types/subscriptionTypes';
-import { generateSubscriptionCode } from '@/utils/codeGenerator';
+import { generateCode } from '@/utils/importSubscriptions';
 
 // Define form schema
 const subscriptionSchema = z.object({
@@ -68,7 +67,7 @@ const SubscriptionForm: React.FC = () => {
       whatsapp_number: "",
       header_color: "#3b82f6", // Default blue
       price_color: "#10b981", // Default green
-      code: generateSubscriptionCode(),
+      code: generateCode(),
     },
   });
 
@@ -91,7 +90,7 @@ const SubscriptionForm: React.FC = () => {
         whatsapp_number: subscriptionFromState.whatsapp_number || "",
         header_color: subscriptionFromState.header_color || "#3b82f6",
         price_color: subscriptionFromState.price_color || "#10b981",
-        code: subscriptionFromState.code || generateSubscriptionCode(),
+        code: subscriptionFromState.code || generateCode(),
       });
     }
   }, [subscriptionFromState]);
@@ -135,7 +134,7 @@ const SubscriptionForm: React.FC = () => {
           whatsapp_number: data.whatsapp_number || "",
           header_color: data.header_color || "#3b82f6",
           price_color: data.price_color || "#10b981",
-          code: data.code || generateSubscriptionCode(),
+          code: data.code || generateCode(),
         });
       }
     } catch (error: any) {

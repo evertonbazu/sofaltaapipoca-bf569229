@@ -1,10 +1,5 @@
 
-import React, { useRef, useState } from 'react';
-import {
-  ResizablePanelGroup,
-  ResizablePanel,
-  ResizableHandle,
-} from "@/components/ui/resizable";
+import React, { useRef, useState, useCallback } from 'react';
 import {
   Table,
   TableBody,
@@ -33,6 +28,40 @@ export const ResizableTable: React.FC<ResizableTableProps> = ({
   className = "",
 }) => {
   const tableRef = useRef<HTMLTableElement>(null);
+  const [columnWidths, setColumnWidths] = useState<number[]>(columns.map(col => col.width));
+  const [resizingIndex, setResizingIndex] = useState<number | null>(null);
+  const [startX, setStartX] = useState<number>(0);
+  const [startWidth, setStartWidth] = useState<number>(0);
+  
+  const handleMouseDown = useCallback((e: React.MouseEvent<HTMLDivElement>, index: number) => {
+    e.preventDefault();
+    setResizingIndex(index);
+    setStartX(e.clientX);
+    setStartWidth(columnWidths[index]);
+    
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseUp);
+  }, [columnWidths]);
+  
+  const handleMouseMove = useCallback((e: MouseEvent) => {
+    if (resizingIndex === null) return;
+    
+    const minWidth = columns[resizingIndex].minWidth || 50;
+    const delta = e.clientX - startX;
+    const newWidth = Math.max(startWidth + delta, minWidth);
+    
+    setColumnWidths(prev => {
+      const newWidths = [...prev];
+      newWidths[resizingIndex as number] = newWidth;
+      return newWidths;
+    });
+  }, [resizingIndex, startX, startWidth, columns]);
+  
+  const handleMouseUp = useCallback(() => {
+    setResizingIndex(null);
+    document.removeEventListener('mousemove', handleMouseMove);
+    document.removeEventListener('mouseup', handleMouseUp);
+  }, [handleMouseMove]);
   
   return (
     <div className={`border rounded-md overflow-auto ${className}`}>
@@ -43,9 +72,17 @@ export const ResizableTable: React.FC<ResizableTableProps> = ({
               <TableHead 
                 key={column.name} 
                 className="relative"
-                style={{ width: `${column.width}px` }}
+                style={{ width: `${columnWidths[index]}px` }}
               >
-                {column.label}
+                <div className="flex items-center justify-between">
+                  <div>{column.label}</div>
+                  <div
+                    className="absolute right-0 top-0 h-full w-4 cursor-col-resize group"
+                    onMouseDown={(e) => handleMouseDown(e, index)}
+                  >
+                    <div className="absolute right-1 h-full w-1 group-hover:bg-gray-400 transition-colors" />
+                  </div>
+                </div>
               </TableHead>
             ))}
           </TableRow>
