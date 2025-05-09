@@ -46,6 +46,13 @@ import {
 import { Eye, CheckCircle, XCircle, MoreHorizontal, ChevronDown, Edit, Trash, MessageSquare } from 'lucide-react';
 import { PendingSubscriptionFromSupabase } from '@/types/subscriptionTypes';
 
+// Define the ResizingState interface for better type safety
+interface ResizingState {
+  column: string | null;
+  startX: number;
+  startWidth: number;
+}
+
 const PendingSubscriptions: React.FC = () => {
   const [subscriptions, setSubscriptions] = useState<PendingSubscriptionFromSupabase[]>([]);
   const [loading, setLoading] = useState(true);
@@ -70,7 +77,8 @@ const PendingSubscriptions: React.FC = () => {
     approval: 150,
     actions: 100,
   });
-  const [resizing, setResizing<{column: string | null, startX: number, startWidth: number}>({
+  // Fixed the useState generic syntax
+  const [resizing, setResizing] = useState<ResizingState>({
     column: null,
     startX: 0,
     startWidth: 0
