@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -180,9 +181,18 @@ const SubscriptionForm: React.FC = () => {
           });
         }
       } else {
-        // Create new subscription - do NOT include user_id field
+        // Create new subscription - ensure all required fields are explicitly included
         const newSubscription = {
-          ...values,  // Include all form values
+          title: values.title,
+          price: values.price,
+          payment_method: values.payment_method,
+          status: values.status,
+          access: values.access,
+          header_color: values.header_color,
+          price_color: values.price_color,
+          whatsapp_number: values.whatsapp_number || "",
+          telegram_username: values.telegram_username || "",
+          code: values.code,
           added_date: new Date().toLocaleDateString('pt-BR'),
           featured: false
         };
