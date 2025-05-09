@@ -94,19 +94,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
       
       console.log('Login successful:', data?.user?.id);
-      toast({
-        title: "Login bem-sucedido",
-        description: "Você foi autenticado com sucesso.",
-      });
-      
       return { success: true };
     } catch (error: any) {
       console.error('Login error:', error);
-      toast({
-        title: "Erro ao fazer login",
-        description: error.message || "Não foi possível fazer login. Por favor tente novamente.",
-        variant: "destructive",
-      });
       return { success: false, message: error.message };
     }
   };
@@ -144,21 +134,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
       }
       
-      toast({
-        title: "Registro bem-sucedido!",
-        description: "Um email de verificação foi enviado para sua caixa de entrada. Por favor, confirme seu email para continuar.",
-      });
-      
       // We no longer auto-login after registration since email needs to be confirmed
       // The user will be redirected to the main page but will need to confirm their email
       return { success: true };
     } catch (error: any) {
       console.error('Registration error:', error);
-      toast({
-        title: "Erro ao criar conta",
-        description: error.message || "Não foi possível criar a conta. Por favor tente novamente.",
-        variant: "destructive",
-      });
       return { success: false, message: error.message };
     }
   };

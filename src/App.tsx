@@ -21,7 +21,7 @@ import Contact from './pages/Contact';
 import Navbar from './components/ui/Navbar';
 
 // Version information
-export const APP_VERSION = '1.5.0'; // Updated version with fixed login and navigation
+export const APP_VERSION = '1.5.1'; // Updated version with fixed login flow
 
 // Create a separate component for the authenticated routes
 const AppRoutes = () => {
@@ -67,6 +67,7 @@ const AppRoutes = () => {
           <Route path="users" element={<UserManagement />} />
           <Route path="messages" element={<ContactMessages />} />
         </Route>
+        <Route path="*" element={<Navigate to="/" />} />
       </Routes>
     </>
   );

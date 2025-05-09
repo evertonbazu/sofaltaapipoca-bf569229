@@ -4,6 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { CardContent, CardFooter } from "@/components/ui/card";
 import { useAuth } from '@/hooks/use-auth';
+import { useNavigate } from 'react-router-dom';
+import { useToast } from '@/hooks/use-toast';
 
 interface LoginFormProps {
   setShowVerifyMessage: (show: boolean) => void;
@@ -11,6 +13,8 @@ interface LoginFormProps {
 
 const LoginForm: React.FC<LoginFormProps> = ({ setShowVerifyMessage }) => {
   const { signIn } = useAuth();
+  const navigate = useNavigate();
+  const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -27,8 +31,18 @@ const LoginForm: React.FC<LoginFormProps> = ({ setShowVerifyMessage }) => {
         email,
         password
       });
-      if (!result.success && result.message) {
+
+      if (result.success) {
+        toast({
+          title: "Login bem-sucedido",
+          description: "Você foi autenticado com sucesso.",
+        });
+        navigate('/');
+      } else if (result.message) {
         setError(result.message);
+        if (result.message.includes("email") && result.message.includes("confirm")) {
+          setShowVerifyMessage(true);
+        }
       }
     } catch (error: any) {
       console.error('Erro de login:', error);

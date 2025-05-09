@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { CardContent, CardFooter } from "@/components/ui/card";
 import { useAuth } from '@/hooks/use-auth';
+import { useToast } from '@/hooks/use-toast';
 
 interface SignupFormProps {
   setShowVerifyMessage: (show: boolean) => void;
@@ -12,6 +13,7 @@ interface SignupFormProps {
 
 const SignupForm: React.FC<SignupFormProps> = ({ setShowVerifyMessage, setActiveTab }) => {
   const { signUp } = useAuth();
+  const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -38,6 +40,10 @@ const SignupForm: React.FC<SignupFormProps> = ({ setShowVerifyMessage, setActive
       });
       
       if (result.success) {
+        toast({
+          title: "Cadastro realizado com sucesso!",
+          description: "Um email de verificação foi enviado para sua caixa de entrada.",
+        });
         // Show verification message
         setShowVerifyMessage(true);
         setActiveTab('signin');
