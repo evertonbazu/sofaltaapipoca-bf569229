@@ -149,7 +149,6 @@ const SubscriptionForm: React.FC = () => {
     }
   };
 
-  // Updated onSubmit function to handle error logging and avoid user_id issues
   const onSubmit = async (values: FormValues) => {
     setLoading(true);
     try {
@@ -181,21 +180,11 @@ const SubscriptionForm: React.FC = () => {
           });
         }
       } else {
-        // Create new subscription - Make sure all required fields are present
+        // Create new subscription - do NOT include user_id field
         const newSubscription = {
-          title: values.title,
-          price: values.price,
-          payment_method: values.payment_method,
-          status: values.status,
-          access: values.access, 
-          telegram_username: values.telegram_username || "",
-          whatsapp_number: values.whatsapp_number || "",
-          header_color: values.header_color,
-          price_color: values.price_color,
-          code: values.code,
+          ...values,  // Include all form values
           added_date: new Date().toLocaleDateString('pt-BR'),
           featured: false
-          // Não incluímos mais o campo user_id para evitar problemas com RLS
         };
         
         const { error } = await supabase
@@ -206,7 +195,7 @@ const SubscriptionForm: React.FC = () => {
           throw error;
         }
         
-        // Registrar a operação bem-sucedida
+        // Log the successful operation
         const { logError } = await import('@/data/subscriptions');
         await logError('Anúncio criado com sucesso', 'SubscriptionForm.onSubmit');
         
@@ -221,7 +210,7 @@ const SubscriptionForm: React.FC = () => {
     } catch (error: any) {
       console.error("Error saving subscription:", error);
       
-      // Log the error to our new error logging system
+      // Log the error to our error logging system
       try {
         const { logError } = await import('@/data/subscriptions');
         await logError(
