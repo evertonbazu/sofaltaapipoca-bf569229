@@ -1,204 +1,102 @@
 
-import React, { useEffect } from 'react';
-import { Navigate, Route, Routes, useNavigate, useLocation } from 'react-router-dom';
-import { useAuth } from '@/hooks/use-auth';
-import { Button } from "@/components/ui/button";
-import { Separator } from "@/components/ui/separator";
-import { SidebarProvider, Sidebar, SidebarMenu, SidebarMenuItem, SidebarMenuButton } from "@/components/ui/sidebar";
-import { Home, ListPlus, Edit, LogOut, Users, Bell, FileText, User, MessageSquare } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { useLocation, useParams } from 'react-router-dom';
+import AdminLayout from '@/components/admin/AdminLayout';
 import AdminDashboard from '@/components/admin/AdminDashboard';
-import SubscriptionForm from '@/components/admin/SubscriptionForm';
 import SubscriptionList from '@/components/admin/SubscriptionList';
-import UserManagement from '@/components/admin/UserManagement';
 import PendingSubscriptions from '@/components/admin/PendingSubscriptions';
-import ImportSubscriptions from '@/components/admin/ImportSubscriptions';
-import ExportSubscriptionsTxt from '@/components/admin/ExportSubscriptionsTxt';
-import UserProfile from '@/components/admin/UserProfile';
+import SubscriptionForm from '@/components/admin/SubscriptionForm';
 import ContactMessages from '@/components/admin/ContactMessages';
-import { APP_VERSION } from '@/App';
+import UserManagement from '@/components/admin/UserManagement';
+import UserProfile from '@/components/admin/UserProfile';
+import ExportSubscriptions from '@/components/admin/ExportSubscriptions';
+import ExportSubscriptionsTxt from '@/components/admin/ExportSubscriptionsTxt';
+import ImportSubscriptions from '@/components/admin/ImportSubscriptions';
 
-const Admin: React.FC = () => {
-  const { authState, isAdmin, signOut } = useAuth();
-  const navigate = useNavigate();
+interface AdminProps {
+  section?: string;
+  action?: string;
+}
+
+const Admin: React.FC<AdminProps> = ({ section, action }) => {
   const location = useLocation();
-
+  const params = useParams();
+  const [currentSection, setCurrentSection] = useState(section || 'dashboard');
+  const [currentAction, setCurrentAction] = useState(action || null);
+  
+  // Extract subscription data if passed in location state (from pending subscription approval)
+  const subscriptionData = location.state?.subscriptionData || null;
+  const isPending = location.state?.isPending || false;
+  
+  // Update current section and action when the props change
   useEffect(() => {
-    document.title = 'Painel Administrativo | Só Falta a Pipoca';
-  }, []);
+    if (section) setCurrentSection(section);
+    if (action) setCurrentAction(action);
+  }, [section, action]);
 
-  if (authState.isLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
-      </div>
-    );
-  }
-
-  // If user is not authenticated, redirect to auth page
-  if (!authState.user) {
-    return <Navigate to="/auth" />;
-  }
-
-  const handleSignOut = async () => {
-    await signOut();
-    navigate('/');
+  // Render the appropriate content based on the current section
+  const renderContent = () => {
+    switch (currentSection) {
+      case 'dashboard':
+        return <AdminDashboard />;
+      
+      case 'subscriptions':
+        if (currentAction === 'new') {
+          return <SubscriptionForm />;
+        } else if (currentAction === 'edit' && params.id) {
+          return <SubscriptionForm id={params.id} initialData={subscriptionData} isPending={isPending} />;
+        }
+        return <SubscriptionList />;
+      
+      case 'pending-subscriptions':
+        return <PendingSubscriptions />;
+      
+      case 'messages':
+        return <ContactMessages />;
+      
+      case 'users':
+        return <UserManagement />;
+      
+      case 'profile':
+        return <UserProfile />;
+      
+      case 'export':
+        return <ExportSubscriptions />;
+        
+      case 'export-txt':
+        return <ExportSubscriptionsTxt />;
+      
+      case 'import':
+        return <ImportSubscriptions />;
+      
+      default:
+        return <AdminDashboard />;
+    }
   };
 
-  const isActive = (path: string) => {
-    return location.pathname === path;
-  };
-
-  // Format date as dd/mm/yyyy
-  const formatDate = () => {
-    const now = new Date();
-    const day = String(now.getDate()).padStart(2, '0');
-    const month = String(now.getMonth() + 1).padStart(2, '0');
-    const year = now.getFullYear();
-    return `${day}/${month}/${year}`;
+  // Convert section name to title format
+  const sectionTitle = () => {
+    switch (currentSection) {
+      case 'dashboard': return 'Dashboard';
+      case 'subscriptions': 
+        if (currentAction === 'new') return 'Novo Anúncio';
+        else if (currentAction === 'edit') return 'Editar Anúncio';
+        else return 'Anúncios';
+      case 'pending-subscriptions': return 'Anúncios Pendentes';
+      case 'messages': return 'Mensagens';
+      case 'users': return 'Usuários';
+      case 'profile': return 'Perfil';
+      case 'export': return 'Exportar Dados';
+      case 'export-txt': return 'Exportar para TXT';
+      case 'import': return 'Importar Dados';
+      default: return 'Dashboard';
+    }
   };
 
   return (
-    <SidebarProvider>
-      <div className="flex h-screen overflow-hidden">
-        <Sidebar>
-          <div className="p-4">
-            <h1 className="text-2xl font-bold text-center">🍿 Só Falta a Pipoca</h1>
-            <p className="text-sm text-muted-foreground text-center">Painel Administrativo</p>
-          </div>
-          <Separator />
-          <div className="flex-1 overflow-y-auto py-4">
-            <SidebarMenu>
-              <SidebarMenuItem>
-                <SidebarMenuButton 
-                  onClick={() => navigate('/admin')}
-                  isActive={isActive('/admin')}
-                >
-                  <Home className="mr-2 h-5 w-5" />
-                  Dashboard
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-              <SidebarMenuItem>
-                <SidebarMenuButton 
-                  onClick={() => navigate('/admin/subscriptions')}
-                  isActive={isActive('/admin/subscriptions')}
-                >
-                  <ListPlus className="mr-2 h-5 w-5" />
-                  Listar Anúncios
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-              <SidebarMenuItem>
-                <SidebarMenuButton 
-                  onClick={() => navigate('/admin/subscriptions/new')}
-                  isActive={isActive('/admin/subscriptions/new')}
-                >
-                  <Edit className="mr-2 h-5 w-5" />
-                  Novo Anúncio
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-              <SidebarMenuItem>
-                <SidebarMenuButton 
-                  onClick={() => navigate('/admin/pending')}
-                  isActive={isActive('/admin/pending')}
-                >
-                  <Bell className="mr-2 h-5 w-5" />
-                  Anúncios Pendentes
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-              <SidebarMenuItem>
-                <SidebarMenuButton 
-                  onClick={() => navigate('/admin/messages')}
-                  isActive={isActive('/admin/messages')}
-                >
-                  <MessageSquare className="mr-2 h-5 w-5" />
-                  Mensagens de Contato
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-              <SidebarMenuItem>
-                <SidebarMenuButton 
-                  onClick={() => navigate('/admin/import')}
-                  isActive={isActive('/admin/import')}
-                >
-                  <FileText className="mr-2 h-5 w-5" />
-                  Importar TXT
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-              <SidebarMenuItem>
-                <SidebarMenuButton 
-                  onClick={() => navigate('/admin/export')}
-                  isActive={isActive('/admin/export')}
-                >
-                  <FileText className="mr-2 h-5 w-5" />
-                  Exportar TXT
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-              {isAdmin() && (
-                <SidebarMenuItem>
-                  <SidebarMenuButton 
-                    onClick={() => navigate('/admin/users')}
-                    isActive={isActive('/admin/users')}
-                  >
-                    <Users className="mr-2 h-5 w-5" />
-                    Gerenciar Usuários
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              )}
-              <SidebarMenuItem>
-                <SidebarMenuButton 
-                  onClick={() => navigate('/admin/profile')}
-                  isActive={isActive('/admin/profile')}
-                >
-                  <User className="mr-2 h-5 w-5" />
-                  Meu Perfil
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-            </SidebarMenu>
-          </div>
-          <div className="p-4">
-            <Button 
-              variant="default" 
-              className="w-full flex gap-2 mb-2" 
-              onClick={() => navigate('/')}
-            >
-              <Home className="h-5 w-5" />
-              Voltar ao Início
-            </Button>
-            <Button 
-              variant="outline" 
-              className="w-full flex gap-2" 
-              onClick={handleSignOut}
-            >
-              <LogOut className="h-5 w-5" />
-              Sair
-            </Button>
-            <p className="mt-4 text-xs text-center text-muted-foreground">
-              Logado como {authState.user.username || authState.user.id}
-              <br />
-              <span className="font-semibold">{isAdmin() ? 'Administrador' : 'Membro'}</span>
-              <br />
-              <span className="text-xs">versão {APP_VERSION} • {formatDate()}</span>
-            </p>
-          </div>
-        </Sidebar>
-        <main className="flex-1 overflow-auto">
-          <div className="p-6">
-            <Routes>
-              <Route path="/" element={<AdminDashboard />} />
-              <Route path="/subscriptions" element={<SubscriptionList />} />
-              <Route path="/subscriptions/new" element={<SubscriptionForm />} />
-              <Route path="/subscriptions/edit/:id" element={<SubscriptionForm />} />
-              <Route path="/pending" element={<PendingSubscriptions />} />
-              <Route path="/import" element={<ImportSubscriptions />} />
-              <Route path="/export" element={<ExportSubscriptionsTxt />} />
-              <Route path="/messages" element={<ContactMessages />} />
-              {isAdmin() && (
-                <Route path="/users" element={<UserManagement />} />
-              )}
-              <Route path="/profile" element={<UserProfile />} />
-            </Routes>
-          </div>
-        </main>
-      </div>
-    </SidebarProvider>
+    <AdminLayout title={sectionTitle()}>
+      {renderContent()}
+    </AdminLayout>
   );
 };
 

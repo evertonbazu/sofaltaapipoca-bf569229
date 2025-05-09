@@ -47,19 +47,6 @@ export const logError = async (
   }
 };
 
-// Helper function to sort subscriptions by date (newest first)
-const sortByDateDesc = (subscriptions: Subscription[]) => {
-  return [...subscriptions].sort((a, b) => {
-    if (!a.added_date) return 1;
-    if (!b.added_date) return -1;
-    
-    const dateA = new Date(a.added_date).getTime();
-    const dateB = new Date(b.added_date).getTime();
-    
-    return dateB - dateA;
-  });
-};
-
 // Cached subscriptions for initial render
 let cachedSubscriptions: Subscription[] = [];
 
@@ -98,8 +85,25 @@ export const getRegularSubscriptions = async (): Promise<Subscription[]> => {
 // Function to save subscription
 export const saveSubscription = async (subscription: Subscription): Promise<{success: boolean, error?: string}> => {
   try {
-    // Remove user_id from subscription to prevent RLS issues
-    const { user_id, ...subscriptionData } = subscription;
+    // Explicitly create a clean subscription object with only the fields we want
+    const subscriptionData = {
+      title: subscription.title,
+      price: subscription.price,
+      payment_method: subscription.payment_method,
+      status: subscription.status,
+      access: subscription.access,
+      header_color: subscription.header_color,
+      price_color: subscription.price_color,
+      whatsapp_number: subscription.whatsapp_number,
+      telegram_username: subscription.telegram_username,
+      icon: subscription.icon,
+      pix_qr_code: subscription.pix_qr_code,
+      pix_key: subscription.pix_key,
+      payment_proof_image: subscription.payment_proof_image,
+      added_date: subscription.added_date || new Date().toLocaleDateString('pt-BR'),
+      code: subscription.code,
+      featured: subscription.featured || false
+    };
     
     const { data, error } = await supabase
       .from('subscriptions')
@@ -167,7 +171,7 @@ export const approvePendingSubscription = async (pendingId: string): Promise<{su
       return { success: false, error: 'Pending subscription not found' };
     }
     
-    // Create a new subscription from the pending one, removing any fields that might cause issues
+    // Create a new subscription from the pending one, with explicit fields
     const newSubscription = {
       title: pendingSubscription.title,
       price: pendingSubscription.price,
@@ -183,9 +187,11 @@ export const approvePendingSubscription = async (pendingId: string): Promise<{su
       pix_key: pendingSubscription.pix_key,
       payment_proof_image: pendingSubscription.payment_proof_image,
       added_date: pendingSubscription.added_date || new Date().toLocaleDateString('pt-BR'),
-      code: pendingSubscription.code,
-      // Removemos user_id para evitar problemas com RLS
+      code: pendingSubscription.code || `SF${Math.floor(Math.random() * 9000 + 1000)}`,
+      featured: false // Default to not featured
     };
+    
+    console.log('Creating new subscription from pending:', newSubscription);
     
     // Insert the new subscription
     const { error: insertError } = await supabase
@@ -220,6 +226,64 @@ export const approvePendingSubscription = async (pendingId: string): Promise<{su
   } catch (error: any) {
     console.error('Error approving pending subscription:', error);
     await logError('Error approving pending subscription', 'approvePendingSubscription', error?.name, error?.stack);
+    return { success: false, error: error.message };
+  }
+};
+
+// Function to remove all subscriptions and replace with new ones
+export const replaceAllSubscriptions = async (
+  subscriptions: Partial<Subscription>[]
+): Promise<{ success: boolean; error?: string }> => {
+  try {
+    // Begin a transaction
+    const { error: deleteError } = await supabase
+      .from('subscriptions')
+      .delete()
+      .neq('id', '00000000-0000-0000-0000-000000000000'); // Delete all records
+      
+    if (deleteError) {
+      console.error('Error deleting subscriptions:', deleteError);
+      return { success: false, error: deleteError.message };
+    }
+    
+    // Prepare the data with explicit fields for insertion
+    const subscriptionsToInsert = subscriptions.map((sub) => ({
+      title: sub.title || '',
+      price: sub.price || '',
+      payment_method: sub.payment_method || '',
+      status: sub.status || '',
+      access: sub.access || '',
+      header_color: sub.header_color || 'bg-blue-600',
+      price_color: sub.price_color || 'text-blue-600',
+      whatsapp_number: sub.whatsapp_number || '',
+      telegram_username: sub.telegram_username || '',
+      icon: sub.icon || 'tv',
+      pix_qr_code: sub.pix_qr_code || null,
+      pix_key: sub.pix_key || null,
+      payment_proof_image: sub.payment_proof_image || null,
+      added_date: sub.added_date || new Date().toLocaleDateString('pt-BR'),
+      code: sub.code || `SF${Math.floor(Math.random() * 9000 + 1000)}`,
+      featured: sub.featured || false
+    }));
+    
+    // Insert all new subscriptions
+    if (subscriptionsToInsert.length > 0) {
+      const { error: insertError } = await supabase
+        .from('subscriptions')
+        .insert(subscriptionsToInsert);
+        
+      if (insertError) {
+        console.error('Error inserting subscriptions:', insertError);
+        return { success: false, error: insertError.message };
+      }
+    }
+    
+    // Force refresh cached data
+    await getSubscriptions(true);
+    
+    return { success: true };
+  } catch (error: any) {
+    console.error('Error replacing subscriptions:', error);
     return { success: false, error: error.message };
   }
 };

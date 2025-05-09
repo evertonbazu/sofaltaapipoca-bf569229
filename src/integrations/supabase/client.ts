@@ -12,12 +12,11 @@ const SUPABASE_SERVICE_ROLE_KEY = ""; // Este é um placeholder. Nunca exponha e
 // import { supabase } from "@/integrations/supabase/client";
 
 // Create our base client with the types, including our custom types
-export const supabase = createClient<Database & { public: { Tables: Tables } }>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
-
-// Create an admin client (for server-side operations only, DO NOT USE on client-side)
-// This client should NEVER be exported or used in client-side code
-// It exists here for documentation purposes only
-// const adminClient = createClient<Database & { public: { Tables: Tables } }>(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+export const supabase = createClient<Database & { public: { Tables: Tables } }>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
+  auth: {
+    persistSession: true
+  }
+});
 
 // Setup storage bucket initialization
 export const initializeStorage = async () => {

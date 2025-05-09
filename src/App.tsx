@@ -1,96 +1,80 @@
 
-import React, { useState, useEffect } from 'react';
-import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-dom';
-import { AuthProvider } from './context/AuthContext';
-import { Toaster } from "@/components/ui/toaster";
-import Auth from './pages/Auth';
-import Admin from './pages/Admin';
-import AdminDashboard from './components/admin/AdminDashboard';
-import SubscriptionList from './components/admin/SubscriptionList';
-import SubscriptionForm from './components/admin/SubscriptionForm';
-import PendingSubscriptions from './components/admin/PendingSubscriptions';
-import ExportSubscriptionsTxt from './components/admin/ExportSubscriptionsTxt';
-import ExportSubscriptions from './components/admin/ExportSubscriptions';
-import ImportSubscriptions from './components/admin/ImportSubscriptions';
-import ImportBulkSubscriptions from './pages/admin/ImportBulkSubscriptions';
-import UserManagement from './components/admin/UserManagement';
-import ContactMessages from './components/admin/ContactMessages';
-import NewSubscription from './pages/NewSubscription';
+import React, { useEffect } from 'react';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { Toaster } from 'sonner';
+
+// Pages
 import Index from './pages/Index';
-import UserProfile from './components/admin/UserProfile';
 import Contact from './pages/Contact';
-import Navbar from './components/ui/Navbar';
+import Admin from './pages/Admin';
+import Auth from './pages/Auth';
+import NotFound from './pages/NotFound';
+import NewSubscription from './pages/NewSubscription';
+import ImportBulkSubscriptions from './pages/admin/ImportBulkSubscriptions';
+import ImportSubscriptionText from './pages/admin/ImportSubscriptionText';
 
-// Version information
-export const APP_VERSION = '1.5.2'; // Updated version with import subscriptions
+// Components
+import { AuthProvider } from './context/AuthContext';
+import ProtectedRoute from './components/ProtectedRoute';
 
-// Create a separate component for the authenticated routes
-const AppRoutes = () => {
-  const [loading, setLoading] = useState(true);
+// Styles
+import './App.css';
+import { supabase, initializeStorage } from './integrations/supabase/client';
+import { ThemeProvider } from './components/ui/theme-provider';
 
+// Create React-Query client
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      refetchOnWindowFocus: false,
+      retry: 1
+    }
+  }
+});
+
+function App() {
+  // Initialize storage buckets if needed
   useEffect(() => {
-    // Simulate loading delay
-    setTimeout(() => {
-      setLoading(false);
-    }, 500);
+    initializeStorage();
   }, []);
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
-      </div>
-    );
-  }
-
   return (
-    <>
-      <Navbar />
-      <Routes>
-        <Route path="/auth" element={<Auth />} />
-        <Route path="/new" element={<NewSubscription />} />
-        <Route path="/profile" element={<UserProfile />} />
-        <Route path="/contact" element={<Contact />} />
-        <Route path="/" element={<Index />} />
-        <Route
-          path="/admin/*"
-          element={<Admin />}
-        >
-          <Route index element={<AdminDashboard />} />
-          <Route path="profile" element={<UserProfile />} />
-          <Route path="subscriptions" element={<SubscriptionList />} />
-          <Route path="subscriptions/new" element={<SubscriptionForm />} />
-          <Route path="subscriptions/edit/:id" element={<SubscriptionForm />} />
-          <Route path="pending" element={<PendingSubscriptions />} />
-          <Route path="export" element={<ExportSubscriptionsTxt />} />
-          <Route path="export-all" element={<ExportSubscriptions />} />
-          <Route path="import" element={<ImportSubscriptions />} />
-          <Route path="import-bulk" element={<ImportBulkSubscriptions />} />
-          <Route path="users" element={<UserManagement />} />
-          <Route path="messages" element={<ContactMessages />} />
-        </Route>
-        <Route path="*" element={<Navigate to="/" />} />
-      </Routes>
-    </>
-  );
-};
+    <ThemeProvider defaultTheme="light" storageKey="vite-ui-theme">
+      <QueryClientProvider client={queryClient}>
+        <AuthProvider>
+          <Router>
+            <Routes>
+              {/* Public routes */}
+              <Route path="/" element={<Index />} />
+              <Route path="/contact" element={<Contact />} />
+              <Route path="/auth" element={<Auth />} />
+              <Route path="/new-subscription" element={<NewSubscription />} />
+              
+              {/* Admin routes */}
+              <Route path="/admin" element={<ProtectedRoute admin><Admin /></ProtectedRoute>} />
+              <Route path="/admin/dashboard" element={<ProtectedRoute admin><Navigate to="/admin" replace /></ProtectedRoute>} />
+              <Route path="/admin/subscriptions" element={<ProtectedRoute admin><Admin section="subscriptions" /></ProtectedRoute>} />
+              <Route path="/admin/subscriptions/new" element={<ProtectedRoute admin><Admin section="subscriptions" action="new" /></ProtectedRoute>} />
+              <Route path="/admin/subscriptions/edit/:id" element={<ProtectedRoute admin><Admin section="subscriptions" action="edit" /></ProtectedRoute>} />
+              <Route path="/admin/pending-subscriptions" element={<ProtectedRoute admin><Admin section="pending-subscriptions" /></ProtectedRoute>} />
+              <Route path="/admin/messages" element={<ProtectedRoute admin><Admin section="messages" /></ProtectedRoute>} />
+              <Route path="/admin/users" element={<ProtectedRoute admin><Admin section="users" /></ProtectedRoute>} />
+              <Route path="/admin/profile" element={<ProtectedRoute admin><Admin section="profile" /></ProtectedRoute>} />
+              <Route path="/admin/export" element={<ProtectedRoute admin><Admin section="export" /></ProtectedRoute>} />
+              <Route path="/admin/import" element={<ProtectedRoute admin><Admin section="import" /></ProtectedRoute>} />
+              <Route path="/admin/import-bulk" element={<ProtectedRoute admin><ImportBulkSubscriptions /></ProtectedRoute>} />
+              <Route path="/admin/import-text" element={<ProtectedRoute admin><ImportSubscriptionText /></ProtectedRoute>} />
 
-// Main App component that only provides the AuthProvider
-const App = () => {
-  return (
-    <>
-      <AuthProvider>
-        <Router>
-          <div className="flex flex-col min-h-screen">
-            <div className="flex-grow">
-              <AppRoutes />
-            </div>
-          </div>
-        </Router>
-      </AuthProvider>
-      <Toaster />
-    </>
+              {/* Catch all */}
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </Router>
+        </AuthProvider>
+      </QueryClientProvider>
+      <Toaster richColors position="top-right" />
+    </ThemeProvider>
   );
-};
+}
 
 export default App;

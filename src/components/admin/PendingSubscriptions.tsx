@@ -1,9 +1,11 @@
-import React, { useState, useEffect, useRef } from 'react';
+
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -36,22 +38,10 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Eye, CheckCircle, XCircle, MoreHorizontal, ChevronDown, Edit, Trash, MessageSquare } from 'lucide-react';
 import { PendingSubscriptionFromSupabase } from '@/types/subscriptionTypes';
-
-// Define the ResizingState interface for better type safety
-interface ResizingState {
-  column: string | null;
-  startX: number;
-  startWidth: number;
-}
+import PendingSubscriptionForm from './PendingSubscriptionForm';
+import { approvePendingSubscription } from '@/data/subscriptions';
 
 const PendingSubscriptions: React.FC = () => {
   const [subscriptions, setSubscriptions] = useState<PendingSubscriptionFromSupabase[]>([]);
@@ -59,33 +49,13 @@ const PendingSubscriptions: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [sortColumn, setSortColumn] = useState<string>('submitted_at');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
-  const [reviewDialogOpen, setReviewDialogOpen] = useState(false);
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [bulkDeleteDialogOpen, setBulkDeleteDialogOpen] = useState(false);
   const [selectedSubscription, setSelectedSubscription] = useState<PendingSubscriptionFromSupabase | null>(null);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isReviewDialogOpen, setIsReviewDialogOpen] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [rejectionReason, setRejectionReason] = useState('');
-  const [selectedSubscriptions, setSelectedSubscriptions] = useState<string[]>([]);
-  const [columnsWidth, setColumnsWidth] = useState<{[key: string]: number}>({
-    title: 250,
-    price: 100,
-    telegram: 150,
-    whatsapp: 150,
-    status: 120,
-    access: 150,
-    payment: 150,
-    date: 180,
-    approval: 150,
-    actions: 100,
-  });
-  // Fixed the useState generic syntax
-  const [resizing, setResizing] = useState<ResizingState>({
-    column: null,
-    startX: 0,
-    startWidth: 0
-  });
   const { toast } = useToast();
   const navigate = useNavigate();
-  const tableRef = useRef<HTMLTableElement>(null);
 
   useEffect(() => {
     fetchPendingSubscriptions();
@@ -123,41 +93,30 @@ const PendingSubscriptions: React.FC = () => {
     }
   };
 
-  // Updated approve function that uses the fixed approvePendingSubscription function
   const handleApprove = async (subscription: PendingSubscriptionFromSupabase) => {
     setSelectedSubscription(subscription);
     
     try {
-      // Import the function from our data layer
-      const { approvePendingSubscription } = await import('@/data/subscriptions');
       const result = await approvePendingSubscription(subscription.id);
       
       if (!result.success) {
         throw new Error(result.error);
       }
       
-      // Update the local state
-      setSubscriptions(prev => 
-        prev.map(sub => 
-          sub.id === subscription.id 
-            ? { ...sub, status_approval: 'approved' } 
-            : sub
-        )
-      );
-      
+      // Show success message
       toast({
         title: 'Anúncio aprovado',
         description: 'O anúncio foi aprovado e adicionado à lista pública.'
       });
       
-      // Reload data
+      // Refresh data
       fetchPendingSubscriptions();
     } catch (error: any) {
       console.error("Error approving subscription:", error);
       toast({
         variant: "destructive",
         title: "Erro ao aprovar anúncio",
-        description: error.message
+        description: error.message || 'Ocorreu um erro ao aprovar o anúncio'
       });
     }
   };
@@ -165,7 +124,7 @@ const PendingSubscriptions: React.FC = () => {
   const handleRejectClick = (subscription: PendingSubscriptionFromSupabase) => {
     setSelectedSubscription(subscription);
     setRejectionReason('');
-    setReviewDialogOpen(true);
+    setIsReviewDialogOpen(true);
   };
 
   const confirmReject = async () => {
@@ -183,21 +142,13 @@ const PendingSubscriptions: React.FC = () => {
       
       if (error) throw error;
       
-      // Update the local state
-      setSubscriptions(prev => 
-        prev.map(sub => 
-          sub.id === selectedSubscription.id 
-            ? { ...sub, status_approval: 'rejected', rejection_reason: rejectionReason } 
-            : sub
-        )
-      );
-      
       toast({
         title: 'Anúncio rejeitado',
         description: 'O anúncio foi marcado como rejeitado.'
       });
       
-      setReviewDialogOpen(false);
+      setIsReviewDialogOpen(false);
+      fetchPendingSubscriptions();
     } catch (error: any) {
       console.error("Error rejecting subscription:", error);
       toast({
@@ -208,9 +159,42 @@ const PendingSubscriptions: React.FC = () => {
     }
   };
 
+  const handleEdit = (subscription: PendingSubscriptionFromSupabase) => {
+    setSelectedSubscription(subscription);
+    setIsEditDialogOpen(true);
+  };
+
+  const handleSaveEdit = async (data: any) => {
+    if (!selectedSubscription) return;
+    
+    try {
+      const { error } = await supabase
+        .from('pending_subscriptions')
+        .update(data)
+        .eq('id', selectedSubscription.id);
+      
+      if (error) throw error;
+      
+      toast({
+        title: 'Anúncio atualizado',
+        description: 'O anúncio foi atualizado com sucesso.'
+      });
+      
+      setIsEditDialogOpen(false);
+      fetchPendingSubscriptions();
+    } catch (error: any) {
+      console.error("Error updating subscription:", error);
+      toast({
+        variant: "destructive",
+        title: "Erro ao atualizar anúncio",
+        description: error.message
+      });
+    }
+  };
+
   const handleDeleteClick = (subscription: PendingSubscriptionFromSupabase) => {
     setSelectedSubscription(subscription);
-    setDeleteDialogOpen(true);
+    setIsDeleteDialogOpen(true);
   };
 
   const confirmDelete = async () => {
@@ -224,15 +208,13 @@ const PendingSubscriptions: React.FC = () => {
       
       if (error) throw error;
       
-      // Update the local state
-      setSubscriptions(prev => prev.filter(sub => sub.id !== selectedSubscription.id));
-      
       toast({
         title: 'Anúncio excluído',
         description: 'O anúncio pendente foi excluído com sucesso.'
       });
       
-      setDeleteDialogOpen(false);
+      setIsDeleteDialogOpen(false);
+      fetchPendingSubscriptions();
     } catch (error: any) {
       console.error("Error deleting subscription:", error);
       toast({
@@ -243,102 +225,19 @@ const PendingSubscriptions: React.FC = () => {
     }
   };
 
-  const handleEdit = (subscription: PendingSubscriptionFromSupabase) => {
-    navigate(`/admin/subscriptions/edit/${subscription.id}`, { 
-      state: { subscriptionData: subscription, isPending: true }
-    });
-  };
-
-  const toggleSubscriptionSelection = (id: string) => {
-    setSelectedSubscriptions(prev => {
-      if (prev.includes(id)) {
-        return prev.filter(subId => subId !== id);
-      } else {
-        return [...prev, id];
-      }
-    });
-  };
-
-  const toggleSelectAll = () => {
-    if (selectedSubscriptions.length === filteredSubscriptions.length) {
-      // If all are selected, unselect all
-      setSelectedSubscriptions([]);
-    } else {
-      // Otherwise, select all
-      setSelectedSubscriptions(filteredSubscriptions.map(sub => sub.id));
-    }
-  };
-
-  const confirmBulkDelete = async () => {
-    if (selectedSubscriptions.length === 0) return;
-    
-    try {
-      const { error } = await supabase
-        .from('pending_subscriptions')
-        .delete()
-        .in('id', selectedSubscriptions);
-      
-      if (error) throw error;
-      
-      // Update the local state
-      setSubscriptions(prev => prev.filter(sub => !selectedSubscriptions.includes(sub.id)));
-      
-      toast({
-        title: 'Anúncios excluídos',
-        description: `${selectedSubscriptions.length} anúncios foram excluídos com sucesso.`
-      });
-      
-      setSelectedSubscriptions([]);
-      setBulkDeleteDialogOpen(false);
-    } catch (error: any) {
-      console.error("Error deleting subscriptions:", error);
-      toast({
-        variant: "destructive",
-        title: "Erro ao excluir anúncios",
-        description: error.message
-      });
-    }
-  };
-
-  const startResizing = (columnName: string, e: React.MouseEvent) => {
-    e.preventDefault();
-    setResizing({
-      column: columnName,
-      startX: e.clientX,
-      startWidth: columnsWidth[columnName] || 100
-    });
-    
-    document.addEventListener('mousemove', handleMouseMove);
-    document.addEventListener('mouseup', stopResizing);
-  };
-  
-  const handleMouseMove = (e: MouseEvent) => {
-    if (!resizing.column) return;
-    
-    const width = Math.max(50, resizing.startWidth + (e.clientX - resizing.startX));
-    setColumnsWidth(prev => ({
-      ...prev,
-      [resizing.column!]: width
-    }));
-  };
-  
-  const stopResizing = () => {
-    setResizing({ column: null, startX: 0, startWidth: 0 });
-    document.removeEventListener('mousemove', handleMouseMove);
-    document.removeEventListener('mouseup', stopResizing);
-  };
-
+  // Filter the subscriptions based on search term
   const filteredSubscriptions = subscriptions.filter(sub => 
-    sub.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    sub.price.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    sub.telegram_username.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    sub.access.toLowerCase().includes(searchTerm.toLowerCase())
+    sub.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    sub.price?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    sub.telegram_username?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    sub.access?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold">Anúncios Pendentes</h1>
+        <Button onClick={() => navigate('/admin/subscriptions/new')}>Novo Anúncio</Button>
       </div>
 
       <div className="flex flex-wrap gap-2 justify-between items-center">
@@ -351,15 +250,6 @@ const PendingSubscriptions: React.FC = () => {
         </div>
         
         <div className="flex items-center gap-2">
-          {selectedSubscriptions.length > 0 && (
-            <Button
-              variant="destructive"
-              size="sm"
-              onClick={() => setBulkDeleteDialogOpen(true)}
-            >
-              Excluir {selectedSubscriptions.length} selecionados
-            </Button>
-          )}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="outline" size="sm" className="ml-auto">
@@ -391,166 +281,45 @@ const PendingSubscriptions: React.FC = () => {
             <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-blue-500"></div>
           </div>
         ) : (
-          <Table ref={tableRef} className="relative w-full">
+          <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="w-[40px]">
-                  <input 
-                    type="checkbox" 
-                    checked={selectedSubscriptions.length === filteredSubscriptions.length && filteredSubscriptions.length > 0}
-                    onChange={toggleSelectAll}
-                    className="h-4 w-4 rounded border-gray-300"
-                  />
-                </TableHead>
-                <TableHead 
-                  className="relative cursor-col-resize" 
-                  style={{ width: `${columnsWidth.title}px` }}
-                >
-                  Título
-                  <div 
-                    className="absolute right-0 top-0 h-full w-2 cursor-col-resize"
-                    onMouseDown={(e) => startResizing('title', e)}
-                  ></div>
-                </TableHead>
-                <TableHead 
-                  className="relative cursor-col-resize" 
-                  style={{ width: `${columnsWidth.price}px` }}
-                >
-                  Preço
-                  <div 
-                    className="absolute right-0 top-0 h-full w-2 cursor-col-resize"
-                    onMouseDown={(e) => startResizing('price', e)}
-                  ></div>
-                </TableHead>
-                <TableHead 
-                  className="relative cursor-col-resize" 
-                  style={{ width: `${columnsWidth.telegram}px` }}
-                >
-                  Telegram
-                  <div 
-                    className="absolute right-0 top-0 h-full w-2 cursor-col-resize"
-                    onMouseDown={(e) => startResizing('telegram', e)}
-                  ></div>
-                </TableHead>
-                <TableHead 
-                  className="relative cursor-col-resize"
-                  style={{ width: `${columnsWidth.whatsapp}px` }}
-                >
-                  WhatsApp
-                  <div 
-                    className="absolute right-0 top-0 h-full w-2 cursor-col-resize"
-                    onMouseDown={(e) => startResizing('whatsapp', e)}
-                  ></div>
-                </TableHead>
-                <TableHead 
-                  className="relative cursor-col-resize" 
-                  style={{ width: `${columnsWidth.status}px` }}
-                >
-                  Status
-                  <div 
-                    className="absolute right-0 top-0 h-full w-2 cursor-col-resize"
-                    onMouseDown={(e) => startResizing('status', e)}
-                  ></div>
-                </TableHead>
-                <TableHead 
-                  className="relative cursor-col-resize" 
-                  style={{ width: `${columnsWidth.access}px` }}
-                >
-                  Acesso
-                  <div 
-                    className="absolute right-0 top-0 h-full w-2 cursor-col-resize"
-                    onMouseDown={(e) => startResizing('access', e)}
-                  ></div>
-                </TableHead>
-                <TableHead 
-                  className="relative cursor-col-resize" 
-                  style={{ width: `${columnsWidth.payment}px` }}
-                >
-                  Pagamento
-                  <div 
-                    className="absolute right-0 top-0 h-full w-2 cursor-col-resize"
-                    onMouseDown={(e) => startResizing('payment', e)}
-                  ></div>
-                </TableHead>
-                <TableHead 
-                  className="relative cursor-col-resize" 
-                  style={{ width: `${columnsWidth.date}px` }}
-                >
-                  Data do Anúncio
-                  <div 
-                    className="absolute right-0 top-0 h-full w-2 cursor-col-resize"
-                    onMouseDown={(e) => startResizing('date', e)}
-                  ></div>
-                </TableHead>
-                <TableHead 
-                  className="relative cursor-col-resize" 
-                  style={{ width: `${columnsWidth.approval}px` }}
-                >
-                  Aprovação
-                  <div 
-                    className="absolute right-0 top-0 h-full w-2 cursor-col-resize"
-                    onMouseDown={(e) => startResizing('approval', e)}
-                  ></div>
-                </TableHead>
-                <TableHead 
-                  className="relative text-right" 
-                  style={{ width: `${columnsWidth.actions}px` }}
-                >
-                  Ações
-                </TableHead>
+                <TableHead>Título</TableHead>
+                <TableHead>Preço</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>Acesso</TableHead>
+                <TableHead>Contato</TableHead>
+                <TableHead>Aprovação</TableHead>
+                <TableHead className="text-right">Ações</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {filteredSubscriptions.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={10} className="text-center py-10 text-gray-500">
+                  <TableCell colSpan={7} className="text-center py-10 text-gray-500">
                     Nenhum anúncio pendente encontrado
                   </TableCell>
                 </TableRow>
               ) : (
                 filteredSubscriptions.map((subscription) => (
                   <TableRow key={subscription.id}>
-                    <TableCell>
-                      <input 
-                        type="checkbox" 
-                        checked={selectedSubscriptions.includes(subscription.id)} 
-                        onChange={() => toggleSubscriptionSelection(subscription.id)}
-                        className="h-4 w-4 rounded border-gray-300"
-                      />
-                    </TableCell>
-                    <TableCell>
-                      {subscription.title}
-                    </TableCell>
-                    <TableCell>
-                      {subscription.price}
-                    </TableCell>
-                    <TableCell>
-                      {subscription.telegram_username || 'N/A'}
-                    </TableCell>
-                    <TableCell>
-                      {subscription.whatsapp_number || 'N/A'}
-                    </TableCell>
+                    <TableCell className="font-medium">{subscription.title}</TableCell>
+                    <TableCell>{subscription.price}</TableCell>
                     <TableCell>
                       <span className={
                         subscription.status === 'disponível' 
                           ? 'bg-green-100 text-green-800 px-2 py-1 rounded text-xs'
-                          : 'bg-red-100 text-red-800 px-2 py-1 rounded text-xs'
+                          : 'bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs'
                       }>
                         {subscription.status}
                       </span>
                     </TableCell>
+                    <TableCell>{subscription.access}</TableCell>
                     <TableCell>
-                      {subscription.access}
-                    </TableCell>
-                    <TableCell>
-                      {subscription.payment_method}
-                    </TableCell>
-                    <TableCell>
-                      {subscription.reviewed_at 
-                        ? new Date(subscription.reviewed_at).toLocaleDateString() 
-                        : (subscription.submitted_at 
-                          ? new Date(subscription.submitted_at).toLocaleDateString() 
-                          : 'N/A')}
+                      <div className="flex flex-col gap-1 text-sm">
+                        <span>{subscription.telegram_username}</span>
+                        <span>{subscription.whatsapp_number}</span>
+                      </div>
                     </TableCell>
                     <TableCell>
                       <span className={
@@ -569,7 +338,7 @@ const PendingSubscriptions: React.FC = () => {
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end space-x-1">
-                        {!subscription.status_approval || subscription.status_approval === 'pending' && (
+                        {(!subscription.status_approval || subscription.status_approval === 'pending') && (
                           <>
                             <Button
                               variant="ghost"
@@ -591,26 +360,23 @@ const PendingSubscriptions: React.FC = () => {
                             </Button>
                           </>
                         )}
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon" className="h-8 w-8">
-                              <MoreHorizontal className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={() => handleEdit(subscription)}>
-                              <Edit className="h-4 w-4 mr-2" /> Editar
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => handleDeleteClick(subscription)}>
-                              <Trash className="h-4 w-4 mr-2" /> Excluir
-                            </DropdownMenuItem>
-                            {(!subscription.status_approval || subscription.status_approval === 'pending') && (
-                              <DropdownMenuItem onClick={() => handleApprove(subscription)}>
-                                <CheckCircle className="h-4 w-4 mr-2" /> Aprovar
-                              </DropdownMenuItem>
-                            )}
-                          </DropdownMenuContent>
-                        </DropdownMenu>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleEdit(subscription)}
+                          title="Editar"
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleDeleteClick(subscription)}
+                          className="text-red-600 hover:text-red-800 hover:bg-red-50"
+                          title="Excluir"
+                        >
+                          <Trash className="h-4 w-4" />
+                        </Button>
                       </div>
                     </TableCell>
                   </TableRow>
@@ -621,8 +387,24 @@ const PendingSubscriptions: React.FC = () => {
         )}
       </div>
 
+      {/* Edit Dialog */}
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent className="sm:max-w-[900px] max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Editar Anúncio</DialogTitle>
+          </DialogHeader>
+          {selectedSubscription && (
+            <PendingSubscriptionForm 
+              initialData={selectedSubscription}
+              onSave={handleSaveEdit}
+              onCancel={() => setIsEditDialogOpen(false)}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
+
       {/* Reject Dialog */}
-      <Dialog open={reviewDialogOpen} onOpenChange={setReviewDialogOpen}>
+      <Dialog open={isReviewDialogOpen} onOpenChange={setIsReviewDialogOpen}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Rejeitar Anúncio</DialogTitle>
@@ -633,22 +415,23 @@ const PendingSubscriptions: React.FC = () => {
           <div className="space-y-4 py-4">
             <div className="space-y-2">
               <label className="text-sm font-medium">Motivo da rejeição</label>
-              <Input 
+              <Textarea 
                 value={rejectionReason} 
                 onChange={(e) => setRejectionReason(e.target.value)}
                 placeholder="Digite o motivo da rejeição"
+                className="min-h-[100px]"
               />
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setReviewDialogOpen(false)}>Cancelar</Button>
-            <Button variant="default" onClick={confirmReject}>Rejeitar</Button>
+            <Button variant="outline" onClick={() => setIsReviewDialogOpen(false)}>Cancelar</Button>
+            <Button variant="destructive" onClick={confirmReject}>Rejeitar</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
       {/* Delete Dialog */}
-      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Confirmar exclusão</AlertDialogTitle>
@@ -663,27 +446,6 @@ const PendingSubscriptions: React.FC = () => {
               className="bg-red-500 hover:bg-red-600"
             >
               Excluir
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-
-      {/* Bulk Delete Dialog */}
-      <AlertDialog open={bulkDeleteDialogOpen} onOpenChange={setBulkDeleteDialogOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Confirmar exclusão em massa</AlertDialogTitle>
-            <AlertDialogDescription>
-              Tem certeza que deseja excluir {selectedSubscriptions.length} anúncios pendentes? Esta ação não pode ser desfeita.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction 
-              onClick={confirmBulkDelete}
-              className="bg-red-500 hover:bg-red-600"
-            >
-              Excluir {selectedSubscriptions.length} anúncios
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
