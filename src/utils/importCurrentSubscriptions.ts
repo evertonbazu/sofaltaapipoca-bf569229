@@ -302,9 +302,25 @@ export const importAllSubscriptions = async () => {
         // Make certain subscriptions featured based on index
         const featured = featuredSubs.includes(i);
         
+        // Add default values to ensure required fields are present
+        const subscriptionToInsert = {
+          title: parsed.title || '',
+          price: parsed.price || '',
+          status: parsed.status || 'disponível',
+          access: parsed.access || '',
+          header_color: parsed.header_color || 'bg-blue-600',
+          price_color: parsed.price_color || 'text-green-600',
+          whatsapp_number: parsed.whatsapp_number || '',
+          telegram_username: parsed.telegram_username || '',
+          code: parsed.code || generateCode(),
+          payment_method: parsed.payment_method || 'PIX',
+          added_date: parsed.added_date || new Date().toLocaleDateString('pt-BR'),
+          featured
+        };
+        
         // Make sure all required fields are present
         const requiredFields = ['title', 'price', 'status', 'access', 'header_color', 'price_color', 'whatsapp_number', 'telegram_username', 'code'];
-        const missingFields = requiredFields.filter(field => !parsed[field]);
+        const missingFields = requiredFields.filter(field => !subscriptionToInsert[field]);
         
         if (missingFields.length > 0) {
           console.error(`Missing required fields: ${missingFields.join(', ')}`, parsed);
@@ -314,20 +330,7 @@ export const importAllSubscriptions = async () => {
         
         const { error } = await supabase
           .from('subscriptions')
-          .insert({
-            title: parsed.title,
-            price: parsed.price,
-            status: parsed.status,
-            access: parsed.access,
-            header_color: parsed.header_color,
-            price_color: parsed.price_color,
-            whatsapp_number: parsed.whatsapp_number,
-            telegram_username: parsed.telegram_username,
-            code: parsed.code || generateCode(),
-            payment_method: parsed.payment_method || 'PIX',
-            added_date: parsed.added_date || new Date().toLocaleDateString('pt-BR'),
-            featured
-          });
+          .insert(subscriptionToInsert);
           
         if (error) {
           console.error('Error inserting subscription:', error);

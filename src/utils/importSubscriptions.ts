@@ -48,8 +48,8 @@ export const parseSubscription = (text: string): Partial<Subscription> => {
     whatsapp_number,
     added_date,
     payment_method,
-    header_color: '#3b82f6', // Default blue
-    price_color: '#10b981', // Default green
+    header_color: 'bg-blue-600', // Default blue
+    price_color: 'text-green-600', // Default green
     code: generateCode(),
   };
 };
@@ -82,8 +82,8 @@ export const addSubscription = async (subscription: Partial<Subscription>): Prom
         price: subscription.price,
         status: subscription.status,
         access: subscription.access,
-        header_color: subscription.header_color || '#3b82f6',
-        price_color: subscription.price_color || '#10b981',
+        header_color: subscription.header_color || 'bg-blue-600',
+        price_color: subscription.price_color || 'text-green-600',
         whatsapp_number: subscription.whatsapp_number,
         telegram_username: subscription.telegram_username,
         code: subscription.code || generateCode(),

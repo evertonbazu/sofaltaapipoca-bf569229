@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -71,7 +70,7 @@ const PendingSubscriptions: React.FC = () => {
     approval: 150,
     actions: 100,
   });
-  const [resizing, setResizing] = useState<{column: string | null, startX: number, startWidth: number}>({
+  const [resizing, setResizing<{column: string | null, startX: number, startWidth: number}>({
     column: null,
     startX: 0,
     startWidth: 0
@@ -120,8 +119,8 @@ const PendingSubscriptions: React.FC = () => {
     setSelectedSubscription(subscription);
     
     try {
-      // Generate a subscription code
-      const code = `SF${Math.floor(1000 + Math.random() * 9000)}`;
+      // Generate a subscription code if not exists
+      const code = subscription.code || `SF${Math.floor(1000 + Math.random() * 9000)}`;
       
       // Insert into subscriptions table
       const { error: insertError } = await supabase
@@ -134,10 +133,10 @@ const PendingSubscriptions: React.FC = () => {
           telegram_username: subscription.telegram_username,
           whatsapp_number: subscription.whatsapp_number,
           status: subscription.status,
-          header_color: subscription.header_color || '#3b82f6',
-          price_color: subscription.price_color || '#10b981',
-          code: subscription.code || code,
-          added_date: new Date().toISOString().split('T')[0],
+          header_color: subscription.header_color || 'bg-blue-600',
+          price_color: subscription.price_color || 'text-green-600',
+          code: code,
+          added_date: new Date().toLocaleDateString('pt-BR'),
           user_id: subscription.user_id,
           icon: subscription.icon,
           pix_key: subscription.pix_key,
@@ -588,7 +587,7 @@ const PendingSubscriptions: React.FC = () => {
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end space-x-1">
-                        {!subscription.status_approval && (
+                        {!subscription.status_approval || subscription.status_approval === 'pending' && (
                           <>
                             <Button
                               variant="ghost"
@@ -623,7 +622,7 @@ const PendingSubscriptions: React.FC = () => {
                             <DropdownMenuItem onClick={() => handleDeleteClick(subscription)}>
                               <Trash className="h-4 w-4 mr-2" /> Excluir
                             </DropdownMenuItem>
-                            {!subscription.status_approval && (
+                            {(!subscription.status_approval || subscription.status_approval === 'pending') && (
                               <DropdownMenuItem onClick={() => handleApprove(subscription)}>
                                 <CheckCircle className="h-4 w-4 mr-2" /> Aprovar
                               </DropdownMenuItem>
