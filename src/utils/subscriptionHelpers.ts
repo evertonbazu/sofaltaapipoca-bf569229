@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
 import { generateSubscriptionCode } from '@/utils/codeGenerator';
@@ -12,6 +11,9 @@ export const createExampleSubscription = async (userId: string) => {
     // Format today's date as DD/MM/YYYY
     const today = new Date();
     const formattedDate = format(today, 'dd/MM/yyyy');
+    
+    // Generate a unique code for the subscription
+    const code = generateSubscriptionCode('SF', 9, Math.floor(Math.random() * 999) + 1);
 
     // Create a new pending subscription
     const { data, error } = await supabase
@@ -29,7 +31,8 @@ export const createExampleSubscription = async (userId: string) => {
         price_color: 'text-red-600',
         added_date: formattedDate,
         status_approval: 'pending',
-        pix_key: 'exemplo@email.com'
+        pix_key: 'exemplo@email.com',
+        code: code // Add the required code field
       })
       .select();
       
