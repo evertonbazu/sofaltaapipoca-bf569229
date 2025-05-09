@@ -25,7 +25,7 @@ interface AdminLayoutProps {
 
 const AdminLayout: React.FC<AdminLayoutProps> = ({ children, title }) => {
   const location = useLocation();
-  const { signOut, user } = useAuth();
+  const { signOut, authState } = useAuth();
 
   const handleSignOut = () => {
     signOut();
