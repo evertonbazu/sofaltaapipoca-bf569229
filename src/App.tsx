@@ -12,6 +12,7 @@ import PendingSubscriptions from './components/admin/PendingSubscriptions';
 import ExportSubscriptionsTxt from './components/admin/ExportSubscriptionsTxt';
 import ExportSubscriptions from './components/admin/ExportSubscriptions';
 import ImportSubscriptions from './components/admin/ImportSubscriptions';
+import ImportBulkSubscriptions from './pages/admin/ImportBulkSubscriptions';
 import UserManagement from './components/admin/UserManagement';
 import ContactMessages from './components/admin/ContactMessages';
 import NewSubscription from './pages/NewSubscription';
@@ -21,7 +22,7 @@ import Contact from './pages/Contact';
 import Navbar from './components/ui/Navbar';
 
 // Version information
-export const APP_VERSION = '1.5.1'; // Updated version with fixed login flow
+export const APP_VERSION = '1.5.2'; // Updated version with import subscriptions
 
 // Create a separate component for the authenticated routes
 const AppRoutes = () => {
@@ -64,6 +65,7 @@ const AppRoutes = () => {
           <Route path="export" element={<ExportSubscriptionsTxt />} />
           <Route path="export-all" element={<ExportSubscriptions />} />
           <Route path="import" element={<ImportSubscriptions />} />
+          <Route path="import-bulk" element={<ImportBulkSubscriptions />} />
           <Route path="users" element={<UserManagement />} />
           <Route path="messages" element={<ContactMessages />} />
         </Route>
