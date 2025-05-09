@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-dom';
-import { AuthProvider, useAuth } from './context/AuthContext';
+import { AuthProvider } from './context/AuthContext';
 import { Toaster } from "@/components/ui/toaster";
 import Auth from './pages/Auth';
 import Admin from './pages/Admin';
@@ -18,14 +18,14 @@ import NewSubscription from './pages/NewSubscription';
 import Index from './pages/Index';
 import UserProfile from './components/admin/UserProfile';
 import Contact from './pages/Contact';
+import Navbar from './components/ui/Navbar';
 
 // Version information
-export const APP_VERSION = '1.4.0'; // Updated version with Portuguese translation, improved UX
+export const APP_VERSION = '1.5.0'; // Updated version with fixed login and navigation
 
 // Create a separate component for the authenticated routes
 const AppRoutes = () => {
   const [loading, setLoading] = useState(true);
-  const { authState, isAdmin } = useAuth();
 
   useEffect(() => {
     // Simulate loading delay
@@ -43,44 +43,32 @@ const AppRoutes = () => {
   }
 
   return (
-    <Routes>
-      <Route path="/auth" element={<Auth />} />
-      <Route path="/new" element={<NewSubscription />} />
-      <Route path="/profile" element={<UserProfile />} />
-      <Route path="/contact" element={<Contact />} />
-      <Route path="/" element={<Index />} />
-      <Route
-        path="/admin/*"
-        element={
-          authState?.user?.role === 'admin' ? (
-            <Admin />
-          ) : (
-            <Navigate to="/" replace />
-          )
-        }
-      >
-        <Route index element={<AdminDashboard />} />
-        <Route path="profile" element={<UserProfile />} />
-        <Route path="subscriptions" element={<SubscriptionList />} />
-        <Route path="subscriptions/new" element={<SubscriptionForm />} />
-        <Route path="subscriptions/edit/:id" element={<SubscriptionForm />} />
-        <Route path="pending" element={<PendingSubscriptions />} />
-        <Route path="export" element={<ExportSubscriptionsTxt />} />
-        <Route path="export-all" element={<ExportSubscriptions />} />
-        <Route path="import" element={<ImportSubscriptions />} />
-        <Route path="users" element={<UserManagement />} />
-        <Route path="messages" element={<ContactMessages />} />
-      </Route>
-    </Routes>
-  );
-};
-
-// Component for the Footer with version info
-export const Footer = () => {
-  return (
-    <footer className="py-4 px-6 text-center text-gray-500 text-sm border-t mt-auto">
-      <p>&copy; {new Date().getFullYear()} Só Falta a Pipoca - versão {APP_VERSION}</p>
-    </footer>
+    <>
+      <Navbar />
+      <Routes>
+        <Route path="/auth" element={<Auth />} />
+        <Route path="/new" element={<NewSubscription />} />
+        <Route path="/profile" element={<UserProfile />} />
+        <Route path="/contact" element={<Contact />} />
+        <Route path="/" element={<Index />} />
+        <Route
+          path="/admin/*"
+          element={<Admin />}
+        >
+          <Route index element={<AdminDashboard />} />
+          <Route path="profile" element={<UserProfile />} />
+          <Route path="subscriptions" element={<SubscriptionList />} />
+          <Route path="subscriptions/new" element={<SubscriptionForm />} />
+          <Route path="subscriptions/edit/:id" element={<SubscriptionForm />} />
+          <Route path="pending" element={<PendingSubscriptions />} />
+          <Route path="export" element={<ExportSubscriptionsTxt />} />
+          <Route path="export-all" element={<ExportSubscriptions />} />
+          <Route path="import" element={<ImportSubscriptions />} />
+          <Route path="users" element={<UserManagement />} />
+          <Route path="messages" element={<ContactMessages />} />
+        </Route>
+      </Routes>
+    </>
   );
 };
 
@@ -94,7 +82,6 @@ const App = () => {
             <div className="flex-grow">
               <AppRoutes />
             </div>
-            <Footer />
           </div>
         </Router>
       </AuthProvider>

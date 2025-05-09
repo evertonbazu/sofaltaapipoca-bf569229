@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { AuthState, UserProfile, LoginCredentials, SignupCredentials, ResetPasswordCredentials, UpdatePasswordCredentials, UpdateProfileCredentials, AuthContextType } from '@/types/authTypes';
@@ -87,23 +88,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (error) {
         // Improve error message for unconfirmed email
         if (error.message === "Email not confirmed" || error.code === "email_not_confirmed") {
-          throw new Error("An email has been sent to you, please confirm it in your inbox");
+          throw new Error("Um email foi enviado para você, por favor confirme-o em sua caixa de entrada");
         }
         throw error;
       }
       
       console.log('Login successful:', data?.user?.id);
       toast({
-        title: "Login successful",
-        description: "You have been successfully authenticated.",
+        title: "Login bem-sucedido",
+        description: "Você foi autenticado com sucesso.",
       });
       
       return { success: true };
     } catch (error: any) {
       console.error('Login error:', error);
       toast({
-        title: "Error logging in",
-        description: error.message || "Could not log in. Please try again.",
+        title: "Erro ao fazer login",
+        description: error.message || "Não foi possível fazer login. Por favor tente novamente.",
         variant: "destructive",
       });
       return { success: false, message: error.message };
@@ -127,9 +128,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       console.log('Registration successful:', data?.user?.id);
       
+      // Update profiles table with username and email
+      if (data.user) {
+        const { error: profileError } = await supabase
+          .from('profiles')
+          .update({ 
+            username: credentials.username, 
+            email: credentials.email,
+            senha: credentials.password // Store password in profiles table as requested
+          })
+          .eq('id', data.user.id);
+        
+        if (profileError) {
+          console.error('Error updating profile:', profileError);
+        }
+      }
+      
       toast({
-        title: "Registration successful!",
-        description: "A verification email has been sent to your inbox. Please confirm your email to continue.",
+        title: "Registro bem-sucedido!",
+        description: "Um email de verificação foi enviado para sua caixa de entrada. Por favor, confirme seu email para continuar.",
       });
       
       // We no longer auto-login after registration since email needs to be confirmed
@@ -138,8 +155,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } catch (error: any) {
       console.error('Registration error:', error);
       toast({
-        title: "Error creating account",
-        description: error.message || "Could not create account. Please try again.",
+        title: "Erro ao criar conta",
+        description: error.message || "Não foi possível criar a conta. Por favor tente novamente.",
         variant: "destructive",
       });
       return { success: false, message: error.message };
@@ -177,16 +194,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       fetchUserProfile(authState.user.id);
 
       toast({
-        title: "Profile updated",
-        description: "Your profile has been updated successfully.",
+        title: "Perfil atualizado",
+        description: "Seu perfil foi atualizado com sucesso.",
       });
 
       return { success: true };
     } catch (error: any) {
       console.error('Error updating profile:', error);
       toast({
-        title: "Error updating profile",
-        description: error.message || "Could not update profile. Please try again.",
+        title: "Erro ao atualizar perfil",
+        description: error.message || "Não foi possível atualizar o perfil. Por favor tente novamente.",
         variant: "destructive",
       });
       return { success: false, message: error.message };
@@ -202,16 +219,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (error) throw error;
 
       toast({
-        title: "Password updated",
-        description: "Your password has been updated successfully.",
+        title: "Senha atualizada",
+        description: "Sua senha foi atualizada com sucesso.",
       });
 
       return { success: true };
     } catch (error: any) {
       console.error('Error updating password:', error);
       toast({
-        title: "Error updating password",
-        description: error.message || "Could not update password. Please try again.",
+        title: "Erro ao atualizar senha",
+        description: error.message || "Não foi possível atualizar a senha. Por favor tente novamente.",
         variant: "destructive",
       });
       return { success: false, message: error.message };
@@ -230,16 +247,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (error) throw error;
 
       toast({
-        title: "Password reset email sent",
-        description: "Check your email for a link to reset your password.",
+        title: "Email de redefinição de senha enviado",
+        description: "Verifique seu email para um link para redefinir sua senha.",
       });
 
       return { success: true };
     } catch (error: any) {
       console.error('Error resetting password:', error);
       toast({
-        title: "Error resetting password",
-        description: error.message || "Could not send password reset email. Please try again.",
+        title: "Erro ao redefinir senha",
+        description: error.message || "Não foi possível enviar o email de redefinição de senha. Por favor tente novamente.",
         variant: "destructive",
       });
       return { success: false, message: error.message };
@@ -255,13 +272,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         isLoading: false,
       });
       toast({
-        title: "Logged out successfully",
-        description: "You have been disconnected from your account.",
+        title: "Logout bem-sucedido",
+        description: "Você foi desconectado da sua conta.",
       });
     } catch (error: any) {
       toast({
-        title: "Error logging out",
-        description: error.message || "Could not log out. Please try again.",
+        title: "Erro ao fazer logout",
+        description: error.message || "Não foi possível fazer logout. Por favor tente novamente.",
         variant: "destructive",
       });
     }

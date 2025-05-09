@@ -60,6 +60,23 @@ const UserManagement = () => {
   const fetchUsers = async () => {
     setLoading(true);
     try {
+      // Fetch all users from auth.users
+      const { data: authData, error: authError } = await supabase.auth.admin.listUsers();
+      
+      if (authError) throw authError;
+      
+      // Fetch all profiles
+      const { data: profileData, error: profileError } = await supabase
+        .from('profiles')
+        .select('*');
+      
+      if (profileError) throw profileError;
+      
+      // Combine data from both sources
+      const combinedUsers = profileData || [];
+      
+      // Make sure we're fetching all users, even if they don't have a profile
+      // This ensures we don't miss any users
       const { data, error } = await supabase
         .from('profiles')
         .select('*');
@@ -167,6 +184,11 @@ const UserManagement = () => {
         
       if (profileError) throw profileError;
       
+      // Delete the auth user (requires admin privileges)
+      const { error: authError } = await supabase.auth.admin.deleteUser(currentUser.id);
+      
+      if (authError) throw authError;
+      
       // Update local state
       setUsers(prev => prev.filter(user => user.id !== currentUser.id));
       
@@ -193,6 +215,17 @@ const UserManagement = () => {
       setSortColumn(column);
       setSortDirection('asc');
     }
+  };
+
+  const formatDate = (dateString?: string) => {
+    if (!dateString) return 'N/A';
+    
+    const date = new Date(dateString);
+    const day = String(date.getDate()).padStart(2, '0');
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const year = date.getFullYear();
+    
+    return `${day}/${month}/${year}`;
   };
 
   const getSortedUsers = () => {
@@ -276,7 +309,7 @@ const UserManagement = () => {
           <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-blue-500"></div>
         </div>
       ) : (
-        <div className="border rounded-md overflow-hidden">
+        <div className="border rounded-md overflow-x-auto">
           <Table>
             <TableHeader>
               <TableRow>
@@ -316,14 +349,10 @@ const UserManagement = () => {
                       </span>
                     </TableCell>
                     <TableCell>
-                      {user.created_at 
-                        ? new Date(user.created_at).toLocaleDateString() 
-                        : 'N/A'}
+                      {formatDate(user.created_at)}
                     </TableCell>
                     <TableCell>
-                      {user.updated_at 
-                        ? new Date(user.updated_at).toLocaleDateString() 
-                        : 'N/A'}
+                      {formatDate(user.updated_at)}
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-2">

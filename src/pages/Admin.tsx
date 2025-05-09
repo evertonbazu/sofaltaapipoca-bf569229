@@ -48,6 +48,15 @@ const Admin: React.FC = () => {
     return location.pathname === path;
   };
 
+  // Format date as dd/mm/yyyy
+  const formatDate = () => {
+    const now = new Date();
+    const day = String(now.getDate()).padStart(2, '0');
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const year = now.getFullYear();
+    return `${day}/${month}/${year}`;
+  };
+
   return (
     <SidebarProvider>
       <div className="flex h-screen overflow-hidden">
@@ -166,7 +175,7 @@ const Admin: React.FC = () => {
               <br />
               <span className="font-semibold">{isAdmin() ? 'Administrador' : 'Membro'}</span>
               <br />
-              <span className="text-xs">versão {APP_VERSION}</span>
+              <span className="text-xs">versão {APP_VERSION} • {formatDate()}</span>
             </p>
           </div>
         </Sidebar>
