@@ -1,33 +1,22 @@
 
-import React, { useState, useRef, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import React, { useState, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import SearchBar from '@/components/SearchBar';
 import SubscriptionList from '@/components/SubscriptionList';
 import NoResults from '@/components/NoResults';
-import { MessageSquare, User, Settings, Home, Plus, UserCircle } from 'lucide-react';
+import { MessageSquare, Plus } from 'lucide-react';
 import { useAuth } from '@/hooks/use-auth';
 import { Button } from '@/components/ui/button';
-import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
 
 const Index: React.FC = () => {
-  const { authState, isAdmin, signOut } = useAuth();
+  const { authState } = useAuth();
   const navigate = useNavigate();
-  const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState("");
   const [hasResults, setHasResults] = useState(true);
   const subscriptionRefs = useRef<{ [key: string]: HTMLDivElement | null }>({});
 
   const handleSearch = (term: string) => {
     setSearchTerm(term.toLowerCase());
-  };
-
-  const handleSignOut = async () => {
-    try {
-      await signOut();
-    } catch (error) {
-      console.error('Error signing out:', error);
-    }
   };
 
   // Get current date formatted as dd/mm/yyyy
@@ -44,62 +33,6 @@ const Index: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gray-100">
-      <div className="bg-white shadow-sm">
-        <div className="container mx-auto px-3 sm:px-4 py-2">
-          <div className="flex justify-between items-center">
-            <Button 
-              variant="ghost" 
-              className="font-medium px-3"
-              onClick={() => navigate('/')}
-            >
-              <Home className="h-4 w-4 mr-2" /> 
-              Início
-            </Button>
-            <div className="flex gap-2">
-              {authState.user ? (
-                <>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => navigate('/profile')}
-                  >
-                    <UserCircle className="h-4 w-4 mr-1" />
-                    Meu Perfil
-                  </Button>
-                  {isAdmin() && (
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => navigate('/admin')}
-                    >
-                      <Settings className="h-4 w-4 mr-1" />
-                      Admin
-                    </Button>
-                  )}
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={handleSignOut}
-                  >
-                    <User className="h-4 w-4 mr-1" />
-                    Sair
-                  </Button>
-                </>
-              ) : (
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => navigate('/auth')}
-                >
-                  <User className="h-4 w-4 mr-1" />
-                  Entrar
-                </Button>
-              )}
-            </div>
-          </div>
-        </div>
-      </div>
-
       <header className="bg-gradient-indigo text-white py-4 sm:py-6">
         <div className="container mx-auto px-3 sm:px-4">
           <div className="flex justify-center items-center mb-4">
