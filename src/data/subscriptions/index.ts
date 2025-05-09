@@ -119,6 +119,31 @@ export const saveSubscription = async (subscription: Subscription): Promise<{suc
   }
 };
 
+// Function to toggle subscription featured status
+export const toggleFeaturedStatus = async (id: string, featured: boolean): Promise<{success: boolean, error?: string}> => {
+  try {
+    const { error } = await supabase
+      .from('subscriptions')
+      .update({ featured })
+      .eq('id', id);
+      
+    if (error) {
+      console.error('Error updating featured status:', error);
+      await logError('Error updating featured status', 'toggleFeaturedStatus', error.code, error.message);
+      return { success: false, error: error.message };
+    }
+    
+    // Force refresh of cached subscriptions
+    await getSubscriptions(true);
+    
+    return { success: true };
+  } catch (error: any) {
+    console.error('Error updating featured status:', error);
+    await logError('Error updating featured status', 'toggleFeaturedStatus', error.code, error.stack);
+    return { success: false, error: error.message };
+  }
+};
+
 // Function to approve pending subscription and move it to subscriptions table
 export const approvePendingSubscription = async (pendingId: string): Promise<{success: boolean, error?: string}> => {
   try {

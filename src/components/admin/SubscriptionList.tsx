@@ -19,7 +19,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Edit, Trash, MoreVertical, ExternalLink } from 'lucide-react';
+import { Edit, Trash, MoreVertical, ExternalLink, Star } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import {
   AlertDialog,
@@ -31,6 +31,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { toggleFeaturedStatus } from '@/data/subscriptions';
 
 const SubscriptionList = () => {
   const [subscriptions, setSubscriptions] = useState<SubscriptionFromSupabase[]>([]);
@@ -46,6 +47,7 @@ const SubscriptionList = () => {
     telegram: 150,
     whatsapp: 150,
     date: 120,
+    featured: 80,
     actions: 80,
   });
   const [resizing, setResizing] = useState<{column: string | null, startX: number, startWidth: number}>({
@@ -113,6 +115,37 @@ const SubscriptionList = () => {
     } finally {
       setSubscriptionToDelete(null);
       setDeleteDialogOpen(false);
+    }
+  };
+
+  const handleToggleFeatured = async (id: string, currentStatus: boolean) => {
+    try {
+      const { success, error } = await toggleFeaturedStatus(id, !currentStatus);
+      
+      if (success) {
+        // Update local state
+        setSubscriptions(prev => 
+          prev.map(sub => 
+            sub.id === id ? { ...sub, featured: !currentStatus } : sub
+          )
+        );
+        
+        toast({
+          title: !currentStatus ? "Anúncio destacado" : "Destaque removido",
+          description: !currentStatus 
+            ? "O anúncio foi marcado como destaque." 
+            : "O destaque do anúncio foi removido."
+        });
+      } else if (error) {
+        throw new Error(error);
+      }
+    } catch (error: any) {
+      console.error("Error toggling featured status:", error);
+      toast({
+        variant: "destructive",
+        title: "Erro ao alterar destaque",
+        description: error.message
+      });
     }
   };
 
@@ -305,6 +338,16 @@ const SubscriptionList = () => {
                   ></div>
                 </TableHead>
                 <TableHead 
+                  className="relative cursor-col-resize" 
+                  style={{ width: `${columnsWidth.featured}px` }}
+                >
+                  Destaque
+                  <div 
+                    className="absolute right-0 top-0 h-full w-2 cursor-col-resize"
+                    onMouseDown={(e) => startResizing('featured', e)}
+                  ></div>
+                </TableHead>
+                <TableHead 
                   className="relative text-right" 
                   style={{ width: `${columnsWidth.actions}px` }}
                 >
@@ -315,7 +358,7 @@ const SubscriptionList = () => {
             <TableBody>
               {getSortedSubscriptions().length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={7} className="text-center py-6 text-gray-500">
+                  <TableCell colSpan={8} className="text-center py-6 text-gray-500">
                     Nenhum anúncio encontrado
                   </TableCell>
                 </TableRow>
@@ -358,6 +401,16 @@ const SubscriptionList = () => {
                     <TableCell>
                       {subscription.added_date ? new Date(subscription.added_date).toLocaleDateString() : "N/A"}
                     </TableCell>
+                    <TableCell>
+                      <Button 
+                        variant={subscription.featured ? "default" : "outline"}
+                        size="sm"
+                        className={subscription.featured ? "bg-yellow-500 hover:bg-yellow-600" : ""}
+                        onClick={() => handleToggleFeatured(subscription.id, !!subscription.featured)}
+                      >
+                        <Star className={`h-4 w-4 ${subscription.featured ? "fill-white" : ""}`} />
+                      </Button>
+                    </TableCell>
                     <TableCell className="text-right">
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
@@ -368,6 +421,12 @@ const SubscriptionList = () => {
                         <DropdownMenuContent align="end">
                           <DropdownMenuItem onClick={() => handleEdit(subscription.id)}>
                             <Edit className="mr-2 h-4 w-4" /> Editar
+                          </DropdownMenuItem>
+                          <DropdownMenuItem 
+                            onClick={() => handleToggleFeatured(subscription.id, !!subscription.featured)}
+                          >
+                            <Star className="mr-2 h-4 w-4" /> 
+                            {subscription.featured ? "Remover destaque" : "Destacar"}
                           </DropdownMenuItem>
                           <DropdownMenuItem 
                             onClick={() => confirmDelete(subscription.id)}
