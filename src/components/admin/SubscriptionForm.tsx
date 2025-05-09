@@ -149,6 +149,7 @@ const SubscriptionForm: React.FC = () => {
     }
   };
 
+  // Updated onSubmit function to handle error logging and avoid user_id issues
   const onSubmit = async (values: FormValues) => {
     setLoading(true);
     try {
@@ -194,13 +195,20 @@ const SubscriptionForm: React.FC = () => {
           code: values.code,
           added_date: new Date().toLocaleDateString('pt-BR'),
           featured: false
+          // Não incluímos mais o campo user_id para evitar problemas com RLS
         };
         
         const { error } = await supabase
           .from('subscriptions')
           .insert(newSubscription);
           
-        if (error) throw error;
+        if (error) {
+          throw error;
+        }
+        
+        // Registrar a operação bem-sucedida
+        const { logError } = await import('@/data/subscriptions');
+        await logError('Anúncio criado com sucesso', 'SubscriptionForm.onSubmit');
         
         toast({
           title: "Anúncio criado",
@@ -212,6 +220,20 @@ const SubscriptionForm: React.FC = () => {
       navigate('/admin/subscriptions');
     } catch (error: any) {
       console.error("Error saving subscription:", error);
+      
+      // Log the error to our new error logging system
+      try {
+        const { logError } = await import('@/data/subscriptions');
+        await logError(
+          `Error saving subscription: ${error.message}`, 
+          'SubscriptionForm.onSubmit', 
+          error.code, 
+          error.stack
+        );
+      } catch (logError) {
+        console.error("Failed to log error:", logError);
+      }
+      
       toast({
         variant: "destructive",
         title: "Erro ao salvar anúncio",

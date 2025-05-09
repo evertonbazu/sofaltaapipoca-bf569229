@@ -309,7 +309,7 @@ const SubscriptionSubmissionForm: React.FC = () => {
         added_date: formattedDate,
         pix_key: formData.pixKey,
         payment_proof_image: paymentProofImageUrl,
-        user_id: authState.user.id,
+        user_id: authState.user.id, // Mantemos o user_id aqui pois ele é necessário para RLS
         code: code
       };
       
@@ -319,7 +319,15 @@ const SubscriptionSubmissionForm: React.FC = () => {
         .insert(subscriptionData);
       
       if (error) {
-        console.error("Error submitting subscription:", error);
+        // Log the error to our database
+        const { logError } = await import('@/data/subscriptions');
+        await logError(
+          `Error submitting subscription: ${error.message}`, 
+          'SubscriptionSubmissionForm.handleSubmit', 
+          error.code,
+          JSON.stringify(subscriptionData)
+        );
+        
         throw new Error(error.message);
       }
       
@@ -340,6 +348,20 @@ const SubscriptionSubmissionForm: React.FC = () => {
     } catch (error: any) {
       console.error("Error in form submission:", error);
       setErrorMessage(error.message);
+      
+      // Tente registrar o erro no sistema de logs
+      try {
+        const { logError } = await import('@/data/subscriptions');
+        await logError(
+          `Form submission error: ${error.message}`,
+          'SubscriptionSubmissionForm.handleSubmit',
+          error.code,
+          error.stack
+        );
+      } catch (logErr) {
+        console.error("Could not log error to database:", logErr);
+      }
+      
       toast({
         variant: "destructive",
         title: "Erro ao enviar anúncio",

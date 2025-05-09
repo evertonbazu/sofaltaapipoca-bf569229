@@ -42,6 +42,39 @@ export type Database = {
         }
         Relationships: []
       }
+      error_logs: {
+        Row: {
+          created_at: string
+          error_code: string | null
+          error_context: string | null
+          error_message: string
+          id: string
+          resolution_notes: string | null
+          resolved: boolean | null
+          stack_trace: string | null
+        }
+        Insert: {
+          created_at?: string
+          error_code?: string | null
+          error_context?: string | null
+          error_message: string
+          id?: string
+          resolution_notes?: string | null
+          resolved?: boolean | null
+          stack_trace?: string | null
+        }
+        Update: {
+          created_at?: string
+          error_code?: string | null
+          error_context?: string | null
+          error_message?: string
+          id?: string
+          resolution_notes?: string | null
+          resolved?: boolean | null
+          stack_trace?: string | null
+        }
+        Relationships: []
+      }
       pending_subscriptions: {
         Row: {
           access: string
@@ -222,6 +255,15 @@ export type Database = {
       is_admin: {
         Args: Record<PropertyKey, never>
         Returns: boolean
+      }
+      log_error: {
+        Args: {
+          error_msg: string
+          error_ctx?: string
+          error_cd?: string
+          stack_tr?: string
+        }
+        Returns: string
       }
     }
     Enums: {

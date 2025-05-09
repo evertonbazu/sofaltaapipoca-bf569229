@@ -123,47 +123,18 @@ const PendingSubscriptions: React.FC = () => {
     }
   };
 
+  // Updated approve function that uses the fixed approvePendingSubscription function
   const handleApprove = async (subscription: PendingSubscriptionFromSupabase) => {
     setSelectedSubscription(subscription);
     
     try {
-      // Generate a subscription code if not exists
-      const code = subscription.code || `SF${Math.floor(1000 + Math.random() * 9000)}`;
+      // Import the function from our data layer
+      const { approvePendingSubscription } = await import('@/data/subscriptions');
+      const result = await approvePendingSubscription(subscription.id);
       
-      // Insert into subscriptions table
-      const { error: insertError } = await supabase
-        .from('subscriptions')
-        .insert({
-          title: subscription.title,
-          price: subscription.price,
-          access: subscription.access,
-          payment_method: subscription.payment_method,
-          telegram_username: subscription.telegram_username,
-          whatsapp_number: subscription.whatsapp_number,
-          status: subscription.status,
-          header_color: subscription.header_color || 'bg-blue-600',
-          price_color: subscription.price_color || 'text-green-600',
-          code: code,
-          added_date: new Date().toLocaleDateString('pt-BR'),
-          user_id: subscription.user_id,
-          icon: subscription.icon,
-          pix_key: subscription.pix_key,
-          pix_qr_code: subscription.pix_qr_code,
-          payment_proof_image: subscription.payment_proof_image
-        });
-      
-      if (insertError) throw insertError;
-
-      // Update pending_subscriptions status
-      const { error: updateError } = await supabase
-        .from('pending_subscriptions')
-        .update({
-          status_approval: 'approved',
-          reviewed_at: new Date().toISOString()
-        })
-        .eq('id', subscription.id);
-        
-      if (updateError) throw updateError;
+      if (!result.success) {
+        throw new Error(result.error);
+      }
       
       // Update the local state
       setSubscriptions(prev => 
@@ -178,6 +149,9 @@ const PendingSubscriptions: React.FC = () => {
         title: 'Anúncio aprovado',
         description: 'O anúncio foi aprovado e adicionado à lista pública.'
       });
+      
+      // Reload data
+      fetchPendingSubscriptions();
     } catch (error: any) {
       console.error("Error approving subscription:", error);
       toast({
