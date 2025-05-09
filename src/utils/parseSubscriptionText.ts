@@ -10,6 +10,7 @@ export interface ParsedSubscription {
   whatsapp_number: string;
   added_date?: string;
   icon?: string;
+  payment_method?: string;  // Add this to the interface
 }
 
 /**
@@ -123,7 +124,7 @@ export function convertToSubscriptionFormat(parsed: ParsedSubscription): Partial
   return {
     title: parsed.title,
     price: parsed.price,
-    payment_method: parsed.price.includes('-') ? parsed.price.split('-')[1].trim() : 'PIX (Mensal)',
+    payment_method: parsed.payment_method || (parsed.price.includes('-') ? parsed.price.split('-')[1].trim() : 'PIX (Mensal)'),
     status: parsed.status,
     access: parsed.access,
     header_color: 'bg-blue-600',  // Default colors

@@ -18,6 +18,17 @@ interface AdminProps {
   action?: string;
 }
 
+interface SubscriptionFormComponentProps {
+  id?: string;
+  initialData?: any;
+  isPending?: boolean;
+}
+
+// Create a wrapper component for SubscriptionForm to handle the props
+const SubscriptionFormWrapper: React.FC<SubscriptionFormComponentProps> = ({ id, initialData, isPending }) => {
+  return <SubscriptionForm id={id} initialData={initialData} isPending={isPending} />;
+};
+
 const Admin: React.FC<AdminProps> = ({ section, action }) => {
   const location = useLocation();
   const params = useParams();
@@ -44,7 +55,7 @@ const Admin: React.FC<AdminProps> = ({ section, action }) => {
         if (currentAction === 'new') {
           return <SubscriptionForm />;
         } else if (currentAction === 'edit' && params.id) {
-          return <SubscriptionForm id={params.id} initialData={subscriptionData} isPending={isPending} />;
+          return <SubscriptionFormWrapper id={params.id} initialData={subscriptionData} isPending={isPending} />;
         }
         return <SubscriptionList />;
       

@@ -15,7 +15,6 @@ import {
   Clock,
   Upload,
   FilePlus2,
-  FileText2,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -26,7 +25,7 @@ interface AdminLayoutProps {
 
 const AdminLayout: React.FC<AdminLayoutProps> = ({ children, title }) => {
   const location = useLocation();
-  const { user, signOut } = useAuth();
+  const { signOut } = useAuth();
 
   const handleSignOut = () => {
     signOut();
@@ -39,7 +38,7 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children, title }) => {
     { name: 'Mensagens', to: '/admin/messages', icon: MessageSquare },
     { name: 'Usuários', to: '/admin/users', icon: Users },
     { name: 'Exportar', to: '/admin/export', icon: FileText },
-    { name: 'Exportar TXT', to: '/admin/export-txt', icon: FileText2 },
+    { name: 'Exportar TXT', to: '/admin/export-txt', icon: FileText },
     { name: 'Importar Excel', to: '/admin/import', icon: Upload },
     { name: 'Importar Bulk', to: '/admin/import-bulk', icon: ClipboardList },
     { name: 'Importar Texto', to: '/admin/import-text', icon: FilePlus2 },

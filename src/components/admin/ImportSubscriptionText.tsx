@@ -4,7 +4,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { useToast } from '@/hooks/use-toast';
 import { parseMultipleSubscriptionTexts, convertToSubscriptionFormat } from '@/utils/parseSubscriptionText';
-import { replaceAllSubscriptions } from '@/data/subscriptions';
+import { supabase } from '@/integrations/supabase/client';
 import { 
   AlertDialog,
   AlertDialogAction,
@@ -15,6 +15,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle
 } from "@/components/ui/alert-dialog";
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Info } from 'lucide-react';
 
 const ImportSubscriptionText: React.FC = () => {
   const [text, setText] = useState('');
@@ -43,17 +45,21 @@ const ImportSubscriptionText: React.FC = () => {
       const parsedSubscriptions = parseMultipleSubscriptionTexts(text);
       const formattedSubscriptions = parsedSubscriptions.map(convertToSubscriptionFormat);
 
-      const result = await replaceAllSubscriptions(formattedSubscriptions);
+      // First, remove all existing subscriptions
+      await supabase.from('subscriptions').delete().neq('id', '0');
       
-      if (result.success) {
-        toast({
-          title: "Importação concluída",
-          description: `${parsedSubscriptions.length} anúncios foram importados com sucesso.`
-        });
-        setText('');
-      } else {
-        throw new Error(result.error);
-      }
+      // Then insert the new ones
+      const { data, error } = await supabase
+        .from('subscriptions')
+        .insert(formattedSubscriptions);
+      
+      if (error) throw error;
+      
+      toast({
+        title: "Importação concluída",
+        description: `${parsedSubscriptions.length} anúncios foram importados com sucesso.`
+      });
+      setText('');
     } catch (error: any) {
       toast({
         variant: "destructive",
@@ -67,22 +73,31 @@ const ImportSubscriptionText: React.FC = () => {
   };
 
   return (
-    <div className="space-y-4">
-      <h1 className="text-2xl font-bold">Importar Anúncios do Telegram</h1>
-      <p className="text-gray-600">
-        Cole o texto dos anúncios do Telegram abaixo. O formato deve ser como este exemplo:
-      </p>
-      <div className="bg-gray-100 p-4 rounded-md text-sm">
-        <pre className="whitespace-pre-wrap">
-          {`ANÚNCIOS SÓ FALTA A PIPOCA 🍿, [09/04/2025 09:21]
+    <div className="space-y-6">
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Info className="h-5 w-5 text-blue-500" />
+            Como importar anúncios do Telegram
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-gray-600 mb-2">
+            Cole o texto dos anúncios do Telegram abaixo. O formato deve ser como este exemplo:
+          </p>
+          <div className="bg-gray-100 p-4 rounded-md text-sm">
+            <pre className="whitespace-pre-wrap">
+              {`ANÚNCIOS SÓ FALTA A PIPOCA 🍿, [09/04/2025 09:21]
 🖥 PARAMOUNT PADRÃO (MELI+)
 🏦 R$ 6,00 - PIX (Mensal)
 📌Assinado (2 vagas)
 🔐 LOGIN E SENHA
 📩@Eduardok10cds
 📱 https://wa.me/5575999997951`}
-        </pre>
-      </div>
+            </pre>
+          </div>
+        </CardContent>
+      </Card>
 
       <Textarea
         placeholder="Cole o texto dos anúncios aqui..."
@@ -102,6 +117,7 @@ const ImportSubscriptionText: React.FC = () => {
         <Button 
           onClick={handleParseAndPreview}
           disabled={isLoading || !text}
+          className="bg-blue-600 hover:bg-blue-700"
         >
           Importar Anúncios
         </Button>

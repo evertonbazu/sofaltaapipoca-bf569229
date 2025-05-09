@@ -5,12 +5,12 @@ import { useAuth } from '@/context/AuthContext';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
-  adminOnly?: boolean;
+  admin?: boolean;
 }
 
 const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ 
   children,
-  adminOnly = false
+  admin = false
 }) => {
   const { authState, isAdmin } = useAuth();
 
@@ -29,7 +29,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   }
 
   // If admin only and user is not admin, redirect to home
-  if (adminOnly && !isAdmin()) {
+  if (admin && !isAdmin()) {
     return <Navigate to="/" replace />;
   }
 

@@ -23,6 +23,9 @@ import './App.css';
 import { supabase, initializeStorage } from './integrations/supabase/client';
 import { ThemeProvider } from './components/ui/theme-provider';
 
+// App version - export it for other components to use
+export const APP_VERSION = "1.0.0";
+
 // Create React-Query client
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -52,19 +55,19 @@ function App() {
               <Route path="/new-subscription" element={<NewSubscription />} />
               
               {/* Admin routes */}
-              <Route path="/admin" element={<ProtectedRoute admin><Admin /></ProtectedRoute>} />
-              <Route path="/admin/dashboard" element={<ProtectedRoute admin><Navigate to="/admin" replace /></ProtectedRoute>} />
-              <Route path="/admin/subscriptions" element={<ProtectedRoute admin><Admin section="subscriptions" /></ProtectedRoute>} />
-              <Route path="/admin/subscriptions/new" element={<ProtectedRoute admin><Admin section="subscriptions" action="new" /></ProtectedRoute>} />
-              <Route path="/admin/subscriptions/edit/:id" element={<ProtectedRoute admin><Admin section="subscriptions" action="edit" /></ProtectedRoute>} />
-              <Route path="/admin/pending-subscriptions" element={<ProtectedRoute admin><Admin section="pending-subscriptions" /></ProtectedRoute>} />
-              <Route path="/admin/messages" element={<ProtectedRoute admin><Admin section="messages" /></ProtectedRoute>} />
-              <Route path="/admin/users" element={<ProtectedRoute admin><Admin section="users" /></ProtectedRoute>} />
-              <Route path="/admin/profile" element={<ProtectedRoute admin><Admin section="profile" /></ProtectedRoute>} />
-              <Route path="/admin/export" element={<ProtectedRoute admin><Admin section="export" /></ProtectedRoute>} />
-              <Route path="/admin/import" element={<ProtectedRoute admin><Admin section="import" /></ProtectedRoute>} />
-              <Route path="/admin/import-bulk" element={<ProtectedRoute admin><ImportBulkSubscriptions /></ProtectedRoute>} />
-              <Route path="/admin/import-text" element={<ProtectedRoute admin><ImportSubscriptionText /></ProtectedRoute>} />
+              <Route path="/admin" element={<ProtectedRoute admin={true}><Admin /></ProtectedRoute>} />
+              <Route path="/admin/dashboard" element={<ProtectedRoute admin={true}><Navigate to="/admin" replace /></ProtectedRoute>} />
+              <Route path="/admin/subscriptions" element={<ProtectedRoute admin={true}><Admin section="subscriptions" /></ProtectedRoute>} />
+              <Route path="/admin/subscriptions/new" element={<ProtectedRoute admin={true}><Admin section="subscriptions" action="new" /></ProtectedRoute>} />
+              <Route path="/admin/subscriptions/edit/:id" element={<ProtectedRoute admin={true}><Admin section="subscriptions" action="edit" /></ProtectedRoute>} />
+              <Route path="/admin/pending-subscriptions" element={<ProtectedRoute admin={true}><Admin section="pending-subscriptions" /></ProtectedRoute>} />
+              <Route path="/admin/messages" element={<ProtectedRoute admin={true}><Admin section="messages" /></ProtectedRoute>} />
+              <Route path="/admin/users" element={<ProtectedRoute admin={true}><Admin section="users" /></ProtectedRoute>} />
+              <Route path="/admin/profile" element={<ProtectedRoute admin={true}><Admin section="profile" /></ProtectedRoute>} />
+              <Route path="/admin/export" element={<ProtectedRoute admin={true}><Admin section="export" /></ProtectedRoute>} />
+              <Route path="/admin/import" element={<ProtectedRoute admin={true}><Admin section="import" /></ProtectedRoute>} />
+              <Route path="/admin/import-bulk" element={<ProtectedRoute admin={true}><ImportBulkSubscriptions /></ProtectedRoute>} />
+              <Route path="/admin/import-text" element={<ProtectedRoute admin={true}><ImportSubscriptionText /></ProtectedRoute>} />
 
               {/* Catch all */}
               <Route path="*" element={<NotFound />} />
