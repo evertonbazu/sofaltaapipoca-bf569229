@@ -6,12 +6,18 @@ import { Tables } from '@/types/supabase';
 
 const SUPABASE_URL = "https://fdiojhklzxuqczxiinzx.supabase.co";
 const SUPABASE_PUBLISHABLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZkaW9qaGtsenh1cWN6eGlpbnp4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDY3NTM3NDIsImV4cCI6MjA2MjMyOTc0Mn0.E-gaFIY8p9TeWyNfK697wDr19y49rWkUaMwFC3L5Lhc";
+const SUPABASE_SERVICE_ROLE_KEY = ""; // Este é um placeholder. Nunca exponha esta chave no front-end.
 
 // Import the supabase client like this:
 // import { supabase } from "@/integrations/supabase/client";
 
 // Create our base client with the types, including our custom types
 export const supabase = createClient<Database & { public: { Tables: Tables } }>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
+
+// Create an admin client (for server-side operations only, DO NOT USE on client-side)
+// This client should NEVER be exported or used in client-side code
+// It exists here for documentation purposes only
+// const adminClient = createClient<Database & { public: { Tables: Tables } }>(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
 // Setup storage bucket initialization
 export const initializeStorage = async () => {
@@ -28,5 +34,20 @@ export const initializeStorage = async () => {
     }
   } catch (error) {
     console.error('Error initializing storage:', error);
+  }
+};
+
+// Helper function to check if user is admin
+export const isUserAdmin = async (): Promise<boolean> => {
+  try {
+    const { data, error } = await supabase.rpc('is_admin');
+    if (error) {
+      console.error('Error checking admin status:', error);
+      return false;
+    }
+    return !!data;
+  } catch (error) {
+    console.error('Error checking admin status:', error);
+    return false;
   }
 };
