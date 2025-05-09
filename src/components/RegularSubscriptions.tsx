@@ -1,9 +1,8 @@
 
 import React, { useEffect, useState } from "react";
+import { regularSubscriptions } from "@/data/subscriptions";
 import SubscriptionItem from "./SubscriptionItem";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { supabase } from '@/integrations/supabase/client';
-import { Subscription, adaptSubscriptions } from "@/types/subscriptionTypes";
 
 interface RegularSubscriptionsProps {
   searchTerm?: string;
@@ -14,126 +13,27 @@ const RegularSubscriptions: React.FC<RegularSubscriptionsProps> = ({
   searchTerm = "", 
   setHasResults 
 }) => {
-  const [allSubscriptions, setAllSubscriptions] = useState<Subscription[]>([]);
-  const [visibleSubscriptions, setVisibleSubscriptions] = useState<Subscription[]>([]);
-  const [isLoading, setIsLoading] = useState<boolean>(true);
-  const [featuredIds, setFeaturedIds] = useState<string[]>([]);
+  const [visibleSubscriptions, setVisibleSubscriptions] = useState(regularSubscriptions);
   const isMobile = useIsMobile();
 
   useEffect(() => {
-    const fetchSubscriptions = async () => {
-      try {
-        setIsLoading(true);
-        
-        // First get the IDs of featured subscriptions to exclude them
-        const { data: featuredData } = await supabase
-          .from('subscriptions')
-          .select('id')
-          .eq('featured', true);
-        
-        const featuredIds = featuredData?.map((item: {id: string}) => item.id) || [];
-        setFeaturedIds(featuredIds);
-        
-        // Get first 6 subscriptions to exclude them as well (these are shown in featured section)
-        const { data: topData } = await supabase
-          .from('subscriptions')
-          .select('id')
-          .not('id', 'in', featuredIds.length > 0 ? `(${featuredIds.join(',')})` : '')
-          .order('added_date', { ascending: false })
-          .limit(6);
-          
-        const topIds = topData?.map((item: {id: string}) => item.id) || [];
-        
-        // Combine IDs to exclude
-        const excludeIds = [...featuredIds, ...topIds];
-        
-        // Then get all remaining subscriptions
-        let query = supabase
-          .from('subscriptions')
-          .select('*')
-          .order('added_date', { ascending: false });
-          
-        if (excludeIds.length > 0) {
-          query = query.not('id', 'in', `(${excludeIds.join(',')})`);
-        }
-        
-        const { data, error } = await query;
-        
-        if (error) throw error;
-        
-        if (data) {
-          // Convert snake_case (DB) format to UI format with camelCase properties
-          const formattedSubscriptions = adaptSubscriptions(data as Subscription[]);
-          setAllSubscriptions(formattedSubscriptions);
-          setVisibleSubscriptions(formattedSubscriptions);
-        }
-      } catch (error) {
-        console.error('Error fetching regular subscriptions:', error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
+    const filtered = regularSubscriptions.filter(sub => {
+      // Incluir todos os campos relevantes na busca
+      const content = `${sub.title} ${sub.price} ${sub.paymentMethod} ${sub.status} ${sub.access}`.toLowerCase();
+      return content.includes(searchTerm.toLowerCase());
+    });
     
-    fetchSubscriptions();
-  }, []);
-
-  useEffect(() => {
-    if (searchTerm) {
-      const filtered = allSubscriptions.filter(sub => {
-        const content = `${sub.title} ${sub.price} ${sub.paymentMethod || sub.payment_method} ${sub.status} ${sub.access}`.toLowerCase();
-        return content.includes(searchTerm.toLowerCase());
-      });
-      
-      setVisibleSubscriptions(filtered);
-      
-      // Update hasResults if needed
-      if (setHasResults) {
-        // Check if there are any results either from this component or from FeaturedSubscriptions
-        if (filtered.length > 0) {
-          setHasResults(true);
-        } else {
-          // Check if FeaturedSubscriptions also has no results
-          supabase
-            .from('subscriptions')
-            .select('count')
-            .filter('id', 'in', `(${featuredIds.join(',')})`)
-            .ilike('title', `%${searchTerm}%`)
-            .then(({ count }) => {
-              if (count === 0) {
-                setHasResults(false);
-              }
-            });
-        }
-      }
-    } else {
-      // When search term is empty, show all regular subscriptions
-      setVisibleSubscriptions(allSubscriptions);
-      // Reset hasResults if no search term
-      if (setHasResults) {
+    setVisibleSubscriptions(filtered);
+    
+    // Atualizar hasResults se a prop estiver disponível e não tiver sido definida por FeaturedSubscriptions
+    if (setHasResults) {
+      if (filtered.length > 0) {
         setHasResults(true);
-      }
+      } 
+      // Não definimos hasResults como false aqui, pois isso é feito no SubscriptionList
+      // baseado na combinação de resultados de ambos os componentes
     }
-  }, [searchTerm, allSubscriptions, featuredIds, setHasResults]);
-
-  if (isLoading) {
-    return (
-      <div className="grid gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
-        {[...Array(9)].map((_, index) => (
-          <div key={index} className="animate-pulse bg-white rounded-xl shadow-lg h-80">
-            <div className="bg-gray-300 h-16 rounded-t-xl"></div>
-            <div className="p-4 space-y-4">
-              <div className="h-6 bg-gray-200 rounded"></div>
-              <div className="h-6 bg-gray-200 rounded"></div>
-              <div className="h-6 bg-gray-200 rounded"></div>
-              <div className="h-6 bg-gray-200 rounded"></div>
-              <div className="h-10 bg-gray-200 rounded mt-6"></div>
-              <div className="h-10 bg-gray-200 rounded"></div>
-            </div>
-          </div>
-        ))}
-      </div>
-    );
-  }
+  }, [searchTerm, setHasResults]);
 
   if (visibleSubscriptions.length === 0) {
     return null;
@@ -141,21 +41,20 @@ const RegularSubscriptions: React.FC<RegularSubscriptionsProps> = ({
 
   return (
     <div className={`grid gap-6 ${isMobile ? 'grid-cols-1' : 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3'}`}>
-      {visibleSubscriptions.map((subscription) => (
+      {visibleSubscriptions.map((subscription, index) => (
         <SubscriptionItem
-          key={subscription.id}
+          key={`${subscription.title}-${index}`}
           title={subscription.title}
           price={subscription.price}
-          paymentMethod={subscription.paymentMethod || subscription.payment_method}
+          paymentMethod={subscription.paymentMethod}
           status={subscription.status}
           access={subscription.access}
-          headerColor={subscription.headerColor || subscription.header_color}
-          priceColor={subscription.priceColor || subscription.price_color}
-          whatsappNumber={subscription.whatsappNumber || subscription.whatsapp_number}
-          telegramUsername={subscription.telegramUsername || subscription.telegram_username}
+          headerColor={subscription.headerColor}
+          priceColor={subscription.priceColor}
+          whatsappNumber={subscription.whatsappNumber}
+          telegramUsername={subscription.telegramUsername}
           icon={subscription.icon}
-          addedDate={subscription.addedDate || subscription.added_date}
-          code={subscription.code}
+          addedDate={subscription.addedDate}
         />
       ))}
     </div>

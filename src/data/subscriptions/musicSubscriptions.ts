@@ -1,35 +1,31 @@
 
-import { Subscription } from "@/types/subscriptionTypes";
-import { addMissingCodes } from "@/utils/codeGenerator";
+import { SubscriptionData } from "@/types/subscriptionTypes";
 
-const rawMusicSubscriptions = [
+export const musicSubscriptions: SubscriptionData[] = [
   {
     title: "SPOTIFY",
     price: "R$ 7,00 - PIX (Mensal)",
-    payment_method: "PIX",
+    paymentMethod: "PIX",
     status: "Assinado (2 vagas)",
     access: "CONVITE POR E-MAIL",
-    header_color: "bg-green-600",
-    price_color: "text-green-600",
-    whatsapp_number: "5588992259940",
-    telegram_username: "pedro127",
+    headerColor: "bg-green-600",
+    priceColor: "text-green-600",
+    whatsappNumber: "5588992259940",
+    telegramUsername: "pedro127",
     icon: "monitor",
-    added_date: "01/04/2025"
+    addedDate: "01/04/2025"
   },
   {
     title: "SPOTIFY",
     price: "R$ 7,50 - PIX (Mensal)",
-    payment_method: "PIX",
+    paymentMethod: "PIX",
     status: "Assinado (2 vagas)",
     access: "CONVITE POR E-MAIL",
-    header_color: "bg-green-600",
-    price_color: "text-green-600",
-    whatsapp_number: "5511912659702",
-    telegram_username: "BrunnoSSantos",
+    headerColor: "bg-green-600",
+    priceColor: "text-green-600",
+    whatsappNumber: "5511912659702",
+    telegramUsername: "BrunnoSSantos",
     icon: "monitor",
-    added_date: "01/04/2025"
+    addedDate: "01/04/2025"
   }
 ];
-
-// Add codes to all music subscriptions with category code 2
-export const musicSubscriptions: Subscription[] = addMissingCodes(rawMusicSubscriptions as Subscription[], 2);

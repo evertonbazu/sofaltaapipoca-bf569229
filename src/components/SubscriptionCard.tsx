@@ -1,8 +1,6 @@
-
 import React from 'react';
 import { Button } from "@/components/ui/button";
-import { Tv, Youtube, Apple, Monitor, Star } from 'lucide-react';
-
+import { Tv, Youtube, Apple, Monitor } from 'lucide-react';
 interface SubscriptionCardProps {
   title: string;
   price: string;
@@ -18,10 +16,7 @@ interface SubscriptionCardProps {
   isSearchResult?: boolean;
   addedDate?: string;
   version?: string;
-  featured?: boolean;
-  code?: string; // Add code field to the component
 }
-
 const SubscriptionCard = ({
   title,
   price,
@@ -36,15 +31,12 @@ const SubscriptionCard = ({
   icon = 'monitor',
   isSearchResult = false,
   addedDate,
-  version = '1.1.0',
-  featured = false,
-  code // Add code to the props
+  version = '1.1.0'
 }: SubscriptionCardProps) => {
   const handleWhatsappClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
     const whatsappUrl = `https://api.whatsapp.com/send?phone=${whatsappNumber}`;
     window.open(whatsappUrl, '_blank');
   };
-  
   const handleTelegramClick = () => {
     const telegramUrl = `https://t.me/${telegramUsername}`;
     window.open(telegramUrl, '_blank');
@@ -64,28 +56,13 @@ const SubscriptionCard = ({
         return <Monitor size={20} className="mr-2" />;
     }
   };
-
-  return (
-    <div className={`card bg-white rounded-xl overflow-hidden shadow-lg ${isSearchResult ? 'search-highlight' : ''} ${featured ? 'ring-2 ring-yellow-400' : ''} relative`}>
-      {featured && (
-        <div className="absolute top-0 right-0 bg-yellow-500 text-white text-xs px-2 py-1 rounded-bl-lg z-10 flex items-center">
-          <Star className="h-3 w-3 mr-1 fill-white" />
-          Destaque
-        </div>
-      )}
+  return <div className={`card bg-white rounded-xl overflow-hidden shadow-lg ${isSearchResult ? 'search-highlight' : ''}`}>
       <div className={`${headerColor} p-4`}>
         <h2 className={`text-xl font-bold text-white flex items-center ${centerTitle ? 'justify-center' : ''}`}>
           {renderIcon()} {title}
         </h2>
       </div>
       <div className="p-3 sm:p-5 space-y-3 sm:space-y-4">
-        {/* Display the code field if present */}
-        {code && (
-          <div className="flex flex-wrap justify-between items-center">
-            <span className="font-semibold text-gray-700 text-sm sm:text-base">🔢 Código:</span>
-            <span className="font-medium text-gray-900 text-sm sm:text-base">{code}</span>
-          </div>
-        )}
         <div className="flex flex-wrap justify-between items-center">
           <span className="font-semibold text-gray-700 text-sm sm:text-base">🏦 Valor:</span>
           <span className={`text-lg sm:text-xl font-bold ${priceColor}`}>{price}</span>
@@ -116,8 +93,6 @@ const SubscriptionCard = ({
         </div>
         
       </div>
-    </div>
-  );
+    </div>;
 };
-
 export default SubscriptionCard;

@@ -1,5 +1,5 @@
 
-import React, { useState, useCallback } from "react";
+import React, { useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Search } from "lucide-react";
 import { useDebounced } from "@/hooks/useDebounced";
@@ -11,17 +11,25 @@ interface SearchBarProps {
 const SearchBar: React.FC<SearchBarProps> = ({ onSearch }) => {
   const [searchTerm, setSearchTerm] = useState("");
   
-  const debouncedSearch = useCallback((value: string) => {
+  const debouncedSearch = useDebounced((value: string) => {
     onSearch(value);
-  }, [onSearch]);
-  
-  const debouncedHandler = useDebounced(debouncedSearch, 300);
+  }, 300);
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     setSearchTerm(value);
-    debouncedHandler(value);
+    debouncedSearch(value);
   };
+
+  // Inicializar a busca com string vazia quando o componente for montado
+  useEffect(() => {
+    onSearch("");
+    
+    return () => {
+      // Clean up quando componente é desmontado
+      onSearch("");
+    };
+  }, [onSearch]);
 
   return (
     <div className="relative mb-6 w-full max-w-md mx-auto">

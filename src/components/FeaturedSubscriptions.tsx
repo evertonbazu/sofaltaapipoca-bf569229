@@ -1,10 +1,8 @@
 
 import React, { useEffect, useState } from "react";
+import { featuredSubscriptions } from "@/data/subscriptions";
 import SubscriptionItem from "./SubscriptionItem";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { supabase } from '@/integrations/supabase/client';
-import { Subscription, SubscriptionFromSupabase, adaptSubscriptions } from "@/types/subscriptionTypes";
-import { TableRow } from "@/types/supabase";
 
 interface FeaturedSubscriptionsProps {
   subscriptionRefs: React.MutableRefObject<{[key: string]: HTMLDivElement | null}>;
@@ -17,107 +15,28 @@ const FeaturedSubscriptions: React.FC<FeaturedSubscriptionsProps> = ({
   searchTerm = "", 
   setHasResults
 }) => {
-  const [allSubscriptions, setAllSubscriptions] = useState<Subscription[]>([]);
-  const [visibleSubscriptions, setVisibleSubscriptions] = useState<Subscription[]>([]);
-  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [visibleSubscriptions, setVisibleSubscriptions] = useState(featuredSubscriptions);
   const isMobile = useIsMobile();
 
   useEffect(() => {
-    const fetchSubscriptions = async () => {
-      try {
-        setIsLoading(true);
-        
-        // First fetch featured subscriptions
-        const { data: featuredData, error: featuredError } = await supabase
-          .from('subscriptions')
-          .select('*')
-          .eq('featured', true)
-          .order('added_date', { ascending: false });
-          
-        if (featuredError) throw featuredError;
-        
-        // If there are no featured subscriptions or less than 6, fetch the most recent ones
-        let regularData = [];
-        
-        if (!featuredData || featuredData.length < 6) {
-          // Determine how many regular subscriptions are needed
-          const regularCount = 6 - (featuredData?.length || 0);
-          
-          // Fetch regular subscriptions, excluding those that are already featured
-          let query = supabase
-            .from('subscriptions')
-            .select('*')
-            .order('added_date', { ascending: false })
-            .limit(regularCount);
-            
-          if (featuredData && featuredData.length > 0) {
-            const featuredIds = featuredData.map(item => item.id);
-            query = query.not('id', 'in', `(${featuredIds.join(',')})`);
-          }
-          
-          const { data: regData, error: regError } = await query;
-          
-          if (regError) throw regError;
-          regularData = regData || [];
-        }
-        
-        // Combine featured and regular subscriptions
-        const combinedData = [...(featuredData || []), ...regularData];
-        
-        if (combinedData) {
-          // Convert snake_case (DB) format to UI format with camelCase properties
-          const formattedSubscriptions = adaptSubscriptions(combinedData as Subscription[]);
-          setAllSubscriptions(formattedSubscriptions);
-          setVisibleSubscriptions(formattedSubscriptions);
-        }
-      } catch (error) {
-        console.error('Error fetching featured subscriptions:', error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
+    const filtered = featuredSubscriptions.filter(sub => {
+      // Incluir todos os campos relevantes na busca
+      const content = `${sub.title} ${sub.price} ${sub.paymentMethod} ${sub.status} ${sub.access}`.toLowerCase();
+      return content.includes(searchTerm.toLowerCase());
+    });
     
-    fetchSubscriptions();
-  }, []);
-
-  useEffect(() => {
-    if (searchTerm) {
-      const filtered = allSubscriptions.filter(sub => {
-        const content = `${sub.title} ${sub.price} ${sub.paymentMethod || sub.payment_method} ${sub.status} ${sub.access}`.toLowerCase();
-        return content.includes(searchTerm.toLowerCase());
-      });
-      
-      setVisibleSubscriptions(filtered);
-      
-      // Update hasResults based only on this component's results
-      if (setHasResults && filtered.length > 0) {
+    setVisibleSubscriptions(filtered);
+    
+    // Atualizar hasResults se a prop estiver disponível
+    if (setHasResults) {
+      if (filtered.length > 0) {
         setHasResults(true);
+      } else if (searchTerm !== "") {
+        // Só definimos como false se houver um termo de busca e nenhum resultado
+        setHasResults(false);
       }
-    } else {
-      // When search term is empty, show all featured subscriptions
-      setVisibleSubscriptions(allSubscriptions);
     }
-  }, [searchTerm, allSubscriptions, setHasResults]);
-
-  if (isLoading) {
-    return (
-      <div className="grid gap-6 mb-8 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
-        {[...Array(6)].map((_, index) => (
-          <div key={index} className="animate-pulse bg-white rounded-xl shadow-lg h-80">
-            <div className="bg-gray-300 h-16 rounded-t-xl"></div>
-            <div className="p-4 space-y-4">
-              <div className="h-6 bg-gray-200 rounded"></div>
-              <div className="h-6 bg-gray-200 rounded"></div>
-              <div className="h-6 bg-gray-200 rounded"></div>
-              <div className="h-6 bg-gray-200 rounded"></div>
-              <div className="h-10 bg-gray-200 rounded mt-6"></div>
-              <div className="h-10 bg-gray-200 rounded"></div>
-            </div>
-          </div>
-        ))}
-      </div>
-    );
-  }
+  }, [searchTerm, setHasResults]);
 
   if (visibleSubscriptions.length === 0) {
     return null;
@@ -125,23 +44,21 @@ const FeaturedSubscriptions: React.FC<FeaturedSubscriptionsProps> = ({
 
   return (
     <div className={`grid gap-6 mb-8 ${isMobile ? 'grid-cols-1' : 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3'}`}>
-      {visibleSubscriptions.map((subscription) => (
+      {visibleSubscriptions.map((subscription, index) => (
         <SubscriptionItem
-          key={subscription.id}
+          key={`${subscription.title}-${index}`}
           title={subscription.title}
           price={subscription.price}
-          paymentMethod={subscription.paymentMethod || subscription.payment_method}
+          paymentMethod={subscription.paymentMethod}
           status={subscription.status}
           access={subscription.access}
-          headerColor={subscription.headerColor || subscription.header_color}
-          priceColor={subscription.priceColor || subscription.price_color}
-          whatsappNumber={subscription.whatsappNumber || subscription.whatsapp_number}
-          telegramUsername={subscription.telegramUsername || subscription.telegram_username}
+          headerColor={subscription.headerColor}
+          priceColor={subscription.priceColor}
+          whatsappNumber={subscription.whatsappNumber}
+          telegramUsername={subscription.telegramUsername}
           icon={subscription.icon}
-          addedDate={subscription.addedDate || subscription.added_date}
+          addedDate={subscription.addedDate}
           subscriptionRefs={subscriptionRefs}
-          featured={subscription.featured}
-          code={subscription.code}
         />
       ))}
     </div>
