@@ -4,6 +4,7 @@ import SubscriptionItem from "./SubscriptionItem";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { supabase } from '@/integrations/supabase/client';
 import { Subscription, SubscriptionFromSupabase, adaptSubscriptions } from "@/types/subscriptionTypes";
+import { TableRow } from "@/types/supabase";
 
 interface FeaturedSubscriptionsProps {
   subscriptionRefs: React.MutableRefObject<{[key: string]: HTMLDivElement | null}>;
@@ -26,7 +27,7 @@ const FeaturedSubscriptions: React.FC<FeaturedSubscriptionsProps> = ({
       try {
         setIsLoading(true);
         
-        // Primeiro buscar anúncios fixados
+        // First fetch featured subscriptions
         const { data: featuredData, error: featuredError } = await supabase
           .from('subscriptions')
           .select('*')
@@ -35,14 +36,14 @@ const FeaturedSubscriptions: React.FC<FeaturedSubscriptionsProps> = ({
           
         if (featuredError) throw featuredError;
         
-        // Se não houver anúncios fixados ou houver menos de 6, busque os mais recentes
+        // If there are no featured subscriptions or less than 6, fetch the most recent ones
         let regularData = [];
         
         if (!featuredData || featuredData.length < 6) {
-          // Determinar quantos anúncios regulares são necessários
+          // Determine how many regular subscriptions are needed
           const regularCount = 6 - (featuredData?.length || 0);
           
-          // Buscar anúncios regulares, excluindo os que já são fixados
+          // Fetch regular subscriptions, excluding those that are already featured
           let query = supabase
             .from('subscriptions')
             .select('*')
@@ -60,7 +61,7 @@ const FeaturedSubscriptions: React.FC<FeaturedSubscriptionsProps> = ({
           regularData = regData || [];
         }
         
-        // Combinar anúncios fixados e regulares
+        // Combine featured and regular subscriptions
         const combinedData = [...(featuredData || []), ...regularData];
         
         if (combinedData) {
