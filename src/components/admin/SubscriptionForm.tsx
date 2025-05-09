@@ -17,29 +17,33 @@ const SubscriptionForm: React.FC = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   
-  // Initialize with both snake_case and camelCase properties
+  // Initialize with complete subscription properties to match the Subscription type
   const [formData, setFormData] = useState<Subscription>({
+    id: '',
     title: '',
     price: '',
     payment_method: '',
-    paymentMethod: '',
     status: 'Assinado',
     access: 'LOGIN E SENHA',
     header_color: 'bg-blue-600',
-    headerColor: 'bg-blue-600', 
     price_color: 'text-blue-600',
-    priceColor: 'text-blue-600',
     whatsapp_number: '',
-    whatsappNumber: '',
     telegram_username: '',
-    telegramUsername: '',
     icon: 'monitor',
     added_date: format(new Date(), 'dd/MM/yyyy'),
-    addedDate: format(new Date(), 'dd/MM/yyyy'),
     pix_key: '',
-    pixKey: '',
     code: '',
-    id: ''
+    pix_qr_code: null, // Add these missing required properties
+    payment_proof_image: null,
+    
+    // Add camelCase aliases
+    paymentMethod: '',
+    headerColor: 'bg-blue-600',
+    priceColor: 'text-blue-600',
+    whatsappNumber: '',
+    telegramUsername: '',
+    addedDate: format(new Date(), 'dd/MM/yyyy'),
+    pixKey: ''
   });
   
   const [isLoading, setIsLoading] = useState<boolean>(false);
@@ -65,30 +69,15 @@ const SubscriptionForm: React.FC = () => {
           if (data) {
             // Set both snake_case and camelCase properties
             setFormData({
-              id: data.id,
-              title: data.title || '',
-              price: data.price || '',
-              payment_method: data.payment_method || '',
+              ...data, // Include all original properties
+              // Add camelCase versions of properties
               paymentMethod: data.payment_method || '',
-              status: data.status || 'Assinado',
-              access: data.access || 'LOGIN E SENHA',
-              header_color: data.header_color || 'bg-blue-600',
               headerColor: data.header_color || 'bg-blue-600',
-              price_color: data.price_color || 'text-blue-600',
               priceColor: data.price_color || 'text-blue-600',
-              whatsapp_number: data.whatsapp_number || '',
               whatsappNumber: data.whatsapp_number || '',
-              telegram_username: data.telegram_username || '',
               telegramUsername: data.telegram_username || '',
-              icon: data.icon || 'monitor',
-              added_date: data.added_date || format(new Date(), 'dd/MM/yyyy'),
               addedDate: data.added_date || format(new Date(), 'dd/MM/yyyy'),
-              pix_key: data.pix_key || '',
               pixKey: data.pix_key || '',
-              payment_proof_image: data.payment_proof_image || '',
-              paymentProofImage: data.payment_proof_image || '',
-              featured: data.featured || false,
-              code: data.code || ''
             });
             
             setPriceValue(data.price || '');
@@ -255,15 +244,15 @@ const SubscriptionForm: React.FC = () => {
         subscriptionCode = 'SF' + Math.floor(1000 + Math.random() * 9000).toString();
       }
 
-      // Prepare subscription data for DB (convert camelCase to snake_case)
-      const subscriptionDataWithSnakeCase = {
+      // Create a properly structured subscription object that meets the Subscription type requirements
+      const completeSubscription: Subscription = {
         ...formData,
         payment_proof_image: paymentProofImageUrl,
         code: subscriptionCode
       };
       
       // Convert to proper format for DB
-      const subscriptionData = prepareSubscriptionForDB(subscriptionDataWithSnakeCase);
+      const subscriptionData = prepareSubscriptionForDB(completeSubscription);
 
       if (id) {
         // Update existing subscription
