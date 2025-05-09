@@ -1,620 +1,448 @@
+
 import React, { useState, useEffect } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { AlertTriangle, Loader2, Star } from 'lucide-react';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
-import { Subscription, prepareSubscriptionForDB } from '@/types/subscriptionTypes';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '@/components/ui/form';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import * as z from 'zod';
 import { useToast } from '@/hooks/use-toast';
-import { format } from 'date-fns';
+import { Subscription } from '@/types/subscriptionTypes';
+import { generateSubscriptionCode } from '@/utils/codeGenerator';
+
+// Define form schema
+const subscriptionSchema = z.object({
+  title: z.string().min(1, "Título é obrigatório"),
+  price: z.string().min(1, "Preço é obrigatório"),
+  payment_method: z.string().min(1, "Método de pagamento é obrigatório"),
+  status: z.string().min(1, "Status é obrigatório"),
+  access: z.string().min(1, "Método de acesso é obrigatório"),
+  telegram_username: z.string().optional(),
+  whatsapp_number: z.string().optional(),
+  header_color: z.string().min(1, "Cor do cabeçalho é obrigatória"),
+  price_color: z.string().min(1, "Cor do preço é obrigatória"),
+  code: z.string().min(1, "Código é obrigatório"),
+});
+
+type FormValues = z.infer<typeof subscriptionSchema>;
 
 const SubscriptionForm: React.FC = () => {
-  const { id } = useParams();
+  const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
   const { toast } = useToast();
+  const [loading, setLoading] = useState(false);
+
+  // Check if we're dealing with a pending subscription
+  const isPendingSubscription = location.state?.isPending || false;
   
-  // Initialize with complete subscription properties to match the Subscription type
-  const [formData, setFormData] = useState<Subscription>({
-    id: '',
-    title: '',
-    price: '',
-    payment_method: '',
-    status: 'Assinado',
-    access: 'LOGIN E SENHA',
-    header_color: 'bg-blue-600',
-    price_color: 'text-blue-600',
-    whatsapp_number: '',
-    telegram_username: '',
-    icon: 'monitor',
-    added_date: format(new Date(), 'dd/MM/yyyy'),
-    pix_key: '',
-    code: '',
-    pix_qr_code: null,
-    payment_proof_image: null,
-    
-    // Add camelCase aliases
-    paymentMethod: '',
-    headerColor: 'bg-blue-600',
-    priceColor: 'text-blue-600',
-    whatsappNumber: '',
-    telegramUsername: '',
-    addedDate: format(new Date(), 'dd/MM/yyyy'),
-    pixKey: ''
+  // Get the subscription data from location state if available
+  const subscriptionFromState = location.state?.subscriptionData;
+
+  // Set up form
+  const form = useForm<FormValues>({
+    resolver: zodResolver(subscriptionSchema),
+    defaultValues: {
+      title: "",
+      price: "",
+      payment_method: "PIX",
+      status: "disponível",
+      access: "LOGIN E SENHA",
+      telegram_username: "",
+      whatsapp_number: "",
+      header_color: "#3b82f6", // Default blue
+      price_color: "#10b981", // Default green
+      code: generateSubscriptionCode(),
+    },
   });
-  
-  const [isLoading, setIsLoading] = useState<boolean>(false);
-  const [isFetching, setIsFetching] = useState<boolean>(!!id);
-  const [error, setError] = useState<string | null>(null);
-  const [paymentProofImage, setPaymentProofImage] = useState<File | null>(null);
-  const [priceValue, setPriceValue] = useState('');
-  const [existingPaymentProofImageUrl, setExistingPaymentProofImageUrl] = useState<string | null>(null);
 
   useEffect(() => {
     if (id) {
-      const fetchSubscription = async () => {
-        try {
-          setIsFetching(true);
-          const { data, error } = await supabase
-            .from('subscriptions')
-            .select('*')
-            .eq('id', id)
-            .single();
-          
-          if (error) throw error;
-          
-          if (data) {
-            // Set both snake_case and camelCase properties
-            setFormData({
-              ...data, // Include all original properties
-              // Add camelCase versions of properties
-              paymentMethod: data.payment_method || '',
-              headerColor: data.header_color || 'bg-blue-600',
-              priceColor: data.price_color || 'text-blue-600',
-              whatsappNumber: data.whatsapp_number || '',
-              telegramUsername: data.telegram_username || '',
-              addedDate: data.added_date || format(new Date(), 'dd/MM/yyyy'),
-              pixKey: data.pix_key || '',
-            });
-            
-            setPriceValue(data.price || '');
-            
-            // Check if there's a payment proof image
-            if (data.payment_proof_image) {
-              setExistingPaymentProofImageUrl(data.payment_proof_image);
-            }
-          }
-        } catch (err: any) {
-          setError(err.message);
-          toast({
-            variant: "destructive",
-            title: "Erro ao carregar anúncio",
-            description: err.message
-          });
-        } finally {
-          setIsFetching(false);
-        }
-      };
-      
       fetchSubscription();
     }
-  }, [id, toast]);
+  }, [id]);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    
-    setFormData(prev => {
-      const updated = { ...prev, [name]: value };
-      
-      // Keep both snake_case and camelCase versions in sync
-      if (name === 'paymentMethod') updated.payment_method = value;
-      else if (name === 'payment_method') updated.paymentMethod = value;
-      else if (name === 'headerColor') updated.header_color = value;
-      else if (name === 'header_color') updated.headerColor = value;
-      else if (name === 'priceColor') updated.price_color = value;
-      else if (name === 'price_color') updated.priceColor = value;
-      else if (name === 'whatsappNumber') updated.whatsapp_number = value;
-      else if (name === 'whatsapp_number') updated.whatsappNumber = value;
-      else if (name === 'telegramUsername') updated.telegram_username = value;
-      else if (name === 'telegram_username') updated.telegramUsername = value;
-      else if (name === 'addedDate') updated.added_date = value;
-      else if (name === 'added_date') updated.addedDate = value;
-      else if (name === 'pixKey') updated.pix_key = value;
-      else if (name === 'pix_key') updated.pixKey = value;
-      
-      return updated;
-    });
-  };
-
-  const handlePriceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    let value = e.target.value;
-    
-    // Remove non-numeric characters except decimal point
-    value = value.replace(/[^\d,]/g, '');
-    
-    // Format as currency
-    if (value) {
-      // Convert comma to dot for calculation
-      const numericValue = value.replace(',', '.');
-      // Parse as float and format
-      const numberValue = parseFloat(numericValue);
-      
-      if (!isNaN(numberValue)) {
-        // Format with 2 decimal places and replace dot with comma
-        value = `R$ ${numberValue.toFixed(2).replace('.', ',')}`;
-      } else {
-        value = 'R$ ';
-      }
-    } else {
-      value = 'R$ ';
+  useEffect(() => {
+    // If we have subscription data from location state, use it
+    if (subscriptionFromState) {
+      form.reset({
+        title: subscriptionFromState.title || "",
+        price: subscriptionFromState.price || "",
+        payment_method: subscriptionFromState.payment_method || "PIX",
+        status: subscriptionFromState.status || "disponível",
+        access: subscriptionFromState.access || "LOGIN E SENHA",
+        telegram_username: subscriptionFromState.telegram_username || "",
+        whatsapp_number: subscriptionFromState.whatsapp_number || "",
+        header_color: subscriptionFromState.header_color || "#3b82f6",
+        price_color: subscriptionFromState.price_color || "#10b981",
+        code: subscriptionFromState.code || generateSubscriptionCode(),
+      });
     }
-    
-    setPriceValue(value);
-    setFormData(prev => ({
-      ...prev,
-      price: value
-    }));
-  };
+  }, [subscriptionFromState]);
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files.length > 0) {
-      setPaymentProofImage(e.target.files[0]);
-    }
-  };
-
-  const handleSelectChange = (name: string, value: string) => {
-    setFormData(prev => {
-      const updated = { ...prev, [name]: value };
-      
-      // Keep both snake_case and camelCase versions in sync
-      if (name === 'paymentMethod') updated.payment_method = value;
-      else if (name === 'payment_method') updated.paymentMethod = value;
-      else if (name === 'headerColor') updated.header_color = value;
-      else if (name === 'header_color') updated.headerColor = value;
-      else if (name === 'priceColor') updated.price_color = value;
-      else if (name === 'price_color') updated.priceColor = value;
-      else if (name === 'whatsappNumber') updated.whatsapp_number = value;
-      else if (name === 'whatsapp_number') updated.whatsappNumber = value;
-      else if (name === 'telegramUsername') updated.telegram_username = value;
-      else if (name === 'telegram_username') updated.telegramUsername = value;
-      else if (name === 'addedDate') updated.added_date = value;
-      else if (name === 'added_date') updated.addedDate = value;
-      else if (name === 'pixKey') updated.pix_key = value;
-      else if (name === 'pix_key') updated.pixKey = value;
-      
-      return updated;
-    });
-  };
-
-  const handleCheckboxChange = (name: string, checked: boolean) => {
-    setFormData({
-      ...formData,
-      [name]: checked
-    });
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError(null);
-    setIsLoading(true);
-
+  const fetchSubscription = async () => {
+    setLoading(true);
     try {
-      // Upload payment proof image if provided
-      let paymentProofImageUrl = existingPaymentProofImageUrl;
-      if (paymentProofImage) {
-        try {
-          // First, check if storage bucket exists and create if not
-          const { data: buckets } = await supabase.storage.listBuckets();
-          const bucketName = 'payment-proofs';
+      let data;
+      let error;
+      
+      // Select from the appropriate table based on whether it's a pending subscription
+      if (isPendingSubscription) {
+        const response = await supabase
+          .from('pending_subscriptions')
+          .select('*')
+          .eq('id', id)
+          .single();
           
-          if (!buckets?.some(bucket => bucket.name === bucketName)) {
-            await supabase.storage.createBucket(bucketName, {
-              public: false
-            });
-          }
+        data = response.data;
+        error = response.error;
+      } else {
+        const response = await supabase
+          .from('subscriptions')
+          .select('*')
+          .eq('id', id)
+          .single();
           
-          // Upload the file
-          const fileName = `admin_${Date.now()}_${paymentProofImage.name}`;
-          const { data, error: uploadError } = await supabase.storage
-            .from(bucketName)
-            .upload(fileName, paymentProofImage);
-            
-          if (uploadError) throw uploadError;
-          
-          // Get the URL
-          const { data: { publicUrl } } = supabase.storage
-            .from(bucketName)
-            .getPublicUrl(fileName);
-            
-          paymentProofImageUrl = publicUrl;
-        } catch (err) {
-          console.error("Error uploading image:", err);
-          // Continue with submission even if image upload fails
-          // We'll use the existing image URL if available
-        }
+        data = response.data;
+        error = response.error;
       }
 
-      // Generate a unique code if this is a new subscription
-      let subscriptionCode = formData.code;
-      if (!id && !subscriptionCode) {
-        // Generate a unique code in format "SF" + 4 random digits
-        subscriptionCode = 'SF' + Math.floor(1000 + Math.random() * 9000).toString();
+      if (error) throw error;
+      if (data) {
+        form.reset({
+          title: data.title || "",
+          price: data.price || "",
+          payment_method: data.payment_method || "PIX",
+          status: data.status || "disponível",
+          access: data.access || "LOGIN E SENHA",
+          telegram_username: data.telegram_username || "",
+          whatsapp_number: data.whatsapp_number || "",
+          header_color: data.header_color || "#3b82f6",
+          price_color: data.price_color || "#10b981",
+          code: data.code || generateSubscriptionCode(),
+        });
       }
+    } catch (error: any) {
+      console.error("Error fetching subscription:", error);
+      toast({
+        variant: "destructive",
+        title: "Erro ao carregar anúncio",
+        description: error.message,
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
 
-      // Create a properly structured subscription object that meets the Subscription type requirements
-      const completeSubscription: Subscription = {
-        ...formData,
-        payment_proof_image: paymentProofImageUrl,
-        code: subscriptionCode || ''
-      };
-      
-      // Convert to proper format for DB
-      const subscriptionData = prepareSubscriptionForDB(completeSubscription);
-
-      // Ensure that all required fields are present before sending to Supabase
-      // The keys that are required by Supabase according to the error
-      const requiredKeys = {
-        access: subscriptionData.access || formData.access,
-        header_color: subscriptionData.header_color || formData.header_color,
-        code: subscriptionCode || formData.code || '',
-        payment_method: subscriptionData.payment_method || formData.payment_method,
-        price: subscriptionData.price || formData.price,
-        price_color: subscriptionData.price_color || formData.price_color,
-        status: subscriptionData.status || formData.status,
-        telegram_username: subscriptionData.telegram_username || formData.telegram_username,
-        title: subscriptionData.title || formData.title,
-        whatsapp_number: subscriptionData.whatsapp_number || formData.whatsapp_number
-      };
-      
-      // Combine with the rest of the data
-      const finalSubscriptionData = {
-        ...subscriptionData,
-        ...requiredKeys,
-        payment_proof_image: paymentProofImageUrl,
-        // Include any other non-required fields
-        pix_key: subscriptionData.pix_key,
-        icon: subscriptionData.icon || formData.icon,
-        added_date: subscriptionData.added_date || formData.added_date,
-        featured: formData.featured
-      };
-
+  const onSubmit = async (values: FormValues) => {
+    setLoading(true);
+    try {
       if (id) {
         // Update existing subscription
-        const { error } = await supabase
-          .from('subscriptions')
-          .update(finalSubscriptionData)
-          .eq('id', id);
-        
-        if (error) throw error;
-        
-        toast({
-          title: "Anúncio atualizado",
-          description: "O anúncio foi atualizado com sucesso."
-        });
+        if (isPendingSubscription) {
+          const { error } = await supabase
+            .from('pending_subscriptions')
+            .update(values)
+            .eq('id', id);
+            
+          if (error) throw error;
+          
+          toast({
+            title: "Anúncio pendente atualizado",
+            description: "O anúncio pendente foi atualizado com sucesso.",
+          });
+        } else {
+          const { error } = await supabase
+            .from('subscriptions')
+            .update(values)
+            .eq('id', id);
+            
+          if (error) throw error;
+          
+          toast({
+            title: "Anúncio atualizado",
+            description: "O anúncio foi atualizado com sucesso.",
+          });
+        }
       } else {
         // Create new subscription
         const { error } = await supabase
           .from('subscriptions')
-          .insert(finalSubscriptionData);
-        
+          .insert({
+            ...values,
+            added_date: new Date().toLocaleDateString('pt-BR'),
+          });
+          
         if (error) throw error;
         
         toast({
           title: "Anúncio criado",
-          description: "O anúncio foi criado com sucesso."
+          description: "O anúncio foi criado com sucesso.",
         });
       }
       
-      // Redirect to subscription list
+      // Navigate back to subscription list
       navigate('/admin/subscriptions');
-    } catch (err: any) {
-      setError(err.message);
+    } catch (error: any) {
+      console.error("Error saving subscription:", error);
       toast({
         variant: "destructive",
         title: "Erro ao salvar anúncio",
-        description: err.message
+        description: error.message,
       });
     } finally {
-      setIsLoading(false);
+      setLoading(false);
     }
   };
 
-  if (isFetching) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh]">
-        <Loader2 className="h-8 w-8 animate-spin text-blue-500" />
-        <p className="mt-4 text-muted-foreground">Carregando anúncio...</p>
-      </div>
-    );
-  }
-
   return (
-    <div className="max-w-3xl mx-auto">
-      <h1 className="text-3xl font-bold mb-6">{id ? 'Editar' : 'Novo'} Anúncio</h1>
-      
-      {error && (
-        <div className="bg-red-50 border border-red-200 p-4 rounded-md flex items-center gap-3 mb-6">
-          <AlertTriangle className="text-red-500" />
-          <span className="text-red-600">{error}</span>
+    <div className="space-y-6">
+      <div className="flex justify-between items-center">
+        <h1 className="text-2xl font-bold">
+          {id ? 'Editar Anúncio' : 'Novo Anúncio'}
+        </h1>
+      </div>
+
+      {loading && !form.formState.isSubmitting ? (
+        <div className="flex justify-center py-8">
+          <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-blue-500"></div>
         </div>
-      )}
-      
-      <Card>
-        <form onSubmit={handleSubmit}>
-          <CardHeader>
-            <CardTitle>Informações do Anúncio</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <div className="flex items-center space-x-2">
-              <Checkbox 
-                id="featured" 
-                checked={formData.featured} 
-                onCheckedChange={(checked) => handleCheckboxChange('featured', checked as boolean)} 
+      ) : (
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <FormField
+                control={form.control}
+                name="title"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Título</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Nome do serviço" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
               />
-              <Label htmlFor="featured" className="font-medium flex items-center">
-                <Star className={`h-4 w-4 mr-1 ${formData.featured ? "fill-yellow-400" : ""}`} />
-                Fixar anúncio na página inicial
-              </Label>
-            </div>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="space-y-2">
-                <Label htmlFor="title">Título</Label>
-                <Input
-                  id="title"
-                  name="title"
-                  placeholder="Ex: SPOTIFY PREMIUM"
-                  value={formData.title}
-                  onChange={handleChange}
-                  required
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="price">Valor</Label>
-                <Input
-                  id="price"
-                  name="price"
-                  placeholder="Ex: R$ 10,00"
-                  value={priceValue}
-                  onChange={handlePriceChange}
-                  required
-                />
-              </div>
-            </div>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="space-y-2">
-                <Label htmlFor="paymentMethod">Método de Pagamento</Label>
-                <Input
-                  id="paymentMethod"
-                  name="paymentMethod"
-                  placeholder="Ex: PIX (Mensal)"
-                  value={formData.paymentMethod}
-                  onChange={handleChange}
-                  required
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Status</Label>
-                <Select 
-                  value={formData.status} 
-                  onValueChange={(value) => handleSelectChange('status', value)}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione o status" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Assinado">Assinado</SelectItem>
-                    <SelectItem value="Assinado (1 vaga)">Assinado (1 vaga)</SelectItem>
-                    <SelectItem value="Assinado (2 vagas)">Assinado (2 vagas)</SelectItem>
-                    <SelectItem value="Assinado (3 vagas)">Assinado (3 vagas)</SelectItem>
-                    <SelectItem value="Assinado (4 vagas)">Assinado (4 vagas)</SelectItem>
-                    <SelectItem value="Aguardando Membros (1 vaga)">Aguardando Membros (1 vaga)</SelectItem>
-                    <SelectItem value="Aguardando Membros (2 vagas)">Aguardando Membros (2 vagas)</SelectItem>
-                    <SelectItem value="Aguardando Membros (3 vagas)">Aguardando Membros (3 vagas)</SelectItem>
-                    <SelectItem value="Aguardando Membros (4 vagas)">Aguardando Membros (4 vagas)</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="space-y-2">
-                <Label>Acesso</Label>
-                <Select 
-                  value={formData.access} 
-                  onValueChange={(value) => handleSelectChange('access', value)}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione o tipo de acesso" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="LOGIN E SENHA">LOGIN E SENHA</SelectItem>
-                    <SelectItem value="CONVITE POR E-MAIL">CONVITE POR E-MAIL</SelectItem>
-                    <SelectItem value="ATIVAÇÃO">ATIVAÇÃO</SelectItem>
-                    <SelectItem value="ATIVAÇÃO POR CÓDIGO">ATIVAÇÃO POR CÓDIGO</SelectItem>
-                    <SelectItem value="Email e Senha">Email e Senha</SelectItem>
-                    <SelectItem value="CONVITE">CONVITE</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label>Ícone</Label>
-                <Select 
-                  value={formData.icon} 
-                  onValueChange={(value) => handleSelectChange('icon', value)}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione o ícone" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="monitor">Monitor (Padrão)</SelectItem>
-                    <SelectItem value="tv">TV</SelectItem>
-                    <SelectItem value="youtube">YouTube</SelectItem>
-                    <SelectItem value="apple">Apple</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="space-y-2">
-                <Label>Cor do Cabeçalho</Label>
-                <Select 
-                  value={formData.headerColor} 
-                  onValueChange={(value) => handleSelectChange('headerColor', value)}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione a cor do cabeçalho" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="bg-blue-600">Azul</SelectItem>
-                    <SelectItem value="bg-green-600">Verde</SelectItem>
-                    <SelectItem value="bg-purple-600">Roxo</SelectItem>
-                    <SelectItem value="bg-red-600">Vermelho</SelectItem>
-                    <SelectItem value="bg-orange-600">Laranja</SelectItem>
-                    <SelectItem value="bg-indigo-600">Índigo</SelectItem>
-                    <SelectItem value="bg-pink-600">Rosa</SelectItem>
-                    <SelectItem value="bg-teal-600">Teal</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label>Cor do Valor</Label>
-                <Select 
-                  value={formData.priceColor} 
-                  onValueChange={(value) => handleSelectChange('priceColor', value)}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione a cor do valor" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="text-blue-600">Azul</SelectItem>
-                    <SelectItem value="text-green-600">Verde</SelectItem>
-                    <SelectItem value="text-purple-600">Roxo</SelectItem>
-                    <SelectItem value="text-red-600">Vermelho</SelectItem>
-                    <SelectItem value="text-orange-600">Laranja</SelectItem>
-                    <SelectItem value="text-indigo-600">Índigo</SelectItem>
-                    <SelectItem value="text-pink-600">Rosa</SelectItem>
-                    <SelectItem value="text-teal-600">Teal</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="space-y-2">
-                <Label htmlFor="telegramUsername">Usuário do Telegram</Label>
-                <Input
-                  id="telegramUsername"
-                  name="telegramUsername"
-                  placeholder="Ex: @usuariotelegram"
-                  value={formData.telegramUsername}
-                  onChange={handleChange}
-                  required
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="whatsappNumber">Número do WhatsApp</Label>
-                <Input
-                  id="whatsappNumber"
-                  name="whatsappNumber"
-                  placeholder="Ex: 5511999999999"
-                  value={formData.whatsappNumber}
-                  onChange={handleChange}
-                  required
-                />
-              </div>
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="pixKey">Chave PIX</Label>
-              <Input
-                id="pixKey"
-                name="pixKey"
-                placeholder="Ex: seu@email.com"
-                value={formData.pixKey || ''}
-                onChange={handleChange}
+
+              <FormField
+                control={form.control}
+                name="price"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Preço</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Ex: R$ 10,00 - PIX (Mensal)" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
               />
-              <p className="text-xs text-gray-500 mt-1">Informe a chave PIX para facilitar o pagamento.</p>
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="paymentProofImage">Comprovante de Assinatura (opcional)</Label>
-              <Input
-                id="paymentProofImage"
-                name="paymentProofImage"
-                type="file"
-                accept="image/*"
-                onChange={handleFileChange}
+
+              <FormField
+                control={form.control}
+                name="payment_method"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Método de Pagamento</FormLabel>
+                    <Select
+                      value={field.value}
+                      onValueChange={field.onChange}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecione o método de pagamento" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="PIX">PIX</SelectItem>
+                        <SelectItem value="Transferência">Transferência</SelectItem>
+                        <SelectItem value="Boleto">Boleto</SelectItem>
+                        <SelectItem value="Cartão">Cartão</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
               />
-              {existingPaymentProofImageUrl && !paymentProofImage && (
-                <div className="mt-2">
-                  <p className="text-sm mb-2">Comprovante atual:</p>
-                  <img 
-                    src={existingPaymentProofImageUrl} 
-                    alt="Comprovante de Assinatura" 
-                    className="max-h-32 border rounded-md"
-                  />
-                </div>
-              )}
-              <p className="text-xs text-gray-500 mt-1">
-                {existingPaymentProofImageUrl ? "Envie um novo arquivo para substituir o comprovante atual." : "Envie uma imagem que comprove a assinatura ativa (opcional)."}
-              </p>
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="addedDate">Data de Adição</Label>
-              <Input
-                id="addedDate"
-                name="addedDate"
-                placeholder="Ex: 01/05/2025"
-                value={formData.addedDate}
-                onChange={handleChange}
-                required
+
+              <FormField
+                control={form.control}
+                name="status"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Status</FormLabel>
+                    <Select
+                      value={field.value}
+                      onValueChange={field.onChange}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecione o status" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="disponível">Disponível</SelectItem>
+                        <SelectItem value="indisponível">Indisponível</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
               />
-            </div>
-            
-            {/* Add code field */}
-            <div className="space-y-2">
-              <Label htmlFor="code">Código Único</Label>
-              <Input
-                id="code"
+
+              <FormField
+                control={form.control}
+                name="access"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Método de Acesso</FormLabel>
+                    <Select
+                      value={field.value}
+                      onValueChange={field.onChange}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecione o método de acesso" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="LOGIN E SENHA">Login e Senha</SelectItem>
+                        <SelectItem value="CONVITE POR E-MAIL">Convite por E-mail</SelectItem>
+                        <SelectItem value="ATIVAÇÃO POR CÓDIGO">Ativação por Código</SelectItem>
+                        <SelectItem value="ATIVAÇÃO">Ativação</SelectItem>
+                        <SelectItem value="CONVITE">Convite</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="telegram_username"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Usuário do Telegram</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Ex: @usuario" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="whatsapp_number"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Número do WhatsApp</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Ex: 5511912345678" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="header_color"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Cor do Cabeçalho</FormLabel>
+                    <div className="flex items-center space-x-2">
+                      <FormControl>
+                        <Input type="color" {...field} className="w-12 h-8" />
+                      </FormControl>
+                      <Input
+                        value={field.value}
+                        onChange={field.onChange}
+                        className="flex-1"
+                      />
+                    </div>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="price_color"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Cor do Preço</FormLabel>
+                    <div className="flex items-center space-x-2">
+                      <FormControl>
+                        <Input type="color" {...field} className="w-12 h-8" />
+                      </FormControl>
+                      <Input
+                        value={field.value}
+                        onChange={field.onChange}
+                        className="flex-1"
+                      />
+                    </div>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
                 name="code"
-                placeholder="Ex: SF1234"
-                value={formData.code}
-                onChange={handleChange}
-                disabled={!!id} // Only allow editing for new subscriptions
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Código</FormLabel>
+                    <FormControl>
+                      <Input {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
               />
-              {!id && <p className="text-xs text-gray-500 mt-1">Um código único será gerado automaticamente se este campo for deixado vazio.</p>}
-              {id && <p className="text-xs text-gray-500 mt-1">O código único não pode ser alterado após a criação.</p>}
             </div>
-          </CardContent>
-          <CardFooter className="flex justify-between">
-            <Button 
-              type="button" 
-              variant="outline" 
-              onClick={() => navigate('/admin/subscriptions')}
-              disabled={isLoading}
-            >
-              Cancelar
-            </Button>
-            <Button type="submit" disabled={isLoading}>
-              {isLoading ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Salvando...
-                </>
-              ) : (
-                id ? 'Atualizar Anúncio' : 'Criar Anúncio'
-              )}
-            </Button>
-          </CardFooter>
-        </form>
-      </Card>
+
+            <div className="flex justify-end space-x-2">
+              <Button 
+                variant="outline" 
+                type="button"
+                onClick={() => navigate('/admin/subscriptions')}
+              >
+                Cancelar
+              </Button>
+              <Button 
+                type="submit" 
+                disabled={form.formState.isSubmitting || loading}
+              >
+                {form.formState.isSubmitting ? (
+                  <span className="flex items-center">
+                    <span className="animate-spin mr-2 h-4 w-4 border-t-2 border-b-2 border-white rounded-full" />
+                    Salvando...
+                  </span>
+                ) : id ? 'Atualizar Anúncio' : 'Criar Anúncio'}
+              </Button>
+            </div>
+          </form>
+        </Form>
+      )}
     </div>
   );
 };

@@ -45,24 +45,10 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Eye, CheckCircle, XCircle, MoreHorizontal, ChevronDown, Edit, Trash, MessageSquare } from 'lucide-react';
-
-interface PendingSubscription {
-  id: string;
-  title: string;
-  price: string;
-  telegram_username: string;
-  whatsapp_number: string;
-  status: string;
-  access: string;
-  payment_method: string;
-  submitted_at: string;
-  status_approval: string | null;
-  reviewed_at: string | null; // Add the missing property
-  rejection_reason?: string | null; // Add this property as well for completeness
-}
+import { PendingSubscriptionFromSupabase } from '@/types/subscriptionTypes';
 
 const PendingSubscriptions: React.FC = () => {
-  const [subscriptions, setSubscriptions] = useState<PendingSubscription[]>([]);
+  const [subscriptions, setSubscriptions] = useState<PendingSubscriptionFromSupabase[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [sortColumn, setSortColumn] = useState<string>('submitted_at');
@@ -70,7 +56,7 @@ const PendingSubscriptions: React.FC = () => {
   const [reviewDialogOpen, setReviewDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [bulkDeleteDialogOpen, setBulkDeleteDialogOpen] = useState(false);
-  const [selectedSubscription, setSelectedSubscription] = useState<PendingSubscription | null>(null);
+  const [selectedSubscription, setSelectedSubscription] = useState<PendingSubscriptionFromSupabase | null>(null);
   const [rejectionReason, setRejectionReason] = useState('');
   const [selectedSubscriptions, setSelectedSubscriptions] = useState<string[]>([]);
   const [columnsWidth, setColumnsWidth] = useState<{[key: string]: number}>({
@@ -130,10 +116,14 @@ const PendingSubscriptions: React.FC = () => {
     }
   };
 
-  const handleApprove = async (subscription: PendingSubscription) => {
+  const handleApprove = async (subscription: PendingSubscriptionFromSupabase) => {
     setSelectedSubscription(subscription);
     
     try {
+      // Generate a subscription code
+      const code = `SF${Math.floor(1000 + Math.random() * 9000)}`;
+      
+      // Insert into subscriptions table
       const { error: insertError } = await supabase
         .from('subscriptions')
         .insert({
@@ -144,14 +134,20 @@ const PendingSubscriptions: React.FC = () => {
           telegram_username: subscription.telegram_username,
           whatsapp_number: subscription.whatsapp_number,
           status: subscription.status,
-          header_color: '#3b82f6', // Default blue
-          price_color: '#10b981', // Default green
-          code: `SF${Math.floor(1000 + Math.random() * 9000)}`, // Generate a code
-          added_date: new Date().toISOString(),
+          header_color: subscription.header_color || '#3b82f6',
+          price_color: subscription.price_color || '#10b981',
+          code: subscription.code || code,
+          added_date: new Date().toISOString().split('T')[0],
+          user_id: subscription.user_id,
+          icon: subscription.icon,
+          pix_key: subscription.pix_key,
+          pix_qr_code: subscription.pix_qr_code,
+          payment_proof_image: subscription.payment_proof_image
         });
       
       if (insertError) throw insertError;
 
+      // Update pending_subscriptions status
       const { error: updateError } = await supabase
         .from('pending_subscriptions')
         .update({
@@ -185,7 +181,7 @@ const PendingSubscriptions: React.FC = () => {
     }
   };
 
-  const handleRejectClick = (subscription: PendingSubscription) => {
+  const handleRejectClick = (subscription: PendingSubscriptionFromSupabase) => {
     setSelectedSubscription(subscription);
     setRejectionReason('');
     setReviewDialogOpen(true);
@@ -231,7 +227,7 @@ const PendingSubscriptions: React.FC = () => {
     }
   };
 
-  const handleDeleteClick = (subscription: PendingSubscription) => {
+  const handleDeleteClick = (subscription: PendingSubscriptionFromSupabase) => {
     setSelectedSubscription(subscription);
     setDeleteDialogOpen(true);
   };
@@ -264,6 +260,12 @@ const PendingSubscriptions: React.FC = () => {
         description: error.message
       });
     }
+  };
+
+  const handleEdit = (subscription: PendingSubscriptionFromSupabase) => {
+    navigate(`/admin/subscriptions/edit/${subscription.id}`, { 
+      state: { subscriptionData: subscription, isPending: true }
+    });
   };
 
   const toggleSubscriptionSelection = (id: string) => {
@@ -593,6 +595,7 @@ const PendingSubscriptions: React.FC = () => {
                               size="icon"
                               onClick={() => handleApprove(subscription)}
                               className="text-green-600 hover:text-green-800 hover:bg-green-50"
+                              title="Aprovar"
                             >
                               <CheckCircle className="h-4 w-4" />
                             </Button>
@@ -601,6 +604,7 @@ const PendingSubscriptions: React.FC = () => {
                               size="icon"
                               onClick={() => handleRejectClick(subscription)}
                               className="text-red-600 hover:text-red-800 hover:bg-red-50"
+                              title="Rejeitar"
                             >
                               <XCircle className="h-4 w-4" />
                             </Button>
@@ -613,12 +617,17 @@ const PendingSubscriptions: React.FC = () => {
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => handleEdit(subscription)}>
+                              <Edit className="h-4 w-4 mr-2" /> Editar
+                            </DropdownMenuItem>
                             <DropdownMenuItem onClick={() => handleDeleteClick(subscription)}>
                               <Trash className="h-4 w-4 mr-2" /> Excluir
                             </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => navigate(`/admin/subscriptions/edit/${subscription.id}`)}>
-                              <Edit className="h-4 w-4 mr-2" /> Editar
-                            </DropdownMenuItem>
+                            {!subscription.status_approval && (
+                              <DropdownMenuItem onClick={() => handleApprove(subscription)}>
+                                <CheckCircle className="h-4 w-4 mr-2" /> Aprovar
+                              </DropdownMenuItem>
+                            )}
                           </DropdownMenuContent>
                         </DropdownMenu>
                       </div>

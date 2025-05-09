@@ -1,142 +1,196 @@
 
 import { supabase } from '@/integrations/supabase/client';
-import { generateSubscriptionCode } from '@/utils/codeGenerator';
-import { formatWhatsAppNumber } from '@/utils/formatters';
-import { parseSubscriptionColorFromTitle } from '@/utils/colorHelpers';
+import { prepareSubscriptionForDB, Subscription } from '@/types/subscriptionTypes';
 
-interface ParsedSubscription {
-  title: string;
-  price: string;
-  payment_method: string;
-  status: string;
-  access: string;
-  telegram_username: string;
-  whatsapp_number: string;
-  added_date: string;
-  header_color: string;
-  price_color: string;
-  code: string;
-}
+// Function to generate a subscription code
+export const generateCode = () => `SF${Math.floor(1000 + Math.random() * 9000)}`;
 
-/**
- * Parses a formatted subscription text into structured data
- * Format example:
- * 🖥 NETFLIX (DISPOSITIVOS MÓVEIS/TV)
- * 🏦 R$ 32,00 - PIX (Mensal)
- * 📌Assinado (1 vaga)
- * 🔐 CONVITE POR E-MAIL
- * 📩@EvandersonAraujo
- * 📱 https://wa.me/5531975374153
- */
-export const parseSubscriptionText = (text: string): ParsedSubscription | null => {
+// Function to parse subscription data from text format
+export const parseSubscription = (text: string): Partial<Subscription> => {
+  // Extract title (after the 🖥 emoji)
+  const titleMatch = text.match(/🖥\s+(.+?)(?=\n|$)/);
+  const title = titleMatch ? titleMatch[1].trim() : '';
+
+  // Extract price (after the 🏦 emoji)
+  const priceMatch = text.match(/🏦\s+(.+?)(?=\n|$)/);
+  const price = priceMatch ? priceMatch[1].trim() : '';
+
+  // Extract status (after the 📌 emoji)
+  const statusMatch = text.match(/📌\s+(.+?)(?=\n|$)/);
+  const status = statusMatch ? statusMatch[1].includes('disponível') ? 'disponível' : 'indisponível' : '';
+
+  // Extract access method (after the 🔐 emoji)
+  const accessMatch = text.match(/🔐\s+(.+?)(?=\n|$)/);
+  const access = accessMatch ? accessMatch[1].trim() : '';
+
+  // Extract telegram username (after the 📩 emoji)
+  const telegramMatch = text.match(/📩\s+(.+?)(?=\n|$)/);
+  const telegram_username = telegramMatch ? telegramMatch[1].trim() : '';
+
+  // Extract WhatsApp number (after the 📱 emoji or URL)
+  const whatsappMatch = text.match(/📱\s+(?:https:\/\/wa\.me\/)?(\d+)/);
+  const whatsapp_number = whatsappMatch ? whatsappMatch[1].trim() : '';
+
+  // Extract added date if available
+  const dateMatch = text.match(/📅\s+Adicionado\s+em:\s+(\d{2}\/\d{2}\/\d{4})/);
+  const added_date = dateMatch ? dateMatch[1] : new Date().toLocaleDateString('pt-BR');
+
+  // Extract payment method from price
+  const paymentMethodMatch = price.match(/-\s*([^(]+)(?:\s*\([^)]+\))?/);
+  const payment_method = paymentMethodMatch ? paymentMethodMatch[1].trim() : 'PIX';
+
+  return {
+    title,
+    price,
+    status: status || 'disponível',
+    access,
+    telegram_username,
+    whatsapp_number,
+    added_date,
+    payment_method,
+    header_color: '#3b82f6', // Default blue
+    price_color: '#10b981', // Default green
+    code: generateCode(),
+  };
+};
+
+// Function to add a single subscription
+export const addSubscription = async (subscription: Partial<Subscription>): Promise<{ success: boolean, error?: any }> => {
   try {
-    // Split by new lines and filter out empty lines or headers
-    const lines = text
-      .split('\n')
-      .map(line => line.trim())
-      .filter(line => line && !line.includes('ANÚNCIOS SÓ FALTA A PIPOCA') && !line.includes('adicionado em:'));
+    const preparedSubscription = prepareSubscriptionForDB({
+      ...subscription,
+      header_color: subscription.header_color || '#3b82f6',
+      price_color: subscription.price_color || '#10b981',
+      code: subscription.code || generateCode(),
+    });
     
-    if (lines.length < 5) {
-      console.error('Invalid subscription format, not enough lines');
-      return null;
-    }
+    const { error } = await supabase
+      .from('subscriptions')
+      .insert(preparedSubscription);
     
-    // Extract title
-    const titleLine = lines.find(l => l.includes('🖥')) || '';
-    const title = titleLine.replace('🖥', '').trim();
+    if (error) throw error;
     
-    // Extract price and payment method
-    const priceLine = lines.find(l => l.includes('🏦')) || '';
-    const priceMatch = priceLine.match(/🏦\s*(.*?)(?:\s*-\s*(.*))?$/);
-    const price = priceMatch ? priceMatch[1].trim() : '';
-    const paymentMethod = priceMatch && priceMatch[2] ? priceMatch[2].trim() : 'PIX (Mensal)';
-    
-    // Extract status
-    const statusLine = lines.find(l => l.includes('📌')) || '';
-    const status = statusLine.replace('📌', '').trim();
-    
-    // Extract access
-    const accessLine = lines.find(l => l.includes('🔐')) || '';
-    const access = accessLine.replace('🔐', '').trim();
-    
-    // Extract telegram username
-    const telegramLine = lines.find(l => l.includes('📩')) || '';
-    const telegramUsername = telegramLine.replace('📩', '').trim();
-    
-    // Extract whatsapp
-    const whatsappLine = lines.find(l => l.includes('📱')) || '';
-    const whatsappUrl = whatsappLine.replace('📱', '').trim();
-    const whatsappNumber = formatWhatsAppNumber(whatsappUrl);
-    
-    // Extract added date
-    const dateLine = lines.find(l => l.includes('📅')) || '';
-    const dateMatch = dateLine.match(/📅\s*Adicionado em:\s*(.*)$/);
-    const addedDate = dateMatch ? dateMatch[1].trim() : new Date().toLocaleDateString('pt-BR');
-    
-    // Generate colors based on title
-    const { headerColor, priceColor } = parseSubscriptionColorFromTitle(title);
-    
-    // Generate subscription code
-    const code = generateSubscriptionCode('SF', 9, Math.floor(Math.random() * 999) + 1);
-    
-    return {
-      title,
-      price,
-      payment_method: paymentMethod,
-      status,
-      access,
-      telegram_username: telegramUsername,
-      whatsapp_number: whatsappNumber,
-      added_date: addedDate,
-      header_color: headerColor,
-      price_color: priceColor,
-      code
-    };
+    return { success: true };
   } catch (error) {
-    console.error('Error parsing subscription text:', error);
-    return null;
+    console.error('Error adding subscription:', error);
+    return { success: false, error };
   }
 };
 
-/**
- * Imports multiple subscriptions from formatted text
- * @param text The formatted text containing multiple subscription listings
- * @returns A result object with success count and errors
- */
-export const importSubscriptionsFromText = async (text: string): Promise<{ success: number; errors: number }> => {
-  // Split by telegram group message pattern
-  const subscriptionTexts = text.split(/ANÚNCIOS SÓ FALTA A PIPOCA 🍿, \[\d{2}\/\d{2}\/\d{4} \d{2}:\d{2}\]/g)
-    .filter(text => text.trim().length > 0);
+// Function to bulk import subscriptions from text
+export const bulkImportSubscriptions = async (text: string): Promise<{ success: boolean, added: number, errors: number }> => {
+  // Split the text into individual subscription blocks
+  const subscriptionBlocks = text.split(/ANÚNCIOS SÓ FALTA A PIPOCA 🍿,/).filter(block => block.trim().length > 0);
   
-  let successCount = 0;
-  let errorCount = 0;
+  let added = 0;
+  let errors = 0;
   
-  for (const subText of subscriptionTexts) {
-    const parsed = parseSubscriptionText(subText);
-    
-    if (parsed) {
-      try {
-        const { error } = await supabase
-          .from('subscriptions')
-          .insert({
-            ...parsed,
-            featured: Math.random() > 0.8 // Randomly feature some subscriptions (20% chance)
-          });
-          
-        if (error) {
-          console.error('Error inserting subscription:', error);
-          errorCount++;
-        } else {
-          successCount++;
-        }
-      } catch (err) {
-        console.error('Error in Supabase insert:', err);
-        errorCount++;
+  for (const block of subscriptionBlocks) {
+    try {
+      const subscription = parseSubscription(block);
+      const result = await addSubscription(subscription);
+      
+      if (result.success) {
+        added++;
+      } else {
+        errors++;
       }
-    } else {
-      errorCount++;
+    } catch (error) {
+      console.error('Error parsing subscription:', block, error);
+      errors++;
     }
   }
   
-  return { success: successCount, errors: errorCount };
+  return { success: added > 0, added, errors };
+};
+
+// Function to add the sample subscriptions from the user's input
+export const addSampleSubscriptions = async (): Promise<{ success: boolean, added: number, errors: number }> => {
+  const sampleSubscriptions = [
+    {
+      title: "PARAMOUNT PADRÃO (MELI+)",
+      price: "R$ 6,00 - PIX (Mensal)",
+      status: "disponível",
+      access: "LOGIN E SENHA",
+      telegram_username: "@Eduardok10cds",
+      whatsapp_number: "5575999997951",
+      added_date: "09/04/2025",
+      payment_method: "PIX",
+      header_color: "#3b82f6",
+      price_color: "#10b981",
+      code: generateCode(),
+    },
+    {
+      title: "YOUTUBE PREMIUM",
+      price: "120,00 /ano - PIX (Mensal)",
+      status: "disponível",
+      access: "CONVITE POR E-MAIL",
+      telegram_username: "@Rastelinho",
+      whatsapp_number: "5527988292875",
+      added_date: "15/04/2025",
+      payment_method: "PIX",
+      header_color: "#3b82f6",
+      price_color: "#10b981",
+      code: generateCode(),
+    },
+    {
+      title: "NETFLIX (DISPOSITIVOS MÓVEIS/TV)",
+      price: "R$ 32,00 - PIX (Mensal)",
+      status: "disponível",
+      access: "CONVITE POR E-MAIL",
+      telegram_username: "@EvandersonAraujo",
+      whatsapp_number: "5531975374153",
+      added_date: "15/04/2025",
+      payment_method: "PIX",
+      header_color: "#3b82f6",
+      price_color: "#10b981",
+      code: generateCode(),
+    },
+    {
+      title: "GOOGLE ONE IA PREMIUM 2TB COM GEMINI ADVANCED 2.5",
+      price: "R$ 20,00 - PIX (Mensal)",
+      status: "disponível",
+      access: "CONVITE POR E-MAIL",
+      telegram_username: "@brenokennedyof",
+      whatsapp_number: "5598984045368",
+      added_date: "16/04/2025",
+      payment_method: "PIX",
+      header_color: "#3b82f6",
+      price_color: "#10b981",
+      code: generateCode(),
+    },
+    {
+      title: "ALURA PLUS",
+      price: "R$ 20,00 - PIX (Mensal)",
+      status: "disponível",
+      access: "LOGIN E SENHA",
+      telegram_username: "@evertonbazu",
+      whatsapp_number: "5513992077804",
+      added_date: "16/04/2025",
+      payment_method: "PIX",
+      header_color: "#3b82f6",
+      price_color: "#10b981",
+      code: generateCode(),
+    }
+  ];
+  
+  let added = 0;
+  let errors = 0;
+  
+  for (const subscription of sampleSubscriptions) {
+    try {
+      const result = await addSubscription(subscription);
+      
+      if (result.success) {
+        added++;
+      } else {
+        errors++;
+      }
+    } catch (error) {
+      console.error('Error adding sample subscription:', error);
+      errors++;
+    }
+  }
+  
+  return { success: added > 0, added, errors };
 };

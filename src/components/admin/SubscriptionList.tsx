@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { SubscriptionFromSupabase } from '@/types/subscriptionTypes';
@@ -39,6 +39,21 @@ const SubscriptionList = () => {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [subscriptionToDelete, setSubscriptionToDelete] = useState<string | null>(null);
   const [sortConfig, setSortConfig] = useState({ key: 'added_date', direction: 'desc' });
+  const [columnsWidth, setColumnsWidth] = useState<{[key: string]: number}>({
+    title: 250,
+    price: 100,
+    status: 120,
+    telegram: 150,
+    whatsapp: 150,
+    date: 120,
+    actions: 80,
+  });
+  const [resizing, setResizing] = useState<{column: string | null, startX: number, startWidth: number}>({
+    column: null,
+    startX: 0,
+    startWidth: 0
+  });
+  const tableRef = useRef<HTMLTableElement>(null);
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -121,6 +136,34 @@ const SubscriptionList = () => {
     });
   };
 
+  const startResizing = (columnName: string, e: React.MouseEvent) => {
+    e.preventDefault();
+    setResizing({
+      column: columnName,
+      startX: e.clientX,
+      startWidth: columnsWidth[columnName] || 100
+    });
+    
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', stopResizing);
+  };
+  
+  const handleMouseMove = (e: MouseEvent) => {
+    if (!resizing.column) return;
+    
+    const width = Math.max(50, resizing.startWidth + (e.clientX - resizing.startX));
+    setColumnsWidth(prev => ({
+      ...prev,
+      [resizing.column!]: width
+    }));
+  };
+  
+  const stopResizing = () => {
+    setResizing({ column: null, startX: 0, startWidth: 0 });
+    document.removeEventListener('mousemove', handleMouseMove);
+    document.removeEventListener('mouseup', stopResizing);
+  };
+
   const getSortedSubscriptions = () => {
     const filtered = subscriptions.filter(sub => 
       sub.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -198,16 +241,75 @@ const SubscriptionList = () => {
         </div>
       ) : (
         <div className="border rounded-md overflow-hidden">
-          <Table>
+          <Table ref={tableRef} className="relative w-full">
             <TableHeader>
               <TableRow>
-                <TableHead>Título</TableHead>
-                <TableHead>Preço</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Telegram</TableHead>
-                <TableHead>WhatsApp</TableHead>
-                <TableHead>Data</TableHead>
-                <TableHead className="text-right">Ações</TableHead>
+                <TableHead 
+                  className="relative cursor-col-resize" 
+                  style={{ width: `${columnsWidth.title}px` }}
+                >
+                  Título
+                  <div 
+                    className="absolute right-0 top-0 h-full w-2 cursor-col-resize"
+                    onMouseDown={(e) => startResizing('title', e)}
+                  ></div>
+                </TableHead>
+                <TableHead 
+                  className="relative cursor-col-resize" 
+                  style={{ width: `${columnsWidth.price}px` }}
+                >
+                  Preço
+                  <div 
+                    className="absolute right-0 top-0 h-full w-2 cursor-col-resize"
+                    onMouseDown={(e) => startResizing('price', e)}
+                  ></div>
+                </TableHead>
+                <TableHead 
+                  className="relative cursor-col-resize" 
+                  style={{ width: `${columnsWidth.status}px` }}
+                >
+                  Status
+                  <div 
+                    className="absolute right-0 top-0 h-full w-2 cursor-col-resize"
+                    onMouseDown={(e) => startResizing('status', e)}
+                  ></div>
+                </TableHead>
+                <TableHead 
+                  className="relative cursor-col-resize" 
+                  style={{ width: `${columnsWidth.telegram}px` }}
+                >
+                  Telegram
+                  <div 
+                    className="absolute right-0 top-0 h-full w-2 cursor-col-resize"
+                    onMouseDown={(e) => startResizing('telegram', e)}
+                  ></div>
+                </TableHead>
+                <TableHead 
+                  className="relative cursor-col-resize" 
+                  style={{ width: `${columnsWidth.whatsapp}px` }}
+                >
+                  WhatsApp
+                  <div 
+                    className="absolute right-0 top-0 h-full w-2 cursor-col-resize"
+                    onMouseDown={(e) => startResizing('whatsapp', e)}
+                  ></div>
+                </TableHead>
+                <TableHead 
+                  className="relative cursor-col-resize" 
+                  style={{ width: `${columnsWidth.date}px` }}
+                >
+                  Data
+                  <div 
+                    className="absolute right-0 top-0 h-full w-2 cursor-col-resize"
+                    onMouseDown={(e) => startResizing('date', e)}
+                  ></div>
+                </TableHead>
+                <TableHead 
+                  className="relative text-right" 
+                  style={{ width: `${columnsWidth.actions}px` }}
+                >
+                  Ações
+                </TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
