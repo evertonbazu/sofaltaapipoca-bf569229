@@ -1,61 +1,60 @@
-
-import { SubscriptionData } from "@/types/subscriptionTypes";
+import { Subscription } from "@/types/subscriptionTypes";
 import { addMissingCodes } from "@/utils/codeGenerator";
 
 const rawProductivitySubscriptions = [
   {
     title: "GOOGLE ONE IA PREMIUM 2TB COM GEMINI ADVANCED 2.5",
     price: "R$ 20,00 - PIX (Mensal)",
-    paymentMethod: "PIX",
+    payment_method: "PIX",
     status: "Assinado (4 vagas)",
     access: "CONVITE POR E-MAIL",
-    headerColor: "bg-blue-600",
-    priceColor: "text-blue-600",
-    whatsappNumber: "5598984045368",
-    telegramUsername: "brenokennedyof",
+    header_color: "bg-blue-600",
+    price_color: "text-blue-600",
+    whatsapp_number: "5598984045368",
+    telegram_username: "brenokennedyof",
     icon: "monitor",
-    addedDate: "01/04/2025"
+    added_date: "01/04/2025"
   },
   {
     title: "MCAFEE TOTAL PROTECTION",
     price: "R$ 5,00 - PIX (Mensal)",
-    paymentMethod: "PIX",
+    payment_method: "PIX",
     status: "Assinado (2 vagas)",
     access: "ATIVAÇÃO",
-    headerColor: "bg-red-600",
-    priceColor: "text-red-600",
-    whatsappNumber: "5527997692531",
-    telegramUsername: "otaviodw",
+    header_color: "bg-red-600",
+    price_color: "text-red-600",
+    whatsapp_number: "5527997692531",
+    telegram_username: "otaviodw",
     icon: "monitor",
-    addedDate: "01/04/2025"
+    added_date: "01/04/2025"
   },
   {
     title: "APPLE ONE (2TB)",
     price: "R$ 20,00 - PIX (Mensal)",
-    paymentMethod: "PIX",
+    payment_method: "PIX",
     status: "Assinado (1 vaga)",
     access: "CONVITE POR E-MAIL",
-    headerColor: "bg-gray-600",
-    priceColor: "text-gray-600",
-    whatsappNumber: "5598984045368",
-    telegramUsername: "brenokennedyof",
+    header_color: "bg-gray-600",
+    price_color: "text-gray-600",
+    whatsapp_number: "5598984045368",
+    telegram_username: "brenokennedyof",
     icon: "apple",
-    addedDate: "01/04/2025"
+    added_date: "01/04/2025"
   },
   {
     title: "Microsoft 365 Família 1T",
     price: "R$ 12 - PIX (Mensal)",
-    paymentMethod: "PIX",
+    payment_method: "PIX",
     status: "Assinado",
     access: "Convite por E-mail",
-    headerColor: "bg-blue-600",
-    priceColor: "text-blue-600",
-    whatsappNumber: "5587991988684",
-    telegramUsername: "alessadinozzo",
+    header_color: "bg-blue-600",
+    price_color: "text-blue-600",
+    whatsapp_number: "5587991988684",
+    telegram_username: "alessadinozzo",
     icon: "monitor",
-    addedDate: "01/04/2025"
+    added_date: "01/04/2025"
   }
 ];
 
 // Add codes to all productivity subscriptions with category code 4
-export const productivitySubscriptions: SubscriptionData[] = addMissingCodes(rawProductivitySubscriptions as SubscriptionData[], 4);
+export const productivitySubscriptions: Subscription[] = addMissingCodes(rawProductivitySubscriptions as Subscription[], 4);

@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { AlertTriangle, Loader2, Star } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
-import { SubscriptionData } from '@/types/subscriptionTypes';
+import { Subscription, prepareSubscriptionForDB } from '@/types/subscriptionTypes';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 
@@ -16,23 +16,32 @@ const SubscriptionForm: React.FC = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [formData, setFormData] = useState<SubscriptionData>({
+  
+  // Initialize with both snake_case and camelCase properties
+  const [formData, setFormData] = useState<Subscription>({
     title: '',
     price: '',
+    payment_method: '',
     paymentMethod: '',
     status: 'Assinado',
     access: 'LOGIN E SENHA',
-    headerColor: 'bg-blue-600',
+    header_color: 'bg-blue-600',
+    headerColor: 'bg-blue-600', 
+    price_color: 'text-blue-600',
     priceColor: 'text-blue-600',
+    whatsapp_number: '',
     whatsappNumber: '',
+    telegram_username: '',
     telegramUsername: '',
     icon: 'monitor',
+    added_date: format(new Date(), 'dd/MM/yyyy'),
     addedDate: format(new Date(), 'dd/MM/yyyy'),
-    pixQrCode: '',
+    pix_key: '',
     pixKey: '',
-    featured: false,
-    code: '' // Add default value for code
+    code: '',
+    id: ''
   });
+  
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [isFetching, setIsFetching] = useState<boolean>(!!id);
   const [error, setError] = useState<string | null>(null);
@@ -54,25 +63,34 @@ const SubscriptionForm: React.FC = () => {
           if (error) throw error;
           
           if (data) {
+            // Set both snake_case and camelCase properties
             setFormData({
+              id: data.id,
               title: data.title || '',
               price: data.price || '',
+              payment_method: data.payment_method || '',
               paymentMethod: data.payment_method || '',
               status: data.status || 'Assinado',
               access: data.access || 'LOGIN E SENHA',
+              header_color: data.header_color || 'bg-blue-600',
               headerColor: data.header_color || 'bg-blue-600',
+              price_color: data.price_color || 'text-blue-600',
               priceColor: data.price_color || 'text-blue-600',
+              whatsapp_number: data.whatsapp_number || '',
               whatsappNumber: data.whatsapp_number || '',
+              telegram_username: data.telegram_username || '',
               telegramUsername: data.telegram_username || '',
               icon: data.icon || 'monitor',
+              added_date: data.added_date || format(new Date(), 'dd/MM/yyyy'),
               addedDate: data.added_date || format(new Date(), 'dd/MM/yyyy'),
-              pixQrCode: data.pix_qr_code || '',
+              pix_key: data.pix_key || '',
               pixKey: data.pix_key || '',
+              payment_proof_image: data.payment_proof_image || '',
               paymentProofImage: data.payment_proof_image || '',
               featured: data.featured || false,
-              code: data.code || '' // Add code from data
+              code: data.code || ''
             });
-
+            
             setPriceValue(data.price || '');
             
             // Check if there's a payment proof image
@@ -97,9 +115,28 @@ const SubscriptionForm: React.FC = () => {
   }, [id, toast]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value
+    const { name, value } = e.target;
+    
+    setFormData(prev => {
+      const updated = { ...prev, [name]: value };
+      
+      // Keep both snake_case and camelCase versions in sync
+      if (name === 'paymentMethod') updated.payment_method = value;
+      else if (name === 'payment_method') updated.paymentMethod = value;
+      else if (name === 'headerColor') updated.header_color = value;
+      else if (name === 'header_color') updated.headerColor = value;
+      else if (name === 'priceColor') updated.price_color = value;
+      else if (name === 'price_color') updated.priceColor = value;
+      else if (name === 'whatsappNumber') updated.whatsapp_number = value;
+      else if (name === 'whatsapp_number') updated.whatsappNumber = value;
+      else if (name === 'telegramUsername') updated.telegram_username = value;
+      else if (name === 'telegram_username') updated.telegramUsername = value;
+      else if (name === 'addedDate') updated.added_date = value;
+      else if (name === 'added_date') updated.addedDate = value;
+      else if (name === 'pixKey') updated.pix_key = value;
+      else if (name === 'pix_key') updated.pixKey = value;
+      
+      return updated;
     });
   };
 
@@ -140,9 +177,26 @@ const SubscriptionForm: React.FC = () => {
   };
 
   const handleSelectChange = (name: string, value: string) => {
-    setFormData({
-      ...formData,
-      [name]: value
+    setFormData(prev => {
+      const updated = { ...prev, [name]: value };
+      
+      // Keep both snake_case and camelCase versions in sync
+      if (name === 'paymentMethod') updated.payment_method = value;
+      else if (name === 'payment_method') updated.paymentMethod = value;
+      else if (name === 'headerColor') updated.header_color = value;
+      else if (name === 'header_color') updated.headerColor = value;
+      else if (name === 'priceColor') updated.price_color = value;
+      else if (name === 'price_color') updated.priceColor = value;
+      else if (name === 'whatsappNumber') updated.whatsapp_number = value;
+      else if (name === 'whatsapp_number') updated.whatsappNumber = value;
+      else if (name === 'telegramUsername') updated.telegram_username = value;
+      else if (name === 'telegram_username') updated.telegramUsername = value;
+      else if (name === 'addedDate') updated.added_date = value;
+      else if (name === 'added_date') updated.addedDate = value;
+      else if (name === 'pixKey') updated.pix_key = value;
+      else if (name === 'pix_key') updated.pixKey = value;
+      
+      return updated;
     });
   };
 
@@ -201,23 +255,15 @@ const SubscriptionForm: React.FC = () => {
         subscriptionCode = 'SF' + Math.floor(1000 + Math.random() * 9000).toString();
       }
 
-      const subscriptionData = {
-        title: formData.title,
-        price: formData.price,
-        payment_method: formData.paymentMethod,
-        status: formData.status,
-        access: formData.access,
-        header_color: formData.headerColor,
-        price_color: formData.priceColor,
-        whatsapp_number: formData.whatsappNumber,
-        telegram_username: formData.telegramUsername,
-        icon: formData.icon,
-        added_date: formData.addedDate,
-        pix_key: formData.pixKey,
+      // Prepare subscription data for DB (convert camelCase to snake_case)
+      const subscriptionDataWithSnakeCase = {
+        ...formData,
         payment_proof_image: paymentProofImageUrl,
-        featured: formData.featured,
-        code: subscriptionCode // Include the code field
+        code: subscriptionCode
       };
+      
+      // Convert to proper format for DB
+      const subscriptionData = prepareSubscriptionForDB(subscriptionDataWithSnakeCase);
 
       if (id) {
         // Update existing subscription

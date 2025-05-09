@@ -1,8 +1,9 @@
+
 import React, { useEffect, useState } from "react";
 import SubscriptionItem from "./SubscriptionItem";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { supabase } from '@/integrations/supabase/client';
-import { SubscriptionData, SubscriptionFromSupabase } from "@/types/subscriptionTypes";
+import { Subscription, SubscriptionFromSupabase, adaptSubscriptions } from "@/types/subscriptionTypes";
 
 interface FeaturedSubscriptionsProps {
   subscriptionRefs: React.MutableRefObject<{[key: string]: HTMLDivElement | null}>;
@@ -15,8 +16,8 @@ const FeaturedSubscriptions: React.FC<FeaturedSubscriptionsProps> = ({
   searchTerm = "", 
   setHasResults
 }) => {
-  const [allSubscriptions, setAllSubscriptions] = useState<SubscriptionData[]>([]);
-  const [visibleSubscriptions, setVisibleSubscriptions] = useState<SubscriptionData[]>([]);
+  const [allSubscriptions, setAllSubscriptions] = useState<Subscription[]>([]);
+  const [visibleSubscriptions, setVisibleSubscriptions] = useState<Subscription[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const isMobile = useIsMobile();
 
@@ -63,26 +64,8 @@ const FeaturedSubscriptions: React.FC<FeaturedSubscriptionsProps> = ({
         const combinedData = [...(featuredData || []), ...regularData];
         
         if (combinedData) {
-          const formattedSubscriptions: SubscriptionData[] = combinedData.map((item: SubscriptionFromSupabase) => ({
-            id: item.id,
-            title: item.title,
-            price: item.price,
-            paymentMethod: item.payment_method,
-            status: item.status,
-            access: item.access,
-            headerColor: item.header_color,
-            priceColor: item.price_color,
-            whatsappNumber: item.whatsapp_number,
-            telegramUsername: item.telegram_username,
-            icon: item.icon,
-            addedDate: item.added_date,
-            pixQrCode: item.pix_qr_code,
-            pixKey: item.pix_key,
-            paymentProofImage: item.payment_proof_image,
-            featured: item.featured,
-            code: item.code // Include the code field
-          }));
-          
+          // Convert snake_case (DB) format to UI format with camelCase properties
+          const formattedSubscriptions = adaptSubscriptions(combinedData as Subscription[]);
           setAllSubscriptions(formattedSubscriptions);
           setVisibleSubscriptions(formattedSubscriptions);
         }
@@ -99,7 +82,7 @@ const FeaturedSubscriptions: React.FC<FeaturedSubscriptionsProps> = ({
   useEffect(() => {
     if (searchTerm) {
       const filtered = allSubscriptions.filter(sub => {
-        const content = `${sub.title} ${sub.price} ${sub.paymentMethod} ${sub.status} ${sub.access}`.toLowerCase();
+        const content = `${sub.title} ${sub.price} ${sub.paymentMethod || sub.payment_method} ${sub.status} ${sub.access}`.toLowerCase();
         return content.includes(searchTerm.toLowerCase());
       });
       
@@ -146,18 +129,18 @@ const FeaturedSubscriptions: React.FC<FeaturedSubscriptionsProps> = ({
           key={subscription.id}
           title={subscription.title}
           price={subscription.price}
-          paymentMethod={subscription.paymentMethod}
+          paymentMethod={subscription.paymentMethod || subscription.payment_method}
           status={subscription.status}
           access={subscription.access}
-          headerColor={subscription.headerColor}
-          priceColor={subscription.priceColor}
-          whatsappNumber={subscription.whatsappNumber}
-          telegramUsername={subscription.telegramUsername}
+          headerColor={subscription.headerColor || subscription.header_color}
+          priceColor={subscription.priceColor || subscription.price_color}
+          whatsappNumber={subscription.whatsappNumber || subscription.whatsapp_number}
+          telegramUsername={subscription.telegramUsername || subscription.telegram_username}
           icon={subscription.icon}
-          addedDate={subscription.addedDate}
+          addedDate={subscription.addedDate || subscription.added_date}
           subscriptionRefs={subscriptionRefs}
           featured={subscription.featured}
-          code={subscription.code} // Pass code to SubscriptionItem
+          code={subscription.code}
         />
       ))}
     </div>
