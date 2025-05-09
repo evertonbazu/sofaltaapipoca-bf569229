@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -22,7 +21,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { format } from 'date-fns';
-import { PendingSubscriptionFromSupabase } from '@/types/subscriptionTypes';
+import { PendingSubscription, PendingSubscriptionFromSupabase } from '@/types/subscriptionTypes';
 
 const formSchema = z.object({
   title: z.string().min(3, {

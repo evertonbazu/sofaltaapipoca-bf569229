@@ -17,12 +17,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useIsMobile } from '@/hooks/use-mobile';
-import { SubscriptionFromSupabase } from '@/types/subscriptionTypes';
-
-interface Subscription extends SubscriptionFromSupabase {}
+import { Subscription, SubscriptionFromSupabase } from '@/types/subscriptionTypes';
 
 const ExportSubscriptionsTxt: React.FC = () => {
-  const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
+  const [subscriptions, setSubscriptions] = useState<SubscriptionFromSupabase[]>([]);
   const [selectedSubscriptions, setSelectedSubscriptions] = useState<Record<string, boolean>>({});
   const [isLoading, setIsLoading] = useState(false);
   const [isFetching, setIsFetching] = useState(true);
@@ -51,7 +49,7 @@ const ExportSubscriptionsTxt: React.FC = () => {
       
       // Initialize all subscriptions as unselected
       const initialSelected: Record<string, boolean> = {};
-      data?.forEach((sub: Subscription) => {
+      data?.forEach((sub: SubscriptionFromSupabase) => {
         initialSelected[sub.id] = false;
       });
       setSelectedSubscriptions(initialSelected);

@@ -4,9 +4,10 @@ export interface ProfileFromSupabase {
   id: string;
   username?: string;
   email?: string;
-  role: 'admin' | 'member' | 'user';
+  role: 'admin' | 'member' | 'user' | string; // Added string to allow any role value
   created_at?: string;
   updated_at?: string;
+  senha?: string;
 }
 
 export interface PendingSubscription {
@@ -55,3 +56,12 @@ export interface Subscription {
   featured?: boolean;
   added_date?: string | null;
 }
+
+// Add SubscriptionData alias for compatibility with existing code
+export type SubscriptionData = Subscription;
+
+// Add SubscriptionFromSupabase for compatibility with Supabase responses
+export type SubscriptionFromSupabase = Subscription;
+
+// Add PendingSubscriptionFromSupabase for compatibility with Supabase responses
+export type PendingSubscriptionFromSupabase = PendingSubscription;

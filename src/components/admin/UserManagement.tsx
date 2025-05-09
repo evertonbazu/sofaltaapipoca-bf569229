@@ -73,7 +73,11 @@ const UserManagement = () => {
       if (profileError) throw profileError;
       
       // Combine data from both sources
-      const combinedUsers = profileData || [];
+      const combinedUsers = profileData?.map(user => ({
+        ...user,
+        // Ensure role is one of the allowed values, defaulting to 'user'
+        role: ['admin', 'member', 'user'].includes(user.role) ? user.role : 'user'
+      })) || [];
       
       // Make sure we're fetching all users, even if they don't have a profile
       // This ensures we don't miss any users
@@ -83,7 +87,13 @@ const UserManagement = () => {
       
       if (error) throw error;
       
-      setUsers(data || []);
+      const typedUsers = data?.map(user => ({
+        ...user,
+        // Ensure role is one of the allowed values, defaulting to 'user'
+        role: ['admin', 'member', 'user'].includes(user.role) ? user.role as 'admin' | 'member' | 'user' : 'user'
+      })) as ProfileFromSupabase[];
+      
+      setUsers(typedUsers || []);
     } catch (error: any) {
       console.error("Error fetching users:", error);
       toast({
@@ -112,10 +122,15 @@ const UserManagement = () => {
     if (!currentUser) return;
     
     try {
+      // Make sure the edited role matches one of the allowed values
+      const validRole = ['admin', 'member', 'user'].includes(editedRole) 
+        ? editedRole as 'admin' | 'member' | 'user' 
+        : 'user';
+      
       const { error } = await supabase
         .from('profiles')
         .update({
-          role: editedRole,
+          role: validRole,
           username: editedUsername,
           updated_at: new Date().toISOString()
         })
@@ -127,7 +142,7 @@ const UserManagement = () => {
       setUsers(prev => 
         prev.map(user => 
           user.id === currentUser.id 
-            ? { ...user, role: editedRole, username: editedUsername } 
+            ? { ...user, role: validRole, username: editedUsername } 
             : user
         )
       );

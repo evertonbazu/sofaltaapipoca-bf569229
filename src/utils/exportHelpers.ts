@@ -1,27 +1,13 @@
-
 import { saveAs } from 'file-saver';
 import { toast } from '@/hooks/use-toast';
-
-interface Subscription {
-  id: string;
-  title: string;
-  price: string;
-  payment_method: string;
-  status: string;
-  access: string;
-  whatsapp_number: string;
-  telegram_username: string;
-  pix_qr_code?: string;
-  added_date?: string;
-  code?: string;
-}
+import { Subscription, SubscriptionFromSupabase } from '@/types/subscriptionTypes';
 
 /**
  * Generates a text content from selected subscriptions
  * @param selectedSubs Array of selected subscriptions
  * @returns Formatted text content
  */
-export const generateTxtContent = (selectedSubs: Subscription[]) => {
+export const generateTxtContent = (selectedSubs: SubscriptionFromSupabase[]) => {
   let content = '';
   
   selectedSubs.forEach((sub, index) => {
@@ -48,7 +34,7 @@ export const generateTxtContent = (selectedSubs: Subscription[]) => {
  * Exports subscriptions as a TXT file
  * @param selectedSubs Array of selected subscriptions
  */
-export const exportSubscriptionsAsTxt = (selectedSubs: Subscription[]) => {
+export const exportSubscriptionsAsTxt = (selectedSubs: SubscriptionFromSupabase[]) => {
   try {
     if (selectedSubs.length === 0) {
       toast({
