@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -180,13 +181,16 @@ const SubscriptionForm: React.FC = () => {
           });
         }
       } else {
-        // Create new subscription
+        // Create new subscription - Make sure all required fields are present
+        const newSubscription = {
+          ...values,
+          added_date: new Date().toLocaleDateString('pt-BR'),
+          featured: false,
+        };
+        
         const { error } = await supabase
           .from('subscriptions')
-          .insert({
-            ...values,
-            added_date: new Date().toLocaleDateString('pt-BR'),
-          });
+          .insert(newSubscription);
           
         if (error) throw error;
         

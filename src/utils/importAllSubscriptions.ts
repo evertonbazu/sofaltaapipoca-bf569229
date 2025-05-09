@@ -1,7 +1,5 @@
 import { supabase } from '@/integrations/supabase/client';
-
-// Function to generate a subscription code
-const generateCode = () => `SF${Math.floor(1000 + Math.random() * 9000)}`;
+import { generateCode } from './importSubscriptions';
 
 // Sample subscriptions data from the user's request
 const subscriptionsData = [
@@ -14,6 +12,9 @@ const subscriptionsData = [
     whatsapp_number: "5575999997951",
     added_date: "09/04/2025",
     payment_method: "PIX",
+    header_color: "#3b82f6", // Added default color
+    price_color: "#10b981", // Added default color
+    code: generateCode(), // Added code generation
   },
   {
     title: "YOUTUBE PREMIUM",
@@ -24,6 +25,9 @@ const subscriptionsData = [
     whatsapp_number: "5527988292875",
     added_date: "15/04/2025",
     payment_method: "PIX",
+    header_color: "#3b82f6", // Added default color
+    price_color: "#10b981", // Added default color
+    code: generateCode(), // Added code generation
   },
   {
     title: "NETFLIX (DISPOSITIVOS MÓVEIS/TV)",
@@ -34,6 +38,9 @@ const subscriptionsData = [
     whatsapp_number: "5531975374153",
     added_date: "15/04/2025",
     payment_method: "PIX",
+    header_color: "#3b82f6", // Added default color
+    price_color: "#10b981", // Added default color
+    code: generateCode(), // Added code generation
   },
   {
     title: "GOOGLE ONE IA PREMIUM 2TB COM GEMINI ADVANCED 2.5",
@@ -44,6 +51,9 @@ const subscriptionsData = [
     whatsapp_number: "5598984045368",
     added_date: "16/04/2025",
     payment_method: "PIX",
+    header_color: "#3b82f6", // Added default color
+    price_color: "#10b981", // Added default color
+    code: generateCode(), // Added code generation
   },
   {
     title: "ALURA PLUS",
@@ -54,6 +64,9 @@ const subscriptionsData = [
     whatsapp_number: "5513992077804",
     added_date: "16/04/2025",
     payment_method: "PIX",
+    header_color: "#3b82f6", // Added default color
+    price_color: "#10b981", // Added default color
+    code: generateCode(), // Added code generation
   },
   {
     title: "GRAN CURSOS ILIMITADO AMIGOS",
@@ -64,6 +77,9 @@ const subscriptionsData = [
     whatsapp_number: "5562982292725",
     added_date: "18/04/2025",
     payment_method: "PIX",
+    header_color: "#3b82f6", // Added default color
+    price_color: "#10b981", // Added default color
+    code: generateCode(), // Added code generation
   },
   {
     title: "SPOTIFY",
@@ -74,6 +90,9 @@ const subscriptionsData = [
     whatsapp_number: "5588992259940",
     added_date: "19/04/2025",
     payment_method: "PIX",
+    header_color: "#3b82f6", // Added default color
+    price_color: "#10b981", // Added default color
+    code: generateCode(), // Added code generation
   },
   {
     title: "NETFLIX 4K + APPLE TV + GLOBO PLAY PREMIUM SEM ANUNCIO + 27 CANAIS",
@@ -84,6 +103,9 @@ const subscriptionsData = [
     whatsapp_number: "5585992166014",
     added_date: "19/04/2025",
     payment_method: "PIX",
+    header_color: "#3b82f6", // Added default color
+    price_color: "#10b981", // Added default color
+    code: generateCode(), // Added code generation
   },
   {
     title: "AMAZON PRIME VIDEO",
@@ -94,6 +116,9 @@ const subscriptionsData = [
     whatsapp_number: "5511912659702",
     added_date: "21/04/2025",
     payment_method: "PIX",
+    header_color: "#3b82f6", // Added default color
+    price_color: "#10b981", // Added default color
+    code: generateCode(), // Added code generation
   },
   {
     title: "CRUNCHYROLL",
@@ -104,6 +129,9 @@ const subscriptionsData = [
     whatsapp_number: "5511912659702",
     added_date: "21/04/2025",
     payment_method: "PIX",
+    header_color: "#3b82f6", // Added default color
+    price_color: "#10b981", // Added default color
+    code: generateCode(), // Added code generation
   },
   {
     title: "SPOTIFY",
@@ -114,6 +142,9 @@ const subscriptionsData = [
     whatsapp_number: "5511912659702",
     added_date: "21/04/2025",
     payment_method: "PIX",
+    header_color: "#3b82f6", // Added default color
+    price_color: "#10b981", // Added default color
+    code: generateCode(), // Added code generation
   },
   {
     title: "DISNEY+ PADRÃO (COM ANÚNCIOS)",
@@ -124,6 +155,9 @@ const subscriptionsData = [
     whatsapp_number: "5583986510421",
     added_date: "21/04/2025",
     payment_method: "PIX",
+    header_color: "#3b82f6", // Added default color
+    price_color: "#10b981", // Added default color
+    code: generateCode(), // Added code generation
   },
   {
     title: "CANVA",
@@ -134,6 +168,9 @@ const subscriptionsData = [
     whatsapp_number: "5513992077804",
     added_date: "25/04/2025",
     payment_method: "PIX",
+    header_color: "#3b82f6", // Added default color
+    price_color: "#10b981", // Added default color
+    code: generateCode(), // Added code generation
   },
   {
     title: "NETFLIX (DISPOSITIVOS MÓVEIS/TV)",
@@ -144,6 +181,9 @@ const subscriptionsData = [
     whatsapp_number: "5585992166014",
     added_date: "27/04/2025",
     payment_method: "PIX",
+    header_color: "#3b82f6", // Added default color
+    price_color: "#10b981", // Added default color
+    code: generateCode(), // Added code generation
   },
   {
     title: "APPLE TV+",
@@ -154,6 +194,9 @@ const subscriptionsData = [
     whatsapp_number: "5574981207317",
     added_date: "27/04/2025",
     payment_method: "PIX",
+    header_color: "#3b82f6", // Added default color
+    price_color: "#10b981", // Added default color
+    code: generateCode(), // Added code generation
   },
   {
     title: "Netflix (Cel/PC)",
@@ -164,6 +207,9 @@ const subscriptionsData = [
     whatsapp_number: "5587991988684",
     added_date: "27/04/2025",
     payment_method: "PIX",
+    header_color: "#3b82f6", // Added default color
+    price_color: "#10b981", // Added default color
+    code: generateCode(), // Added code generation
   },
   {
     title: "Apple TV",
@@ -174,6 +220,9 @@ const subscriptionsData = [
     whatsapp_number: "5587991988684",
     added_date: "27/04/2025",
     payment_method: "PIX",
+    header_color: "#3b82f6", // Added default color
+    price_color: "#10b981", // Added default color
+    code: generateCode(), // Added code generation
   },
   {
     title: "MCAFEE TOTAL PROTECTION",
@@ -184,6 +233,9 @@ const subscriptionsData = [
     whatsapp_number: "5527997692531",
     added_date: "29/04/2025",
     payment_method: "PIX",
+    header_color: "#3b82f6", // Added default color
+    price_color: "#10b981", // Added default color
+    code: generateCode(), // Added code generation
   },
   {
     title: "PLAYPLUS",
@@ -194,6 +246,9 @@ const subscriptionsData = [
     whatsapp_number: "5598984045368",
     added_date: "01/05/2025",
     payment_method: "PIX",
+    header_color: "#3b82f6", // Added default color
+    price_color: "#10b981", // Added default color
+    code: generateCode(), // Added code generation
   },
   {
     title: "MUBI",
@@ -204,6 +259,9 @@ const subscriptionsData = [
     whatsapp_number: "5598984045368",
     added_date: "01/05/2025",
     payment_method: "PIX",
+    header_color: "#3b82f6", // Added default color
+    price_color: "#10b981", // Added default color
+    code: generateCode(), // Added code generation
   },
   {
     title: "MAX STANDARD",
@@ -214,6 +272,9 @@ const subscriptionsData = [
     whatsapp_number: "5575992630618",
     added_date: "01/05/2025",
     payment_method: "PIX",
+    header_color: "#3b82f6", // Added default color
+    price_color: "#10b981", // Added default color
+    code: generateCode(), // Added code generation
   },
   {
     title: "PARAMOUNT PREMIUM",
@@ -224,6 +285,9 @@ const subscriptionsData = [
     whatsapp_number: "5585992166014",
     added_date: "01/05/2025",
     payment_method: "PIX",
+    header_color: "#3b82f6", // Added default color
+    price_color: "#10b981", // Added default color
+    code: generateCode(), // Added code generation
   },
   {
     title: "GLOBO PLAY PREMIUM + 27 CANAIS + APPLE TV+",
@@ -234,6 +298,9 @@ const subscriptionsData = [
     whatsapp_number: "5585992166014",
     added_date: "03/05/2025",
     payment_method: "PIX",
+    header_color: "#3b82f6", // Added default color
+    price_color: "#10b981", // Added default color
+    code: generateCode(), // Added code generation
   },
   {
     title: "CRUNCHYROLL",
@@ -244,6 +311,9 @@ const subscriptionsData = [
     whatsapp_number: "5586995736762",
     added_date: "03/05/2025",
     payment_method: "PIX",
+    header_color: "#3b82f6", // Added default color
+    price_color: "#10b981", // Added default color
+    code: generateCode(), // Added code generation
   },
   {
     title: "GLOBOPLAY PADRÃO (SEM ANÚNCIOS)",
@@ -254,6 +324,9 @@ const subscriptionsData = [
     whatsapp_number: "5565984450752",
     added_date: "03/05/2025",
     payment_method: "PIX",
+    header_color: "#3b82f6", // Added default color
+    price_color: "#10b981", // Added default color
+    code: generateCode(), // Added code generation
   },
   {
     title: "Microsoft 365 Família 1T",
@@ -264,6 +337,9 @@ const subscriptionsData = [
     whatsapp_number: "5587991988684",
     added_date: "03/05/2025",
     payment_method: "PIX",
+    header_color: "#3b82f6", // Added default color
+    price_color: "#10b981", // Added default color
+    code: generateCode(), // Added code generation
   },
   {
     title: "PERPLEXITY IA (Claude/ChatGpt/Gemini/Grok)",
@@ -274,6 +350,9 @@ const subscriptionsData = [
     whatsapp_number: "5513992077804",
     added_date: "04/05/2025",
     payment_method: "PIX",
+    header_color: "#3b82f6", // Added default color
+    price_color: "#10b981", // Added default color
+    code: generateCode(), // Added code generation
   },
   {
     title: "NETFLIX (DISPOSITIVOS MÓVEIS/TV)",
@@ -284,6 +363,9 @@ const subscriptionsData = [
     whatsapp_number: "5531975374153",
     added_date: "04/05/2025",
     payment_method: "PIX",
+    header_color: "#3b82f6", // Added default color
+    price_color: "#10b981", // Added default color
+    code: generateCode(), // Added code generation
   },
   {
     title: "MAX STANDARD",
@@ -294,6 +376,9 @@ const subscriptionsData = [
     whatsapp_number: "5534992675225",
     added_date: "06/05/2025",
     payment_method: "PIX",
+    header_color: "#3b82f6", // Added default color
+    price_color: "#10b981", // Added default color
+    code: generateCode(), // Added code generation
   },
   {
     title: "Globoplay Premium + Telecine",
@@ -304,6 +389,9 @@ const subscriptionsData = [
     whatsapp_number: "5587991988684",
     added_date: "06/05/2025",
     payment_method: "PIX",
+    header_color: "#3b82f6", // Added default color
+    price_color: "#10b981", // Added default color
+    code: generateCode(), // Added code generation
   },
   {
     title: "BABBEL (Cursos de Idiomas)",
@@ -314,6 +402,9 @@ const subscriptionsData = [
     whatsapp_number: "5513992077804",
     added_date: "06/05/2025",
     payment_method: "PIX",
+    header_color: "#3b82f6", // Added default color
+    price_color: "#10b981", // Added default color
+    code: generateCode(), // Added code generation
   },
   {
     title: "YOUTUBE PREMIUM",
@@ -324,6 +415,9 @@ const subscriptionsData = [
     whatsapp_number: "5588992259940",
     added_date: "07/05/2025",
     payment_method: "PIX",
+    header_color: "#3b82f6", // Added default color
+    price_color: "#10b981", // Added default color
+    code: generateCode(), // Added code generation
   },
   {
     title: "MICROSOFT 365",
@@ -334,6 +428,9 @@ const subscriptionsData = [
     whatsapp_number: "5534992675225",
     added_date: "07/05/2025",
     payment_method: "PIX",
+    header_color: "#3b82f6", // Added default color
+    price_color: "#10b981", // Added default color
+    code: generateCode(), // Added code generation
   },
 ];
 
@@ -364,21 +461,17 @@ export const importAllSubscriptions = async () => {
     // Process each subscription
     for (const subscription of subscriptionsData) {
       try {
+        // Add missing required properties if they don't exist
+        const fullSubscription = {
+          ...subscription,
+          header_color: subscription.header_color || "#3b82f6",
+          price_color: subscription.price_color || "#10b981",
+          code: subscription.code || generateCode(),
+        };
+        
         const { error } = await supabase
           .from('subscriptions')
-          .insert({
-            title: subscription.title,
-            price: subscription.price,
-            status: subscription.status,
-            access: subscription.access,
-            header_color: subscription.header_color || '#3b82f6',
-            price_color: subscription.price_color || '#10b981',
-            whatsapp_number: subscription.whatsapp_number,
-            telegram_username: subscription.telegram_username,
-            code: subscription.code || generateCode(),
-            payment_method: subscription.payment_method || 'PIX',
-            added_date: subscription.added_date || new Date().toLocaleDateString('pt-BR')
-          });
+          .insert(fullSubscription);
         
         if (error) {
           console.error('Error adding subscription:', error);

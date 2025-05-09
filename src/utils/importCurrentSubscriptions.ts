@@ -1,6 +1,5 @@
-
 import { supabase } from '@/integrations/supabase/client';
-import { parseSubscription } from './importSubscriptions';
+import { parseSubscription, generateCode } from './importSubscriptions';
 
 // This is the list of subscriptions from the user message
 const subscriptionsText = `ANÚNCIOS SÓ FALTA A PIPOCA 🍿, [09/04/2025 09:21]
