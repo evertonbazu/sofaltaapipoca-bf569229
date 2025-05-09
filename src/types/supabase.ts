@@ -140,6 +140,64 @@ export type Tables = {
       code?: string;
     };
   };
+  profiles: {
+    Row: {
+      id: string;
+      username: string | null;
+      email: string | null;
+      role: string;
+      created_at: string | null;
+      updated_at: string | null;
+    };
+    Insert: {
+      id: string;
+      username?: string | null;
+      email?: string | null;
+      role?: string;
+      created_at?: string | null;
+      updated_at?: string | null;
+    };
+    Update: {
+      id?: string;
+      username?: string | null;
+      email?: string | null;
+      role?: string;
+      created_at?: string | null;
+      updated_at?: string | null;
+    };
+  };
+  contact_messages: {
+    Row: {
+      id: string;
+      user_id: string | null;
+      name: string;
+      email: string;
+      subject: string;
+      message: string;
+      created_at: string | null;
+      read: boolean | null;
+    };
+    Insert: {
+      id?: string;
+      user_id?: string | null;
+      name: string;
+      email: string;
+      subject: string;
+      message: string;
+      created_at?: string | null;
+      read?: boolean | null;
+    };
+    Update: {
+      id?: string;
+      user_id?: string | null;
+      name?: string;
+      email?: string;
+      subject?: string;
+      message?: string;
+      created_at?: string | null;
+      read?: boolean | null;
+    };
+  };
 };
 
 // Helper type for strongly typed Supabase queries

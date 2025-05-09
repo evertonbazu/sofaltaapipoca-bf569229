@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from "@/components/ui/button";
@@ -37,8 +36,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { ProfileFromSupabase } from '@/types/subscriptionTypes';
+import { TableRow as ProfileTableRow } from '@/types/supabase';
 import { Edit, Trash, User, Mail } from 'lucide-react';
+
+type ProfileFromSupabase = ProfileTableRow<'profiles'>;
 
 const UserManagement = () => {
   const [users, setUsers] = useState<ProfileFromSupabase[]>([]);
@@ -60,39 +61,14 @@ const UserManagement = () => {
   const fetchUsers = async () => {
     setLoading(true);
     try {
-      // Fetch all users from auth.users
-      const { data: authData, error: authError } = await supabase.auth.admin.listUsers();
-      
-      if (authError) throw authError;
-      
-      // Fetch all profiles
-      const { data: profileData, error: profileError } = await supabase
-        .from('profiles')
-        .select('*');
-      
-      if (profileError) throw profileError;
-      
-      // Combine data from both sources
-      const combinedUsers = profileData?.map(user => ({
-        ...user,
-        // Ensure role is one of the allowed values, defaulting to 'user'
-        role: ['admin', 'member', 'user'].includes(user.role) ? user.role : 'user'
-      })) || [];
-      
-      // Make sure we're fetching all users, even if they don't have a profile
-      // This ensures we don't miss any users
+      // Fetch all profiles directly
       const { data, error } = await supabase
         .from('profiles')
         .select('*');
       
       if (error) throw error;
       
-      const typedUsers = data?.map(user => ({
-        ...user,
-        // Ensure role is one of the allowed values, defaulting to 'user'
-        role: ['admin', 'member', 'user'].includes(user.role) ? user.role as 'admin' | 'member' | 'user' : 'user'
-      })) as ProfileFromSupabase[];
-      
+      const typedUsers = data as ProfileFromSupabase[];
       setUsers(typedUsers || []);
     } catch (error: any) {
       console.error("Error fetching users:", error);

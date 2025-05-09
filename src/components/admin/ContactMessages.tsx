@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -40,16 +39,10 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Mail, Trash2, Calendar, User, Send } from 'lucide-react';
+import { TableRow } from '@/types/supabase';
 
-interface ContactMessage {
-  id: string;
-  name: string;
-  email: string;
-  subject: string;
-  message: string;
-  created_at: string;
-  user_id: string | null;
-}
+// Use the type from our custom Supabase types
+type ContactMessage = TableRow<'contact_messages'>;
 
 const ContactMessages = () => {
   const [messages, setMessages] = useState<ContactMessage[]>([]);
