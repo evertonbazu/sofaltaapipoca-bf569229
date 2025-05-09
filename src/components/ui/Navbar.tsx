@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { Menu, X, User, LogOut, ChevronDown, ChevronUp } from 'lucide-react';
@@ -140,7 +141,7 @@ const Navbar = () => {
                 </NavLink>
                 
                 {/* Admin dropdown for desktop */}
-                {authState.userDetails?.role === 'admin' && (
+                {authState.user?.role === 'admin' && (
                   <div className="relative">
                     <button
                       onClick={() => setIsAdminDropdownOpen(!isAdminDropdownOpen)}
@@ -167,7 +168,7 @@ const Navbar = () => {
                   <DropdownMenuTrigger asChild>
                     <Button variant="ghost" size="sm" className="flex items-center">
                       <User className="h-4 w-4 mr-1" />
-                      <span className="hidden sm:inline">{authState.userDetails?.username || 'Usuário'}</span>
+                      <span className="hidden sm:inline">{authState.user?.username || 'Usuário'}</span>
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
@@ -235,7 +236,7 @@ const Navbar = () => {
             )}
             
             {/* Admin links for mobile */}
-            {authState.userDetails?.role === 'admin' && (
+            {authState.user?.role === 'admin' && (
               <>
                 <div className="px-4 py-2 text-sm font-medium text-gray-500 border-t border-gray-200 mt-2">
                   Admin
