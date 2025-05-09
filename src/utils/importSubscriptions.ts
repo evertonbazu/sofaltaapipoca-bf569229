@@ -127,7 +127,7 @@ export const bulkImportSubscriptions = async (text: string): Promise<{ success: 
   return { success: added > 0, added, errors };
 };
 
-// Adding the function that was imported but not defined
+// Function that is imported by ImportBulkSubscriptions.tsx
 export const importSubscriptionsFromText = async (text: string): Promise<{ success: number; errors: number }> => {
   const result = await bulkImportSubscriptions(text);
   return { success: result.added, errors: result.errors };

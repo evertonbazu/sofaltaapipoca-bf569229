@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { parseSubscription, generateCode } from './importSubscriptions';
 
@@ -318,8 +319,8 @@ export const importAllSubscriptions = async () => {
             price: parsed.price,
             status: parsed.status,
             access: parsed.access,
-            header_color: parsed.header_color || '#3b82f6',
-            price_color: parsed.price_color || '#10b981',
+            header_color: parsed.header_color,
+            price_color: parsed.price_color,
             whatsapp_number: parsed.whatsapp_number,
             telegram_username: parsed.telegram_username,
             code: parsed.code || generateCode(),

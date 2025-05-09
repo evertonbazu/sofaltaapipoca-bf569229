@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -183,9 +182,18 @@ const SubscriptionForm: React.FC = () => {
       } else {
         // Create new subscription - Make sure all required fields are present
         const newSubscription = {
-          ...values,
+          title: values.title,
+          price: values.price,
+          payment_method: values.payment_method,
+          status: values.status,
+          access: values.access, 
+          telegram_username: values.telegram_username || "",
+          whatsapp_number: values.whatsapp_number || "",
+          header_color: values.header_color,
+          price_color: values.price_color,
+          code: values.code,
           added_date: new Date().toLocaleDateString('pt-BR'),
-          featured: false,
+          featured: false
         };
         
         const { error } = await supabase
