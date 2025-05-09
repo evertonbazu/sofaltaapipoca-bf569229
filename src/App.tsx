@@ -20,7 +20,7 @@ import UserProfile from './components/admin/UserProfile';
 import Contact from './pages/Contact';
 
 // Version information
-export const APP_VERSION = '1.3.0'; // Updated version after implementing contact messages and profile updates
+export const APP_VERSION = '1.4.0'; // Updated version with Portuguese translation, improved UX
 
 // Create a separate component for the authenticated routes
 const AppRoutes = () => {

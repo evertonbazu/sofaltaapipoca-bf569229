@@ -4,7 +4,6 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { Home } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
-import { useToast } from '@/hooks/use-toast';
 import SubscriptionSubmissionForm from '@/components/SubscriptionSubmissionForm';
 
 const NewSubscription: React.FC = () => {
@@ -61,10 +60,10 @@ const NewSubscription: React.FC = () => {
         </div>
       </div>
       
-      <div className="container mx-auto px-3 sm:px-4 py-8">
+      <div className="container mx-auto px-3 sm:px-4 py-8 w-full">
         <h1 className="text-2xl font-bold mb-6">Cadastrar Novo Anúncio</h1>
         
-        <div className="bg-white shadow-md rounded-lg p-6">
+        <div className="bg-white shadow-md rounded-lg p-4 sm:p-6 w-full">
           <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-md">
             <h3 className="font-medium text-blue-800">Instruções para cadastro:</h3>
             <ul className="list-disc pl-5 mt-2 text-sm text-blue-700">
@@ -75,7 +74,9 @@ const NewSubscription: React.FC = () => {
             </ul>
           </div>
           
-          <SubscriptionSubmissionForm />
+          <div className="w-full">
+            <SubscriptionSubmissionForm />
+          </div>
         </div>
       </div>
     </div>

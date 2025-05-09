@@ -24,20 +24,24 @@ const SignupForm: React.FC<SignupFormProps> = ({ setShowVerifyMessage, setActive
     setError('');
 
     if (password !== confirmPassword) {
-      setError('Passwords do not match');
+      setError('As senhas não coincidem');
       return;
     }
 
     setIsLoading(true);
     try {
-      console.log('Attempting to register:', email, username);
-      await signUp(email, password, username);
-      // Show verification message
-      setShowVerifyMessage(true);
-      setActiveTab('signin');
+      console.log('Tentando registrar:', email, username);
+      const result = await signUp(email, password, username);
+      if (result.success) {
+        // Show verification message
+        setShowVerifyMessage(true);
+        setActiveTab('signin');
+      } else if (result.message) {
+        setError(result.message);
+      }
     } catch (error: any) {
-      console.error('Registration error:', error);
-      setError(error.message || 'Registration failed. Please try again later.');
+      console.error('Erro de registro:', error);
+      setError(error.message || 'Falha no registro. Por favor, tente novamente mais tarde.');
     } finally {
       setIsLoading(false);
     }
@@ -51,25 +55,25 @@ const SignupForm: React.FC<SignupFormProps> = ({ setShowVerifyMessage, setActive
           <Input 
             id="signup-email" 
             type="email" 
-            placeholder="your@email.com" 
+            placeholder="seu@email.com" 
             value={email} 
             onChange={(e) => setEmail(e.target.value)} 
             required 
           />
         </div>
         <div className="space-y-2">
-          <label className="text-sm font-medium" htmlFor="username">Username</label>
+          <label className="text-sm font-medium" htmlFor="username">Nome de Usuário</label>
           <Input 
             id="username" 
             type="text" 
-            placeholder="Your username" 
+            placeholder="Seu nome de usuário" 
             value={username} 
             onChange={(e) => setUsername(e.target.value)} 
             required 
           />
         </div>
         <div className="space-y-2">
-          <label className="text-sm font-medium" htmlFor="signup-password">Password</label>
+          <label className="text-sm font-medium" htmlFor="signup-password">Senha</label>
           <Input 
             id="signup-password" 
             type="password" 
@@ -80,7 +84,7 @@ const SignupForm: React.FC<SignupFormProps> = ({ setShowVerifyMessage, setActive
           />
         </div>
         <div className="space-y-2">
-          <label className="text-sm font-medium" htmlFor="confirm-password">Confirm Password</label>
+          <label className="text-sm font-medium" htmlFor="confirm-password">Confirmar Senha</label>
           <Input 
             id="confirm-password" 
             type="password" 
@@ -95,7 +99,7 @@ const SignupForm: React.FC<SignupFormProps> = ({ setShowVerifyMessage, setActive
       
       <CardFooter>
         <Button type="submit" className="w-full" disabled={isLoading}>
-          {isLoading ? 'Signing up...' : 'Sign up'}
+          {isLoading ? 'Cadastrando...' : 'Cadastrar'}
         </Button>
       </CardFooter>
     </form>

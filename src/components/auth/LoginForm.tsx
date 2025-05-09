@@ -22,11 +22,14 @@ const LoginForm: React.FC<LoginFormProps> = ({ setShowVerifyMessage }) => {
     setIsLoading(true);
     
     try {
-      console.log('Attempting login with:', email);
-      await signIn(email, password);
+      console.log('Tentando login com:', email);
+      const result = await signIn(email, password);
+      if (!result.success && result.message) {
+        setError(result.message);
+      }
     } catch (error: any) {
-      console.error('Login error:', error);
-      setError(error.message || 'Login failed. Check your credentials.');
+      console.error('Erro de login:', error);
+      setError(error.message || 'Falha no login. Verifique suas credenciais.');
     } finally {
       setIsLoading(false);
     }
@@ -40,7 +43,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ setShowVerifyMessage }) => {
           <Input 
             id="email" 
             type="email" 
-            placeholder="your@email.com" 
+            placeholder="seu@email.com" 
             value={email} 
             onChange={(e) => setEmail(e.target.value)} 
             required 
@@ -48,7 +51,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ setShowVerifyMessage }) => {
         </div>
         <div className="space-y-2">
           <div className="flex items-center justify-between">
-            <label className="text-sm font-medium" htmlFor="password">Password</label>
+            <label className="text-sm font-medium" htmlFor="password">Senha</label>
           </div>
           <Input 
             id="password" 
@@ -64,7 +67,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ setShowVerifyMessage }) => {
       
       <CardFooter>
         <Button type="submit" className="w-full" disabled={isLoading}>
-          {isLoading ? 'Logging in...' : 'Log in'}
+          {isLoading ? 'Entrando...' : 'Entrar'}
         </Button>
       </CardFooter>
     </form>

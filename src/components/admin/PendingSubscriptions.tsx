@@ -1,9 +1,15 @@
-
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Checkbox } from "@/components/ui/checkbox";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import {
   Table,
   TableBody,
@@ -30,51 +36,76 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Textarea } from "@/components/ui/textarea";
-import { PendingSubscriptionFromSupabase } from '@/types/subscriptionTypes';
-import { useToast } from '@/hooks/use-toast';
-import { Edit, Trash, ThumbsUp, ThumbsDown, Phone, MessageCircle } from 'lucide-react';
-import PendingSubscriptionForm from './PendingSubscriptionForm';
-import { generateSubscriptionCode } from '@/utils/codeGenerator';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Eye, CheckCircle, XCircle, MoreHorizontal, ChevronDown, Edit, Trash, MessageSquare } from 'lucide-react';
 
-const PendingSubscriptions = () => {
-  const [pendingSubs, setPendingSubs] = useState<PendingSubscriptionFromSupabase[]>([]);
+interface PendingSubscription {
+  id: string;
+  title: string;
+  price: string;
+  telegram_username: string;
+  whatsapp_number: string;
+  status: string;
+  access: string;
+  payment_method: string;
+  submitted_at: string;
+  status_approval: string | null;
+}
+
+const PendingSubscriptions: React.FC = () => {
+  const [subscriptions, setSubscriptions] = useState<PendingSubscription[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  const [rejectDialogOpen, setRejectDialogOpen] = useState(false);
-  const [confirmApproveDialogOpen, setConfirmApproveDialogOpen] = useState(false);
+  const [sortColumn, setSortColumn] = useState<string>('submitted_at');
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
+  const [reviewDialogOpen, setReviewDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [bulkDeleteDialogOpen, setBulkDeleteDialogOpen] = useState(false);
-  const [editDialogOpen, setEditDialogOpen] = useState(false);
-  const [currentSub, setCurrentSub] = useState<PendingSubscriptionFromSupabase | null>(null);
+  const [selectedSubscription, setSelectedSubscription] = useState<PendingSubscription | null>(null);
   const [rejectionReason, setRejectionReason] = useState('');
-  const [sortConfig, setSortConfig] = useState({ key: 'submitted_at', direction: 'desc' });
   const [selectedSubscriptions, setSelectedSubscriptions] = useState<string[]>([]);
-  const [selectAll, setSelectAll] = useState(false);
+  const [columnsWidth, setColumnsWidth] = useState<{[key: string]: number}>({
+    title: 250,
+    price: 100,
+    telegram: 150,
+    whatsapp: 150,
+    status: 120,
+    access: 150,
+    payment: 150,
+    date: 180,
+    approval: 150,
+    actions: 100,
+  });
+  const [resizing, setResizing] = useState<{column: string | null, startX: number, startWidth: number}>({
+    column: null,
+    startX: 0,
+    startWidth: 0
+  });
   const { toast } = useToast();
+  const navigate = useNavigate();
+  const tableRef = useRef<HTMLTableElement>(null);
 
   useEffect(() => {
     fetchPendingSubscriptions();
-  }, []);
-
-  useEffect(() => {
-    if (selectAll) {
-      setSelectedSubscriptions(pendingSubs.map(sub => sub.id));
-    } else {
-      setSelectedSubscriptions([]);
-    }
-  }, [selectAll, pendingSubs]);
+  }, [sortColumn, sortDirection]);
 
   const fetchPendingSubscriptions = async () => {
     setLoading(true);
     try {
       const { data, error } = await supabase
         .from('pending_subscriptions')
-        .select('*');
-      
+        .select('*')
+        .order(sortColumn, { ascending: sortDirection === 'asc' });
+
       if (error) throw error;
       
-      setPendingSubs(data || []);
+      setSubscriptions(data || []);
     } catch (error: any) {
       console.error("Error fetching pending subscriptions:", error);
       toast({
@@ -87,106 +118,60 @@ const PendingSubscriptions = () => {
     }
   };
 
-  const handleApprove = (subscription: PendingSubscriptionFromSupabase) => {
-    setCurrentSub(subscription);
-    setConfirmApproveDialogOpen(true);
-  };
-
-  const handleReject = (subscription: PendingSubscriptionFromSupabase) => {
-    setCurrentSub(subscription);
-    setRejectionReason('');
-    setRejectDialogOpen(true);
-  };
-
-  const handleDelete = (subscription: PendingSubscriptionFromSupabase) => {
-    setCurrentSub(subscription);
-    setDeleteDialogOpen(true);
-  };
-
-  const handleEdit = (subscription: PendingSubscriptionFromSupabase) => {
-    setCurrentSub(subscription);
-    setEditDialogOpen(true);
-  };
-
-  const handleSelectSubscription = (id: string) => {
-    setSelectedSubscriptions(prev => 
-      prev.includes(id) 
-        ? prev.filter(subId => subId !== id)
-        : [...prev, id]
-    );
-  };
-
-  const handleBulkDelete = () => {
-    if (selectedSubscriptions.length === 0) {
-      toast({
-        variant: "destructive",
-        title: "Nenhum anúncio selecionado",
-        description: "Por favor, selecione pelo menos um anúncio para excluir."
-      });
-      return;
+  const handleSort = (column: string) => {
+    if (sortColumn === column) {
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortColumn(column);
+      setSortDirection('asc');
     }
-    
-    setBulkDeleteDialogOpen(true);
   };
 
-  const confirmApprove = async () => {
-    if (!currentSub) return;
+  const handleApprove = async (subscription: PendingSubscription) => {
+    setSelectedSubscription(subscription);
     
     try {
-      // Generate a code for the subscription
-      const code = generateSubscriptionCode('SF', 5, Math.floor(Math.random() * 999) + 1);
-      
-      // Create approved subscription
-      const { data: newSub, error: insertError } = await supabase
+      const { error: insertError } = await supabase
         .from('subscriptions')
         .insert({
-          title: currentSub.title,
-          price: currentSub.price,
-          payment_method: currentSub.payment_method,
-          status: currentSub.status,
-          access: currentSub.access,
-          header_color: currentSub.header_color,
-          price_color: currentSub.price_color,
-          whatsapp_number: currentSub.whatsapp_number,
-          telegram_username: currentSub.telegram_username,
-          icon: currentSub.icon,
-          added_date: currentSub.added_date,
-          pix_qr_code: currentSub.pix_qr_code,
-          pix_key: currentSub.pix_key,
-          payment_proof_image: currentSub.payment_proof_image,
-          user_id: currentSub.user_id,
-          code: code
-        })
-        .select();
+          title: subscription.title,
+          price: subscription.price,
+          access: subscription.access,
+          payment_method: subscription.payment_method,
+          telegram_username: subscription.telegram_username,
+          whatsapp_number: subscription.whatsapp_number,
+          status: subscription.status,
+          header_color: '#3b82f6', // Default blue
+          price_color: '#10b981', // Default green
+          code: `SF${Math.floor(1000 + Math.random() * 9000)}`, // Generate a code
+          added_date: new Date().toISOString(),
+        });
       
       if (insertError) throw insertError;
-      
-      // Update pending subscription status
+
       const { error: updateError } = await supabase
         .from('pending_subscriptions')
         .update({
           status_approval: 'approved',
           reviewed_at: new Date().toISOString()
         })
-        .eq('id', currentSub.id);
-      
+        .eq('id', subscription.id);
+        
       if (updateError) throw updateError;
       
-      // Update local state
-      setPendingSubs(prev => 
+      // Update the local state
+      setSubscriptions(prev => 
         prev.map(sub => 
-          sub.id === currentSub.id 
-            ? { ...sub, status_approval: 'approved', reviewed_at: new Date().toISOString() } 
+          sub.id === subscription.id 
+            ? { ...sub, status_approval: 'approved' } 
             : sub
         )
       );
       
       toast({
-        title: "Anúncio aprovado",
-        description: "O anúncio foi aprovado com sucesso."
+        title: 'Anúncio aprovado',
+        description: 'O anúncio foi aprovado e adicionado à lista pública.'
       });
-      
-      setConfirmApproveDialogOpen(false);
     } catch (error: any) {
       console.error("Error approving subscription:", error);
       toast({
@@ -197,8 +182,14 @@ const PendingSubscriptions = () => {
     }
   };
 
+  const handleRejectClick = (subscription: PendingSubscription) => {
+    setSelectedSubscription(subscription);
+    setRejectionReason('');
+    setReviewDialogOpen(true);
+  };
+
   const confirmReject = async () => {
-    if (!currentSub) return;
+    if (!selectedSubscription) return;
     
     try {
       const { error } = await supabase
@@ -208,30 +199,25 @@ const PendingSubscriptions = () => {
           rejection_reason: rejectionReason,
           reviewed_at: new Date().toISOString()
         })
-        .eq('id', currentSub.id);
+        .eq('id', selectedSubscription.id);
       
       if (error) throw error;
       
-      // Update local state
-      setPendingSubs(prev => 
+      // Update the local state
+      setSubscriptions(prev => 
         prev.map(sub => 
-          sub.id === currentSub.id 
-            ? { 
-                ...sub, 
-                status_approval: 'rejected',
-                rejection_reason: rejectionReason,
-                reviewed_at: new Date().toISOString()
-              } 
+          sub.id === selectedSubscription.id 
+            ? { ...sub, status_approval: 'rejected', rejection_reason: rejectionReason } 
             : sub
         )
       );
       
       toast({
-        title: "Anúncio rejeitado",
-        description: "O anúncio foi rejeitado com sucesso."
+        title: 'Anúncio rejeitado',
+        description: 'O anúncio foi marcado como rejeitado.'
       });
       
-      setRejectDialogOpen(false);
+      setReviewDialogOpen(false);
     } catch (error: any) {
       console.error("Error rejecting subscription:", error);
       toast({
@@ -242,26 +228,28 @@ const PendingSubscriptions = () => {
     }
   };
 
+  const handleDeleteClick = (subscription: PendingSubscription) => {
+    setSelectedSubscription(subscription);
+    setDeleteDialogOpen(true);
+  };
+
   const confirmDelete = async () => {
-    if (!currentSub) return;
+    if (!selectedSubscription) return;
     
     try {
       const { error } = await supabase
         .from('pending_subscriptions')
         .delete()
-        .eq('id', currentSub.id);
+        .eq('id', selectedSubscription.id);
       
       if (error) throw error;
       
-      // Update local state
-      setPendingSubs(prev => prev.filter(sub => sub.id !== currentSub.id));
-      
-      // Also remove from selected subscriptions if present
-      setSelectedSubscriptions(prev => prev.filter(id => id !== currentSub.id));
+      // Update the local state
+      setSubscriptions(prev => prev.filter(sub => sub.id !== selectedSubscription.id));
       
       toast({
-        title: "Anúncio excluído",
-        description: "O anúncio foi excluído com sucesso."
+        title: 'Anúncio excluído',
+        description: 'O anúncio pendente foi excluído com sucesso.'
       });
       
       setDeleteDialogOpen(false);
@@ -272,6 +260,26 @@ const PendingSubscriptions = () => {
         title: "Erro ao excluir anúncio",
         description: error.message
       });
+    }
+  };
+
+  const toggleSubscriptionSelection = (id: string) => {
+    setSelectedSubscriptions(prev => {
+      if (prev.includes(id)) {
+        return prev.filter(subId => subId !== id);
+      } else {
+        return [...prev, id];
+      }
+    });
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedSubscriptions.length === filteredSubscriptions.length) {
+      // If all are selected, unselect all
+      setSelectedSubscriptions([]);
+    } else {
+      // Otherwise, select all
+      setSelectedSubscriptions(filteredSubscriptions.map(sub => sub.id));
     }
   };
 
@@ -286,18 +294,15 @@ const PendingSubscriptions = () => {
       
       if (error) throw error;
       
-      // Update local state
-      setPendingSubs(prev => prev.filter(sub => !selectedSubscriptions.includes(sub.id)));
-      
-      // Clear selection
-      setSelectedSubscriptions([]);
-      setSelectAll(false);
+      // Update the local state
+      setSubscriptions(prev => prev.filter(sub => !selectedSubscriptions.includes(sub.id)));
       
       toast({
-        title: "Anúncios excluídos",
+        title: 'Anúncios excluídos',
         description: `${selectedSubscriptions.length} anúncios foram excluídos com sucesso.`
       });
       
+      setSelectedSubscriptions([]);
       setBulkDeleteDialogOpen(false);
     } catch (error: any) {
       console.error("Error deleting subscriptions:", error);
@@ -309,89 +314,48 @@ const PendingSubscriptions = () => {
     }
   };
 
-  const handleSort = (key: string) => {
-    setSortConfig(prevConfig => {
-      if (prevConfig.key === key) {
-        // If same key, toggle direction
-        return {
-          key,
-          direction: prevConfig.direction === 'asc' ? 'desc' : 'asc'
-        };
-      } else {
-        // If different key, default to ascending
-        return { key, direction: 'asc' };
-      }
+  const startResizing = (columnName: string, e: React.MouseEvent) => {
+    e.preventDefault();
+    setResizing({
+      column: columnName,
+      startX: e.clientX,
+      startWidth: columnsWidth[columnName] || 100
     });
+    
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', stopResizing);
+  };
+  
+  const handleMouseMove = (e: MouseEvent) => {
+    if (!resizing.column) return;
+    
+    const width = Math.max(50, resizing.startWidth + (e.clientX - resizing.startX));
+    setColumnsWidth(prev => ({
+      ...prev,
+      [resizing.column!]: width
+    }));
+  };
+  
+  const stopResizing = () => {
+    setResizing({ column: null, startX: 0, startWidth: 0 });
+    document.removeEventListener('mousemove', handleMouseMove);
+    document.removeEventListener('mouseup', stopResizing);
   };
 
-  const getSortedSubscriptions = () => {
-    const filtered = pendingSubs.filter(sub => 
-      sub.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      sub.status_approval?.toLowerCase().includes(searchTerm.toLowerCase())
-    );
-    
-    return [...filtered].sort((a, b) => {
-      if (sortConfig.key === 'submitted_at' || sortConfig.key === 'added_date' || sortConfig.key === 'reviewed_at') {
-        const dateA = a[sortConfig.key] ? new Date(a[sortConfig.key]).getTime() : 0;
-        const dateB = b[sortConfig.key] ? new Date(b[sortConfig.key]).getTime() : 0;
-        
-        return sortConfig.direction === 'asc' ? dateA - dateB : dateB - dateA;
-      }
-      
-      if (a[sortConfig.key] < b[sortConfig.key]) {
-        return sortConfig.direction === 'asc' ? -1 : 1;
-      }
-      if (a[sortConfig.key] > b[sortConfig.key]) {
-        return sortConfig.direction === 'asc' ? 1 : -1;
-      }
-      return 0;
-    });
-  };
-
-  const handleSavePendingEdit = async (updatedData: any) => {
-    if (!currentSub) return;
-    
-    try {
-      const { error } = await supabase
-        .from('pending_subscriptions')
-        .update(updatedData)
-        .eq('id', currentSub.id);
-      
-      if (error) throw error;
-      
-      // Update local state
-      setPendingSubs(prev => 
-        prev.map(sub => 
-          sub.id === currentSub.id 
-            ? { ...sub, ...updatedData } 
-            : sub
-        )
-      );
-      
-      toast({
-        title: "Anúncio atualizado",
-        description: "As alterações foram salvas com sucesso."
-      });
-      
-      setEditDialogOpen(false);
-      setCurrentSub(null);
-    } catch (error: any) {
-      console.error("Error updating subscription:", error);
-      toast({
-        variant: "destructive",
-        title: "Erro ao atualizar anúncio",
-        description: error.message
-      });
-    }
-  };
+  const filteredSubscriptions = subscriptions.filter(sub => 
+    sub.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    sub.price.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    sub.telegram_username.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    sub.access.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold">Anúncios Pendentes</h1>
       </div>
-      
-      <div className="flex justify-between items-center flex-wrap gap-2">
+
+      <div className="flex flex-wrap gap-2 justify-between items-center">
         <div className="w-full max-w-sm">
           <Input 
             placeholder="Buscar anúncios..."
@@ -399,188 +363,273 @@ const PendingSubscriptions = () => {
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
-        <div className="flex items-center gap-2 flex-wrap">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => handleSort('submitted_at')}
-            className={sortConfig.key === 'submitted_at' ? 'border-blue-500' : ''}
-          >
-            Data Envio {sortConfig.key === 'submitted_at' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => handleSort('reviewed_at')}
-            className={sortConfig.key === 'reviewed_at' ? 'border-blue-500' : ''}
-          >
-            Data Revisão {sortConfig.key === 'reviewed_at' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => handleSort('status_approval')}
-            className={sortConfig.key === 'status_approval' ? 'border-blue-500' : ''}
-          >
-            Status {sortConfig.key === 'status_approval' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
-          </Button>
+        
+        <div className="flex items-center gap-2">
+          {selectedSubscriptions.length > 0 && (
+            <Button
+              variant="destructive"
+              size="sm"
+              onClick={() => setBulkDeleteDialogOpen(true)}
+            >
+              Excluir {selectedSubscriptions.length} selecionados
+            </Button>
+          )}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm" className="ml-auto">
+                <ChevronDown className="h-4 w-4 mr-2" />
+                Ordenar por
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => handleSort('title')}>
+                Título {sortColumn === 'title' && (sortDirection === 'asc' ? '↑' : '↓')}
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleSort('price')}>
+                Preço {sortColumn === 'price' && (sortDirection === 'asc' ? '↑' : '↓')}
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleSort('submitted_at')}>
+                Data de envio {sortColumn === 'submitted_at' && (sortDirection === 'asc' ? '↑' : '↓')}
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleSort('status_approval')}>
+                Status {sortColumn === 'status_approval' && (sortDirection === 'asc' ? '↑' : '↓')}
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
 
-      <div className="flex justify-end">
-        {selectedSubscriptions.length > 0 && (
-          <Button 
-            variant="destructive"
-            onClick={handleBulkDelete}
-            className="flex items-center gap-1"
-          >
-            <Trash className="h-4 w-4" /> 
-            Excluir Selecionados ({selectedSubscriptions.length})
-          </Button>
-        )}
-      </div>
-      
-      {loading ? (
-        <div className="flex justify-center py-8">
-          <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-blue-500"></div>
-        </div>
-      ) : (
-        <div className="border rounded-md overflow-hidden">
-          <Table>
+      <div className="border rounded-md overflow-auto">
+        {loading ? (
+          <div className="flex justify-center p-8">
+            <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-blue-500"></div>
+          </div>
+        ) : (
+          <Table ref={tableRef} className="relative w-full">
             <TableHeader>
               <TableRow>
-                <TableHead className="w-12">
-                  <Checkbox 
-                    checked={selectAll} 
-                    onCheckedChange={(checked) => setSelectAll(!!checked)} 
+                <TableHead className="w-[40px]">
+                  <input 
+                    type="checkbox" 
+                    checked={selectedSubscriptions.length === filteredSubscriptions.length && filteredSubscriptions.length > 0}
+                    onChange={toggleSelectAll}
+                    className="h-4 w-4 rounded border-gray-300"
                   />
                 </TableHead>
-                <TableHead>Título</TableHead>
-                <TableHead>Preço</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>WhatsApp</TableHead>
-                <TableHead>Telegram</TableHead>
-                <TableHead>Data Envio</TableHead>
-                <TableHead>Data Revisão</TableHead>
-                <TableHead className="text-right">Ações</TableHead>
+                <TableHead 
+                  className="relative cursor-col-resize" 
+                  style={{ width: `${columnsWidth.title}px` }}
+                >
+                  Título
+                  <div 
+                    className="absolute right-0 top-0 h-full w-2 cursor-col-resize"
+                    onMouseDown={(e) => startResizing('title', e)}
+                  ></div>
+                </TableHead>
+                <TableHead 
+                  className="relative cursor-col-resize" 
+                  style={{ width: `${columnsWidth.price}px` }}
+                >
+                  Preço
+                  <div 
+                    className="absolute right-0 top-0 h-full w-2 cursor-col-resize"
+                    onMouseDown={(e) => startResizing('price', e)}
+                  ></div>
+                </TableHead>
+                <TableHead 
+                  className="relative cursor-col-resize" 
+                  style={{ width: `${columnsWidth.telegram}px` }}
+                >
+                  Telegram
+                  <div 
+                    className="absolute right-0 top-0 h-full w-2 cursor-col-resize"
+                    onMouseDown={(e) => startResizing('telegram', e)}
+                  ></div>
+                </TableHead>
+                <TableHead 
+                  className="relative cursor-col-resize"
+                  style={{ width: `${columnsWidth.whatsapp}px` }}
+                >
+                  WhatsApp
+                  <div 
+                    className="absolute right-0 top-0 h-full w-2 cursor-col-resize"
+                    onMouseDown={(e) => startResizing('whatsapp', e)}
+                  ></div>
+                </TableHead>
+                <TableHead 
+                  className="relative cursor-col-resize" 
+                  style={{ width: `${columnsWidth.status}px` }}
+                >
+                  Status
+                  <div 
+                    className="absolute right-0 top-0 h-full w-2 cursor-col-resize"
+                    onMouseDown={(e) => startResizing('status', e)}
+                  ></div>
+                </TableHead>
+                <TableHead 
+                  className="relative cursor-col-resize" 
+                  style={{ width: `${columnsWidth.access}px` }}
+                >
+                  Acesso
+                  <div 
+                    className="absolute right-0 top-0 h-full w-2 cursor-col-resize"
+                    onMouseDown={(e) => startResizing('access', e)}
+                  ></div>
+                </TableHead>
+                <TableHead 
+                  className="relative cursor-col-resize" 
+                  style={{ width: `${columnsWidth.payment}px` }}
+                >
+                  Pagamento
+                  <div 
+                    className="absolute right-0 top-0 h-full w-2 cursor-col-resize"
+                    onMouseDown={(e) => startResizing('payment', e)}
+                  ></div>
+                </TableHead>
+                <TableHead 
+                  className="relative cursor-col-resize" 
+                  style={{ width: `${columnsWidth.date}px` }}
+                >
+                  Data do Anúncio
+                  <div 
+                    className="absolute right-0 top-0 h-full w-2 cursor-col-resize"
+                    onMouseDown={(e) => startResizing('date', e)}
+                  ></div>
+                </TableHead>
+                <TableHead 
+                  className="relative cursor-col-resize" 
+                  style={{ width: `${columnsWidth.approval}px` }}
+                >
+                  Aprovação
+                  <div 
+                    className="absolute right-0 top-0 h-full w-2 cursor-col-resize"
+                    onMouseDown={(e) => startResizing('approval', e)}
+                  ></div>
+                </TableHead>
+                <TableHead 
+                  className="relative text-right" 
+                  style={{ width: `${columnsWidth.actions}px` }}
+                >
+                  Ações
+                </TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {getSortedSubscriptions().length === 0 ? (
+              {filteredSubscriptions.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={9} className="text-center py-6 text-gray-500">
+                  <TableCell colSpan={10} className="text-center py-10 text-gray-500">
                     Nenhum anúncio pendente encontrado
                   </TableCell>
                 </TableRow>
               ) : (
-                getSortedSubscriptions().map((subscription) => (
+                filteredSubscriptions.map((subscription) => (
                   <TableRow key={subscription.id}>
                     <TableCell>
-                      <Checkbox 
-                        checked={selectedSubscriptions.includes(subscription.id)}
-                        onCheckedChange={() => handleSelectSubscription(subscription.id)}
+                      <input 
+                        type="checkbox" 
+                        checked={selectedSubscriptions.includes(subscription.id)} 
+                        onChange={() => toggleSubscriptionSelection(subscription.id)}
+                        className="h-4 w-4 rounded border-gray-300"
                       />
                     </TableCell>
-                    <TableCell className="font-medium">{subscription.title}</TableCell>
-                    <TableCell>{subscription.price}</TableCell>
+                    <TableCell>
+                      {subscription.title}
+                    </TableCell>
+                    <TableCell>
+                      {subscription.price}
+                    </TableCell>
+                    <TableCell>
+                      {subscription.telegram_username || 'N/A'}
+                    </TableCell>
+                    <TableCell>
+                      {subscription.whatsapp_number || 'N/A'}
+                    </TableCell>
                     <TableCell>
                       <span className={
-                        subscription.status_approval === 'pending'
-                          ? 'bg-yellow-100 text-yellow-800 px-2 py-1 rounded text-xs font-medium'
-                          : subscription.status_approval === 'approved'
-                            ? 'bg-green-100 text-green-800 px-2 py-1 rounded text-xs font-medium'
-                            : 'bg-red-100 text-red-800 px-2 py-1 rounded text-xs font-medium'
+                        subscription.status === 'disponível' 
+                          ? 'bg-green-100 text-green-800 px-2 py-1 rounded text-xs'
+                          : 'bg-red-100 text-red-800 px-2 py-1 rounded text-xs'
                       }>
-                        {subscription.status_approval === 'pending'
-                          ? 'Pendente'
-                          : subscription.status_approval === 'approved'
-                            ? 'Aprovado'
-                            : 'Rejeitado'}
+                        {subscription.status}
                       </span>
                     </TableCell>
-                    <TableCell className="flex items-center gap-1">
-                      <Phone className="h-4 w-4 text-gray-400" />
-                      {subscription.whatsapp_number}
-                    </TableCell>
-                    <TableCell className="flex items-center gap-1">
-                      <MessageCircle className="h-4 w-4 text-gray-400" />
-                      {subscription.telegram_username}
+                    <TableCell>
+                      {subscription.access}
                     </TableCell>
                     <TableCell>
-                      {subscription.submitted_at 
-                        ? new Date(subscription.submitted_at).toLocaleDateString() 
-                        : 'N/A'}
+                      {subscription.payment_method}
                     </TableCell>
                     <TableCell>
                       {subscription.reviewed_at 
                         ? new Date(subscription.reviewed_at).toLocaleDateString() 
-                        : 'N/A'}
+                        : (subscription.submitted_at 
+                          ? new Date(subscription.submitted_at).toLocaleDateString() 
+                          : 'N/A')}
                     </TableCell>
-                    <TableCell className="text-right space-x-1">
-                      {subscription.status_approval === 'pending' && (
-                        <>
-                          <Button 
-                            variant="default" 
-                            size="sm" 
-                            onClick={() => handleApprove(subscription)}
-                            className="bg-green-500 hover:bg-green-600"
-                          >
-                            <ThumbsUp className="h-4 w-4" />
-                          </Button>
-                          <Button 
-                            variant="default" 
-                            size="sm" 
-                            onClick={() => handleReject(subscription)}
-                            className="bg-red-500 hover:bg-red-600"
-                          >
-                            <ThumbsDown className="h-4 w-4" />
-                          </Button>
-                        </>
-                      )}
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
-                        onClick={() => handleEdit(subscription)}
-                      >
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
-                        onClick={() => handleDelete(subscription)}
-                        className="text-red-500 hover:text-red-700 hover:border-red-300"
-                      >
-                        <Trash className="h-4 w-4" />
-                      </Button>
+                    <TableCell>
+                      <span className={
+                        subscription.status_approval === 'approved' 
+                          ? 'bg-green-100 text-green-800 px-2 py-1 rounded text-xs'
+                          : subscription.status_approval === 'rejected'
+                            ? 'bg-red-100 text-red-800 px-2 py-1 rounded text-xs'
+                            : 'bg-yellow-100 text-yellow-800 px-2 py-1 rounded text-xs'
+                      }>
+                        {subscription.status_approval === 'approved' 
+                          ? 'Aprovado' 
+                          : subscription.status_approval === 'rejected' 
+                          ? 'Rejeitado' 
+                          : 'Pendente'}
+                      </span>
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex justify-end space-x-1">
+                        {!subscription.status_approval && (
+                          <>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => handleApprove(subscription)}
+                              className="text-green-600 hover:text-green-800 hover:bg-green-50"
+                            >
+                              <CheckCircle className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => handleRejectClick(subscription)}
+                              className="text-red-600 hover:text-red-800 hover:bg-red-50"
+                            >
+                              <XCircle className="h-4 w-4" />
+                            </Button>
+                          </>
+                        )}
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-8 w-8">
+                              <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => handleDeleteClick(subscription)}>
+                              <Trash className="h-4 w-4 mr-2" /> Excluir
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => navigate(`/admin/subscriptions/edit/${subscription.id}`)}>
+                              <Edit className="h-4 w-4 mr-2" /> Editar
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))
               )}
             </TableBody>
           </Table>
-        </div>
-      )}
-
-      {/* Approve Dialog */}
-      <AlertDialog open={confirmApproveDialogOpen} onOpenChange={setConfirmApproveDialogOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Confirmar aprovação</AlertDialogTitle>
-            <AlertDialogDescription>
-              Tem certeza que deseja aprovar este anúncio? Ele será movido para a lista de anúncios ativos.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmApprove} className="bg-green-500 hover:bg-green-600">
-              Aprovar
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+        )}
+      </div>
 
       {/* Reject Dialog */}
-      <Dialog open={rejectDialogOpen} onOpenChange={setRejectDialogOpen}>
+      <Dialog open={reviewDialogOpen} onOpenChange={setReviewDialogOpen}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Rejeitar Anúncio</DialogTitle>
@@ -588,22 +637,19 @@ const PendingSubscriptions = () => {
               Por favor, forneça um motivo para a rejeição deste anúncio.
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-4 py-2">
-            <Textarea
-              placeholder="Informe o motivo da rejeição..."
-              value={rejectionReason}
-              onChange={(e) => setRejectionReason(e.target.value)}
-              className="min-h-[100px]"
-            />
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Motivo da rejeição</label>
+              <Input 
+                value={rejectionReason} 
+                onChange={(e) => setRejectionReason(e.target.value)}
+                placeholder="Digite o motivo da rejeição"
+              />
+            </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setRejectDialogOpen(false)}>Cancelar</Button>
-            <Button 
-              onClick={confirmReject}
-              className="bg-red-500 hover:bg-red-600 text-white"
-            >
-              Rejeitar
-            </Button>
+            <Button variant="outline" onClick={() => setReviewDialogOpen(false)}>Cancelar</Button>
+            <Button variant="default" onClick={confirmReject}>Rejeitar</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -614,12 +660,15 @@ const PendingSubscriptions = () => {
           <AlertDialogHeader>
             <AlertDialogTitle>Confirmar exclusão</AlertDialogTitle>
             <AlertDialogDescription>
-              Tem certeza que deseja excluir este anúncio? Esta ação não pode ser desfeita.
+              Tem certeza que deseja excluir este anúncio pendente? Esta ação não pode ser desfeita.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmDelete} className="bg-red-500 hover:bg-red-600">
+            <AlertDialogAction 
+              onClick={confirmDelete}
+              className="bg-red-500 hover:bg-red-600"
+            >
               Excluir
             </AlertDialogAction>
           </AlertDialogFooter>
@@ -632,36 +681,20 @@ const PendingSubscriptions = () => {
           <AlertDialogHeader>
             <AlertDialogTitle>Confirmar exclusão em massa</AlertDialogTitle>
             <AlertDialogDescription>
-              Tem certeza que deseja excluir {selectedSubscriptions.length} anúncios selecionados? Esta ação não pode ser desfeita.
+              Tem certeza que deseja excluir {selectedSubscriptions.length} anúncios pendentes? Esta ação não pode ser desfeita.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmBulkDelete} className="bg-red-500 hover:bg-red-600">
+            <AlertDialogAction 
+              onClick={confirmBulkDelete}
+              className="bg-red-500 hover:bg-red-600"
+            >
               Excluir {selectedSubscriptions.length} anúncios
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-
-      {/* Edit Dialog */}
-      <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
-        <DialogContent className="max-w-4xl w-full">
-          <DialogHeader>
-            <DialogTitle>Editar Anúncio Pendente</DialogTitle>
-          </DialogHeader>
-          
-          {currentSub && (
-            <div className="max-h-[70vh] overflow-y-auto py-4">
-              <PendingSubscriptionForm 
-                initialData={currentSub} 
-                onSave={handleSavePendingEdit}
-                onCancel={() => setEditDialogOpen(false)}
-              />
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
     </div>
   );
 };

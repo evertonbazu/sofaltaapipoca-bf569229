@@ -1,7 +1,6 @@
-
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { AuthState, UserProfile, LoginCredentials, SignupCredentials, ResetPasswordCredentials, UpdatePasswordCredentials, UpdateProfileCredentials } from '@/types/authTypes';
+import { AuthState, UserProfile, LoginCredentials, SignupCredentials, ResetPasswordCredentials, UpdatePasswordCredentials, UpdateProfileCredentials, AuthContextType } from '@/types/authTypes';
 import { useToast } from '@/hooks/use-toast';
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);

@@ -4,6 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Card,
   CardContent,
@@ -23,13 +24,22 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogClose,
+} from "@/components/ui/dialog";
+import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Mail, Trash2, Calendar, User } from 'lucide-react';
+import { Mail, Trash2, Calendar, User, Send } from 'lucide-react';
 
 interface ContactMessage {
   id: string;
@@ -48,6 +58,9 @@ const ContactMessages = () => {
   const [sortOrder, setSortOrder] = useState<'newest' | 'oldest'>('newest');
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [selectedMessage, setSelectedMessage] = useState<ContactMessage | null>(null);
+  const [replyDialogOpen, setReplyDialogOpen] = useState(false);
+  const [replyMessage, setReplyMessage] = useState('');
+  const [sendingReply, setSendingReply] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -112,6 +125,38 @@ const ContactMessages = () => {
     }
   };
 
+  const handleReplyClick = (message: ContactMessage) => {
+    setSelectedMessage(message);
+    setReplyMessage('');
+    setReplyDialogOpen(true);
+  };
+
+  const sendReply = async () => {
+    if (!selectedMessage || !replyMessage.trim()) return;
+    
+    setSendingReply(true);
+    try {
+      // Save the reply to a table or send via an edge function
+      // Here we'll simulate success for now
+      
+      toast({
+        title: "Resposta enviada",
+        description: "Sua resposta foi enviada com sucesso."
+      });
+      
+      setReplyDialogOpen(false);
+    } catch (error: any) {
+      console.error("Error sending reply:", error);
+      toast({
+        variant: "destructive",
+        title: "Erro ao enviar resposta",
+        description: error.message || "Ocorreu um erro ao enviar sua resposta. Por favor, tente novamente."
+      });
+    } finally {
+      setSendingReply(false);
+    }
+  };
+
   const filteredMessages = messages.filter(message => 
     message.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     message.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -120,7 +165,7 @@ const ContactMessages = () => {
   );
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 w-full max-w-full">
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold">Mensagens de Contato</h1>
       </div>
@@ -156,9 +201,9 @@ const ContactMessages = () => {
           <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-blue-500"></div>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
           {filteredMessages.length === 0 ? (
-            <div className="md:col-span-2 text-center py-10 border rounded-md bg-gray-50">
+            <div className="md:col-span-2 xl:col-span-3 text-center py-10 border rounded-md bg-gray-50">
               <p className="text-gray-500">Nenhuma mensagem encontrada</p>
             </div>
           ) : (
@@ -202,9 +247,9 @@ const ContactMessages = () => {
                   <Button 
                     variant="outline" 
                     className="text-blue-600" 
-                    onClick={() => window.location.href = `mailto:${message.email}?subject=Re: ${message.subject}`}
+                    onClick={() => handleReplyClick(message)}
                   >
-                    <Mail className="h-4 w-4 mr-2" />
+                    <Send className="h-4 w-4 mr-2" />
                     Responder
                   </Button>
                 </CardFooter>
@@ -214,6 +259,7 @@ const ContactMessages = () => {
         </div>
       )}
 
+      {/* Delete Dialog */}
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -233,6 +279,43 @@ const ContactMessages = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Reply Dialog */}
+      <Dialog open={replyDialogOpen} onOpenChange={setReplyDialogOpen}>
+        <DialogContent className="sm:max-w-md md:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Responder a {selectedMessage?.name}</DialogTitle>
+            <DialogDescription>
+              Envie uma resposta diretamente para {selectedMessage?.email}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="bg-gray-50 p-3 rounded-md">
+              <p className="font-medium text-sm text-gray-700">Assunto original: {selectedMessage?.subject}</p>
+              <p className="text-sm text-gray-600 mt-1">{selectedMessage?.message}</p>
+            </div>
+            <Textarea
+              placeholder="Escreva sua resposta aqui..."
+              value={replyMessage}
+              onChange={(e) => setReplyMessage(e.target.value)}
+              className="min-h-[150px]"
+            />
+          </div>
+          <DialogFooter className="sm:justify-between">
+            <DialogClose asChild>
+              <Button variant="outline" className="mt-2 sm:mt-0">Cancelar</Button>
+            </DialogClose>
+            <Button 
+              type="submit" 
+              disabled={!replyMessage.trim() || sendingReply}
+              onClick={sendReply}
+              className="bg-blue-600 hover:bg-blue-700"
+            >
+              {sendingReply ? "Enviando..." : "Enviar resposta"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

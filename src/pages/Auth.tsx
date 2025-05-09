@@ -47,19 +47,19 @@ const Auth: React.FC = () => {
       <div className="flex flex-1 items-center justify-center px-4 py-12">
         <Card className="w-full max-w-md">
           <CardHeader className="space-y-1">
-            <CardTitle className="text-2xl font-bold text-center">Welcome</CardTitle>
+            <CardTitle className="text-2xl font-bold text-center">Bem-vindo</CardTitle>
             <CardDescription className="text-center">
               {activeTab === 'signin' 
-                ? 'Log in to access your account' 
-                : 'Create your account to get started'
+                ? 'Faça login para acessar sua conta' 
+                : 'Crie sua conta para começar'
               }
             </CardDescription>
           </CardHeader>
           
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
             <TabsList className="grid grid-cols-2 mb-4">
-              <TabsTrigger value="signin">Log in</TabsTrigger>
-              <TabsTrigger value="signup">Sign up</TabsTrigger>
+              <TabsTrigger value="signin">Entrar</TabsTrigger>
+              <TabsTrigger value="signup">Cadastrar</TabsTrigger>
             </TabsList>
             
             <TabsContent value="signin">
@@ -78,7 +78,7 @@ const Auth: React.FC = () => {
           <div className="px-8 pb-6 pt-2">
             <div className="flex items-center justify-center gap-2 text-sm text-gray-500">
               <MessageSquare className="h-4 w-4" />
-              <a href="https://wa.me/5513992077804" className="text-blue-600 hover:underline">Need help?</a>
+              <a href="https://wa.me/5513992077804" className="text-blue-600 hover:underline">Precisa de ajuda?</a>
             </div>
           </div>
         </Card>
