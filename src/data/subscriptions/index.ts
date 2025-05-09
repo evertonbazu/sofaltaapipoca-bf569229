@@ -98,9 +98,12 @@ export const getRegularSubscriptions = async (): Promise<Subscription[]> => {
 // Function to save subscription
 export const saveSubscription = async (subscription: Subscription): Promise<{success: boolean, error?: string}> => {
   try {
+    // Remove user_id from subscription to prevent RLS issues
+    const { user_id, ...subscriptionData } = subscription;
+    
     const { data, error } = await supabase
       .from('subscriptions')
-      .upsert(subscription, { onConflict: 'id' });
+      .upsert(subscriptionData, { onConflict: 'id' });
       
     if (error) {
       console.error('Error saving subscription:', error);
@@ -181,7 +184,7 @@ export const approvePendingSubscription = async (pendingId: string): Promise<{su
       payment_proof_image: pendingSubscription.payment_proof_image,
       added_date: pendingSubscription.added_date || new Date().toLocaleDateString('pt-BR'),
       code: pendingSubscription.code,
-      // Não incluímos mais user_id para evitar problemas com RLS
+      // Removemos user_id para evitar problemas com RLS
     };
     
     // Insert the new subscription
