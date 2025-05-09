@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { Subscription } from '@/types/subscriptionTypes';
 
@@ -51,9 +52,20 @@ export const getSubscriptionById = async (id: string): Promise<Subscription | nu
  */
 export const createSubscription = async (subscription: Partial<Subscription>) => {
   try {
+    // Ensure all required fields have values
+    const requiredFields = ['title', 'price', 'payment_method', 'status', 'access', 
+                           'header_color', 'price_color', 'whatsapp_number', 
+                           'telegram_username', 'code'];
+                           
+    for (const field of requiredFields) {
+      if (!subscription[field as keyof Subscription]) {
+        return { success: false, error: `Missing required field: ${field}` };
+      }
+    }
+    
     const { data, error } = await supabase
       .from('subscriptions')
-      .insert([subscription])
+      .insert([subscription as Subscription])
       .select();
 
     if (error) {
@@ -116,7 +128,7 @@ export const deleteSubscription = async (id: string) => {
 /**
  * Replace all subscriptions with a new set
  */
-export const replaceAllSubscriptions = async (newSubscriptions: Partial<Subscription>[]) => {
+export const replaceAllSubscriptions = async (newSubscriptions: Subscription[]) => {
   try {
     // First delete all existing subscriptions
     const { error: deleteError } = await supabase
@@ -143,6 +155,137 @@ export const replaceAllSubscriptions = async (newSubscriptions: Partial<Subscrip
     return {
       success: false,
       error: error.message || 'Failed to replace subscriptions'
+    };
+  }
+};
+
+/**
+ * Toggle featured status of a subscription
+ */
+export const toggleFeaturedStatus = async (id: string, featured: boolean) => {
+  try {
+    const { data, error } = await supabase
+      .from('subscriptions')
+      .update({ featured })
+      .eq('id', id)
+      .select();
+
+    if (error) {
+      console.error('Error updating featured status:', error);
+      return { success: false, error: error.message };
+    }
+
+    return { success: true, data };
+  } catch (error: any) {
+    console.error('Error updating featured status:', error);
+    return { success: false, error: error.message };
+  }
+};
+
+/**
+ * Log errors to database for tracking
+ */
+export const logError = async (
+  errorMessage: string,
+  errorContext?: string,
+  errorCode?: string,
+  stackTrace?: string
+) => {
+  try {
+    const { data, error } = await supabase.rpc('log_error', {
+      error_msg: errorMessage,
+      error_ctx: errorContext,
+      error_cd: errorCode,
+      stack_tr: stackTrace
+    });
+    
+    if (error) {
+      console.error('Failed to log error to database:', error);
+    }
+    
+    return data;
+  } catch (err) {
+    console.error('Exception when logging error:', err);
+    return null;
+  }
+};
+
+/**
+ * Approve a pending subscription and move it to the subscriptions table
+ */
+export const approvePendingSubscription = async (id: string) => {
+  try {
+    // First, get the pending subscription
+    const { data: pendingSubscription, error: fetchError } = await supabase
+      .from('pending_subscriptions')
+      .select('*')
+      .eq('id', id)
+      .single();
+    
+    if (fetchError) {
+      throw fetchError;
+    }
+    
+    if (!pendingSubscription) {
+      throw new Error('Pending subscription not found');
+    }
+    
+    // Create subscription object with required fields
+    const newSubscription: Subscription = {
+      id: undefined!, // Let the database generate a new ID
+      title: pendingSubscription.title,
+      price: pendingSubscription.price,
+      payment_method: pendingSubscription.payment_method,
+      status: pendingSubscription.status,
+      access: pendingSubscription.access,
+      header_color: pendingSubscription.header_color,
+      price_color: pendingSubscription.price_color,
+      whatsapp_number: pendingSubscription.whatsapp_number,
+      telegram_username: pendingSubscription.telegram_username,
+      code: pendingSubscription.code,
+      icon: pendingSubscription.icon,
+      pix_qr_code: pendingSubscription.pix_qr_code,
+      pix_key: pendingSubscription.pix_key,
+      payment_proof_image: pendingSubscription.payment_proof_image,
+      user_id: pendingSubscription.user_id,
+      featured: false,
+      added_date: pendingSubscription.added_date
+    };
+    
+    // Insert into subscriptions table
+    const { data: insertedSubscription, error: insertError } = await supabase
+      .from('subscriptions')
+      .insert([newSubscription])
+      .select()
+      .single();
+      
+    if (insertError) {
+      throw insertError;
+    }
+    
+    // Update pending subscription status
+    const { error: updateError } = await supabase
+      .from('pending_subscriptions')
+      .update({
+        status_approval: 'approved',
+        reviewed_at: new Date().toISOString()
+      })
+      .eq('id', id);
+      
+    if (updateError) {
+      throw updateError;
+    }
+    
+    return {
+      success: true,
+      data: insertedSubscription
+    };
+    
+  } catch (error: any) {
+    console.error('Error approving pending subscription:', error);
+    return {
+      success: false,
+      error: error.message || 'Failed to approve pending subscription'
     };
   }
 };

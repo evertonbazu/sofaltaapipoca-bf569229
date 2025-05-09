@@ -10,7 +10,7 @@ export interface ParsedSubscription {
   whatsapp_number: string;
   added_date?: string;
   icon?: string;
-  payment_method?: string;  // Add this to the interface
+  payment_method?: string;
 }
 
 /**

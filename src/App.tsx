@@ -21,7 +21,7 @@ import ProtectedRoute from './components/ProtectedRoute';
 // Styles
 import './App.css';
 import { supabase, initializeStorage } from './integrations/supabase/client';
-import { ThemeProvider } from './components/ui/theme-provider';
+import { ThemeProvider } from '@/components/ui/theme-provider';
 
 // App version - export it for other components to use
 export const APP_VERSION = "1.0.0";
@@ -65,6 +65,7 @@ function App() {
               <Route path="/admin/users" element={<ProtectedRoute admin={true}><Admin section="users" /></ProtectedRoute>} />
               <Route path="/admin/profile" element={<ProtectedRoute admin={true}><Admin section="profile" /></ProtectedRoute>} />
               <Route path="/admin/export" element={<ProtectedRoute admin={true}><Admin section="export" /></ProtectedRoute>} />
+              <Route path="/admin/export-txt" element={<ProtectedRoute admin={true}><Admin section="export-txt" /></ProtectedRoute>} />
               <Route path="/admin/import" element={<ProtectedRoute admin={true}><Admin section="import" /></ProtectedRoute>} />
               <Route path="/admin/import-bulk" element={<ProtectedRoute admin={true}><ImportBulkSubscriptions /></ProtectedRoute>} />
               <Route path="/admin/import-text" element={<ProtectedRoute admin={true}><ImportSubscriptionText /></ProtectedRoute>} />

@@ -45,19 +45,51 @@ const ImportSubscriptionText: React.FC = () => {
       const parsedSubscriptions = parseMultipleSubscriptionTexts(text);
       const formattedSubscriptions = parsedSubscriptions.map(convertToSubscriptionFormat);
 
+      // Ensure each subscription has all required fields
+      for (const sub of formattedSubscriptions) {
+        if (!sub.title || !sub.price || !sub.status || !sub.access || 
+            !sub.header_color || !sub.price_color || !sub.whatsapp_number || 
+            !sub.telegram_username || !sub.code) {
+          throw new Error('Missing required fields in some subscriptions');
+        }
+      }
+
       // First, remove all existing subscriptions
       await supabase.from('subscriptions').delete().neq('id', '0');
       
-      // Then insert the new ones
-      const { data, error } = await supabase
-        .from('subscriptions')
-        .insert(formattedSubscriptions);
+      // Then insert the new ones one by one to avoid type errors
+      let addedCount = 0;
+      let errorCount = 0;
       
-      if (error) throw error;
+      for (const subscription of formattedSubscriptions) {
+        const { error } = await supabase
+          .from('subscriptions')
+          .insert({
+            title: subscription.title,
+            price: subscription.price,
+            payment_method: subscription.payment_method || 'PIX',
+            status: subscription.status,
+            access: subscription.access,
+            header_color: subscription.header_color,
+            price_color: subscription.price_color,
+            whatsapp_number: subscription.whatsapp_number,
+            telegram_username: subscription.telegram_username,
+            icon: subscription.icon || 'tv',
+            code: subscription.code,
+            added_date: subscription.added_date
+          });
+        
+        if (error) {
+          console.error('Error inserting subscription:', error);
+          errorCount++;
+        } else {
+          addedCount++;
+        }
+      }
       
       toast({
         title: "Importação concluída",
-        description: `${parsedSubscriptions.length} anúncios foram importados com sucesso.`
+        description: `${addedCount} anúncios foram importados com sucesso. ${errorCount} falhas.`
       });
       setText('');
     } catch (error: any) {
