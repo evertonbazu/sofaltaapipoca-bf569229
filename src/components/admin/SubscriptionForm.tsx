@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -16,7 +15,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { SubscriptionData } from '@/types/subscriptionTypes';
 import { addSubscription, updateSubscription, logError, getAllSubscriptions } from '@/services/subscription-service';
 
-// Schema para validação do formulário
+// Schema for form validation
 const formSchema = z.object({
   title: z.string().min(1, { message: "O título é obrigatório" }),
   customTitle: z.string().optional(),
@@ -37,19 +36,25 @@ const formSchema = z.object({
 
 type FormValues = z.infer<typeof formSchema>;
 
-const SubscriptionForm: React.FC = () => {
+// Add the interface for the component props
+interface SubscriptionFormProps {
+  initialData: SubscriptionData | null;
+  isPendingEdit?: boolean;
+}
+
+const SubscriptionForm: React.FC<SubscriptionFormProps> = ({ initialData, isPendingEdit = false }) => {
   const { id } = useParams<{ id: string }>();
   const isEditing = !!id;
   const navigate = useNavigate();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState<boolean>(false);
-  const [isFetchingData, setIsFetchingData] = useState<boolean>(isEditing);
+  const [isFetchingData, setIsFetchingData] = useState<boolean>(false);
   const [isAdmin, setIsAdmin] = useState<boolean>(false);
   const [existingTitles, setExistingTitles] = useState<string[]>([]);
   const [selectedTitle, setSelectedTitle] = useState<string>("");
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<string>("");
   
-  // Verificar se o usuário é administrador
+  // Check if user is admin
   useEffect(() => {
     const checkIfAdmin = async () => {
       try {
@@ -65,7 +70,7 @@ const SubscriptionForm: React.FC = () => {
     checkIfAdmin();
   }, []);
 
-  // Buscar títulos existentes
+  // Fetch existing titles
   useEffect(() => {
     const fetchExistingTitles = async () => {
       try {
@@ -80,7 +85,7 @@ const SubscriptionForm: React.FC = () => {
     fetchExistingTitles();
   }, []);
   
-  // Configurar formulário
+  // Set up form with default values
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -102,71 +107,40 @@ const SubscriptionForm: React.FC = () => {
     },
   });
 
-  // Buscar dados para edição
+  // Initialize form with initialData if provided
   useEffect(() => {
-    if (isEditing) {
-      const fetchSubscription = async () => {
-        try {
-          const { data, error } = await supabase
-            .from('subscriptions')
-            .select('*')
-            .eq('id', id)
-            .single();
-          
-          if (error) throw error;
-          
-          if (data) {
-            // Verifica se o título está na lista de títulos existentes
-            const isTitleInList = existingTitles.includes(data.title.toUpperCase());
-            
-            // Verifica se o método de pagamento é um dos predefinidos
-            const paymentMethod = data.payment_method;
-            const isPreDefinedPayment = ["PIX (Mensal)", "PIX (Anual)"].includes(paymentMethod);
-            
-            form.reset({
-              title: isTitleInList ? data.title.toUpperCase() : "PERSONALIZADO",
-              customTitle: isTitleInList ? "" : data.title,
-              price: data.price,
-              paymentMethod: isPreDefinedPayment ? data.payment_method : "OUTRA FORMA",
-              customPaymentMethod: isPreDefinedPayment ? "" : data.payment_method,
-              status: data.status || "Assinado",
-              access: data.access,
-              headerColor: data.header_color || "bg-blue-600",
-              priceColor: data.price_color || "text-blue-600",
-              whatsappNumber: data.whatsapp_number,
-              telegramUsername: data.telegram_username,
-              icon: data.icon || 'none',
-              addedDate: data.added_date || new Date().toLocaleDateString('pt-BR'),
-              featured: data.featured || false,
-              code: data.code,
-            });
-            
-            setSelectedTitle(isTitleInList ? data.title.toUpperCase() : "PERSONALIZADO");
-            setSelectedPaymentMethod(isPreDefinedPayment ? data.payment_method : "OUTRA FORMA");
-          }
-        } catch (error) {
-          console.error('Erro ao buscar assinatura:', error);
-          toast({
-            title: "Erro ao carregar dados",
-            description: "Não foi possível carregar os dados da assinatura.",
-            variant: "destructive",
-          });
-          logError(
-            'Erro ao buscar assinatura para edição',
-            JSON.stringify({ id }),
-            'FETCH_ERROR',
-            JSON.stringify(error)
-          );
-        } finally {
-          setIsFetchingData(false);
-        }
-      };
-
-      fetchSubscription();
+    if (initialData) {
+      // Check if title is in the list of existing titles
+      const isTitleInList = existingTitles.includes(initialData.title.toUpperCase());
+      
+      // Check if payment method is one of the predefined ones
+      const paymentMethod = initialData.paymentMethod;
+      const isPreDefinedPayment = ["PIX (Mensal)", "PIX (Anual)"].includes(paymentMethod);
+      
+      form.reset({
+        title: isTitleInList ? initialData.title.toUpperCase() : "PERSONALIZADO",
+        customTitle: isTitleInList ? "" : initialData.title,
+        price: initialData.price,
+        paymentMethod: isPreDefinedPayment ? initialData.paymentMethod : "OUTRA FORMA",
+        customPaymentMethod: isPreDefinedPayment ? "" : initialData.paymentMethod,
+        status: initialData.status || "Assinado",
+        access: initialData.access,
+        headerColor: initialData.headerColor || "bg-blue-600",
+        priceColor: initialData.priceColor || "text-blue-600",
+        whatsappNumber: initialData.whatsappNumber,
+        telegramUsername: initialData.telegramUsername,
+        icon: initialData.icon || 'none',
+        addedDate: initialData.addedDate || new Date().toLocaleDateString('pt-BR'),
+        featured: initialData.featured || false,
+        code: initialData.code,
+      });
+      
+      setSelectedTitle(isTitleInList ? initialData.title.toUpperCase() : "PERSONALIZADO");
+      setSelectedPaymentMethod(isPreDefinedPayment ? initialData.paymentMethod : "OUTRA FORMA");
     }
-  }, [id, isEditing, form, toast, existingTitles]);
+  }, [initialData, form, existingTitles]);
 
-  // Manipular mudança de título
+  // Handle title change
   const handleTitleChange = (value: string) => {
     setSelectedTitle(value);
     form.setValue("title", value);
@@ -176,7 +150,7 @@ const SubscriptionForm: React.FC = () => {
     }
   };
   
-  // Manipular mudança de método de pagamento
+  // Handle payment method change
   const handlePaymentMethodChange = (value: string) => {
     setSelectedPaymentMethod(value);
     form.setValue("paymentMethod", value);
@@ -186,18 +160,18 @@ const SubscriptionForm: React.FC = () => {
     }
   };
 
-  // Manipulador para envio do formulário
+  // Form submission handler
   const onSubmit = async (data: FormValues) => {
     setIsLoading(true);
     
     try {
-      // Processar título personalizado
+      // Process custom title
       const finalTitle = data.title === "PERSONALIZADO" ? data.customTitle : data.title;
       
-      // Processar método de pagamento personalizado
+      // Process custom payment method
       const finalPaymentMethod = data.paymentMethod === "OUTRA FORMA" ? data.customPaymentMethod : data.paymentMethod;
       
-      // Garantir que todos os campos obrigatórios estejam preenchidos
+      // Ensure all required fields are filled
       const formattedData: SubscriptionData = {
         title: finalTitle,
         price: data.price,
@@ -237,7 +211,7 @@ const SubscriptionForm: React.FC = () => {
         variant: "destructive",
       });
       
-      // Registrar erro
+      // Log error
       logError(
         'Erro ao salvar assinatura',
         JSON.stringify(data),
