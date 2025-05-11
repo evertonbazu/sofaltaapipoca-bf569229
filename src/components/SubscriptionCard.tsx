@@ -112,12 +112,6 @@ const SubscriptionCard = ({
           </div>
         )}
         
-        {isMemberSubmission && (
-          <div className="py-2 border-t border-gray-200 mt-2 text-center">
-            <p className="text-emerald-600 text-sm font-semibold">✓ Enviado por Membro</p>
-          </div>
-        )}
-        
         <div className="pt-3 space-y-2">
           {telegramUsername && (
             <a 

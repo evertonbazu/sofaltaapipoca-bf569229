@@ -20,7 +20,6 @@ const FeaturedSubscriptions: React.FC<FeaturedSubscriptionsProps> = ({
 
   // Atualizar lista quando subscriptionList mudar
   useEffect(() => {
-    console.log("FeaturedSubscriptions - received subscription list:", subscriptionList);
     setVisibleSubscriptions(subscriptionList);
   }, [subscriptionList]);
 
@@ -32,8 +31,7 @@ const FeaturedSubscriptions: React.FC<FeaturedSubscriptionsProps> = ({
     
     const filtered = subscriptionList.filter(sub => {
       // Filtrar principalmente pelo título (case insensitive)
-      const content = `${sub.title} ${sub.price} ${sub.paymentMethod} ${sub.status} ${sub.access}`.toLowerCase();
-      return content.includes(searchTerm.toLowerCase());
+      return sub.title.toLowerCase().includes(searchTerm.toLowerCase());
     });
     
     setVisibleSubscriptions(filtered);
@@ -55,28 +53,25 @@ const FeaturedSubscriptions: React.FC<FeaturedSubscriptionsProps> = ({
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-      {visibleSubscriptions.map((subscription) => {
-        console.log("Rendering featured subscription:", subscription.title, "isMemberSubmission:", subscription.isMemberSubmission);
-        return (
-          <SubscriptionItem
-            key={`${subscription.id}-${subscription.title}`}
-            id={subscription.id}
-            title={subscription.title}
-            price={subscription.price}
-            paymentMethod={subscription.paymentMethod}
-            status={subscription.status}
-            access={subscription.access}
-            headerColor={subscription.headerColor}
-            priceColor={subscription.priceColor}
-            whatsappNumber={subscription.whatsappNumber}
-            telegramUsername={subscription.telegramUsername}
-            icon={subscription.icon}
-            addedDate={subscription.addedDate}
-            subscriptionRefs={subscriptionRefs}
-            isMemberSubmission={subscription.isMemberSubmission}
-          />
-        );
-      })}
+      {visibleSubscriptions.map((subscription) => (
+        <SubscriptionItem
+          key={`${subscription.id}-${subscription.title}`}
+          id={subscription.id}
+          title={subscription.title}
+          price={subscription.price}
+          paymentMethod={subscription.paymentMethod}
+          status={subscription.status}
+          access={subscription.access}
+          headerColor={subscription.headerColor}
+          priceColor={subscription.priceColor}
+          whatsappNumber={subscription.whatsappNumber}
+          telegramUsername={subscription.telegramUsername}
+          icon={subscription.icon}
+          addedDate={subscription.addedDate}
+          subscriptionRefs={subscriptionRefs}
+          isMemberSubmission={subscription.isMemberSubmission}
+        />
+      ))}
     </div>
   );
 };
