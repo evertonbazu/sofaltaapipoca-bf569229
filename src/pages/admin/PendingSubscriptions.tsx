@@ -139,6 +139,7 @@ const PendingSubscriptions = () => {
         }));
         
         setApprovedSubscriptions(mappedApprovedData);
+
       } catch (error) {
         console.error('Erro ao buscar assinaturas pendentes:', error);
         toast({
@@ -170,28 +171,23 @@ const PendingSubscriptions = () => {
       
       if (updateError) throw updateError;
 
-      // Add to approved subscriptions table by transforming the subscription data
-      // to match the database column names
-      const { error: insertError } = await supabase
-        .from('subscriptions')
-        .insert({
-          title: subscription.title,
-          price: subscription.price,
-          payment_method: subscription.paymentMethod,
-          status: subscription.status,
-          access: subscription.access,
-          header_color: subscription.headerColor || 'bg-blue-600',
-          price_color: subscription.priceColor || 'text-blue-600',
-          whatsapp_number: subscription.whatsappNumber,
-          telegram_username: subscription.telegramUsername,
-          icon: subscription.icon || '',
-          added_date: subscription.addedDate || new Date().toLocaleDateString('pt-BR'),
-          code: subscription.code,
-          pix_key: subscription.pixKey,
-          user_id: subscription.userId
-        });
-      
-      if (insertError) throw insertError;
+      // Add to approved subscriptions table
+      await addSubscription({
+        title: subscription.title,
+        price: subscription.price,
+        paymentMethod: subscription.paymentMethod,
+        status: subscription.status,
+        access: subscription.access,
+        headerColor: subscription.headerColor || 'bg-blue-600',
+        priceColor: subscription.priceColor || 'text-blue-600',
+        whatsappNumber: subscription.whatsappNumber,
+        telegramUsername: subscription.telegramUsername,
+        icon: subscription.icon || '',
+        addedDate: subscription.addedDate || new Date().toLocaleDateString('pt-BR'),
+        code: subscription.code,
+        pixKey: subscription.pixKey,
+        userId: subscription.userId
+      });
 
       // Update lists
       setPendingSubscriptions(prev => prev.filter(item => item.id !== subscription.id));
@@ -295,7 +291,7 @@ const PendingSubscriptions = () => {
     try {
       setActionInProgress(subscription.id || '');
 
-      // Delete the pending subscription directly
+      // Excluir a assinatura pendente
       const { error: deleteError } = await supabase
         .from('pending_subscriptions')
         .delete()
@@ -303,7 +299,7 @@ const PendingSubscriptions = () => {
       
       if (deleteError) throw deleteError;
 
-      // Update lists
+      // Atualizar listas
       setPendingSubscriptions(prev => prev.filter(item => item.id !== subscription.id));
       setRejectedSubscriptions(prev => prev.filter(item => item.id !== subscription.id));
       setApprovedSubscriptions(prev => prev.filter(item => item.id !== subscription.id));

@@ -1,268 +1,187 @@
 
 import { supabase } from '@/integrations/supabase/client';
-import { SubscriptionData } from '@/types/subscriptionTypes';
+import { SubscriptionData, PendingSubscriptionData } from '@/types/subscriptionTypes';
+import { toast } from '@/components/ui/use-toast';
 
-// Get all subscriptions
-export const getAllSubscriptions = async () => {
+// Função para mapear dados do banco de dados para o formato da aplicação
+function mapToSubscriptionData(data: any): SubscriptionData {
+  return {
+    id: data.id,
+    title: data.title,
+    price: data.price,
+    paymentMethod: data.payment_method,
+    status: data.status,
+    access: data.access,
+    headerColor: data.header_color,
+    priceColor: data.price_color,
+    whatsappNumber: data.whatsapp_number,
+    telegramUsername: data.telegram_username,
+    icon: data.icon,
+    addedDate: data.added_date,
+    featured: data.featured,
+    code: data.code
+  };
+}
+
+// Função para mapear dados da aplicação para o formato do banco de dados
+function mapToDbFormat(subscription: SubscriptionData | PendingSubscriptionData) {
+  return {
+    title: subscription.title,
+    price: subscription.price,
+    payment_method: subscription.paymentMethod,
+    status: subscription.status,
+    access: subscription.access,
+    header_color: subscription.headerColor,
+    price_color: subscription.priceColor,
+    whatsapp_number: subscription.whatsappNumber,
+    telegram_username: subscription.telegramUsername,
+    icon: subscription.icon,
+    added_date: subscription.addedDate,
+    featured: subscription.featured,
+    code: subscription.code || undefined,
+    payment_proof_image: 'paymentProofImage' in subscription ? 
+      (subscription as PendingSubscriptionData).paymentProofImage : undefined,
+    pix_qr_code: 'pixQrCode' in subscription ? 
+      (subscription as PendingSubscriptionData).pixQrCode : undefined,
+    pix_key: 'pixKey' in subscription ? 
+      (subscription as PendingSubscriptionData).pixKey : undefined,
+    user_id: 'userId' in subscription ? 
+      (subscription as PendingSubscriptionData).userId : undefined
+  };
+}
+
+// Obter todas as assinaturas
+export async function getAllSubscriptions(): Promise<SubscriptionData[]> {
   try {
     const { data, error } = await supabase
       .from('subscriptions')
       .select('*')
-      .order('title');
-      
-    if (error) throw error;
+      .order('featured', { ascending: false });
     
-    return data || [];
-  } catch (error) {
-    console.error('Error fetching subscriptions:', error);
-    return [];
+    if (error) throw error;
+    return data.map(mapToSubscriptionData);
+  } catch (error: any) {
+    console.error('Erro ao obter assinaturas:', error);
+    throw error;
   }
-};
+}
 
-// Get featured subscriptions
-export const getFeaturedSubscriptions = async () => {
+// Obter assinaturas em destaque
+export async function getFeaturedSubscriptions(): Promise<SubscriptionData[]> {
   try {
     const { data, error } = await supabase
       .from('subscriptions')
       .select('*')
-      .eq('featured', true)
-      .order('title');
-      
-    if (error) throw error;
+      .eq('featured', true);
     
-    return data || [];
-  } catch (error) {
-    console.error('Error fetching featured subscriptions:', error);
-    return [];
+    if (error) throw error;
+    return data.map(mapToSubscriptionData);
+  } catch (error: any) {
+    console.error('Erro ao obter assinaturas em destaque:', error);
+    throw error;
   }
-};
+}
 
-// Toggle featured status of a subscription
-export const toggleFeaturedStatus = async (id: string, isFeatured: boolean) => {
+// Obter assinaturas regulares (não em destaque)
+export async function getRegularSubscriptions(): Promise<SubscriptionData[]> {
   try {
     const { data, error } = await supabase
       .from('subscriptions')
-      .update({ featured: isFeatured })
-      .eq('id', id)
-      .select();
-      
-    if (error) throw error;
-    
-    return data;
-  } catch (error) {
-    console.error('Error toggling featured status:', error);
-    throw error;
-  }
-};
-
-// Get pending subscriptions
-export const getPendingSubscriptions = async () => {
-  try {
-    const { data, error } = await supabase
-      .from('pending_subscriptions')
       .select('*')
-      .order('submitted_at', { ascending: false });
-      
-    if (error) throw error;
+      .eq('featured', false);
     
-    return data || [];
-  } catch (error) {
-    console.error('Error fetching pending subscriptions:', error);
+    if (error) throw error;
+    return data.map(mapToSubscriptionData);
+  } catch (error: any) {
+    console.error('Erro ao obter assinaturas regulares:', error);
     throw error;
   }
-};
+}
 
-// Add new subscription
-export const addSubscription = async (subscription: SubscriptionData) => {
+// Adicionar uma nova assinatura
+export async function addSubscription(subscription: SubscriptionData): Promise<SubscriptionData> {
   try {
-    // Map the frontend property names to the database column names
-    const dbSubscription = {
-      title: subscription.title,
-      price: subscription.price,
-      payment_method: subscription.paymentMethod,
-      status: subscription.status,
-      access: subscription.access,
-      header_color: subscription.headerColor,
-      price_color: subscription.priceColor,
-      whatsapp_number: subscription.whatsappNumber,
-      telegram_username: subscription.telegramUsername,
-      icon: subscription.icon,
-      added_date: subscription.addedDate,
-      featured: subscription.featured,
-      code: await generateSubscriptionCode(),
-      pix_key: subscription.pixKey
-    };
-    
-    const { data, error } = await supabase
-      .from('subscriptions')
-      .insert([dbSubscription])
-      .select();
-      
-    if (error) throw error;
-    
-    return data;
-  } catch (error) {
-    console.error('Error adding subscription:', error);
-    throw error;
-  }
-};
-
-// Update subscription
-export const updateSubscription = async (
-  id: string, 
-  subscription: SubscriptionData, 
-  tableName: string = 'subscriptions'
-) => {
-  try {
-    // Map the frontend property names to the database column names
-    const dbSubscription = {
-      title: subscription.title,
-      price: subscription.price,
-      payment_method: subscription.paymentMethod,
-      status: subscription.status,
-      access: subscription.access,
-      header_color: subscription.headerColor,
-      price_color: subscription.priceColor,
-      whatsapp_number: subscription.whatsappNumber,
-      telegram_username: subscription.telegramUsername,
-      icon: subscription.icon,
-      added_date: subscription.addedDate,
-      featured: subscription.featured,
-      pix_key: subscription.pixKey
-    };
-    
-    const { data, error } = await supabase
-      .from(tableName)
-      .update(dbSubscription)
-      .eq('id', id)
-      .select();
-      
-    if (error) throw error;
-    
-    return data;
-  } catch (error) {
-    console.error(`Error updating subscription in ${tableName}:`, error);
-    throw error;
-  }
-};
-
-// Delete subscription
-export const deleteSubscription = async (id: string, isPending: boolean = false) => {
-  try {
-    const table = isPending ? 'pending_subscriptions' : 'subscriptions';
-    const { error } = await supabase
-      .from(table)
-      .delete()
-      .eq('id', id);
-      
-    if (error) throw error;
-    
-    return true;
-  } catch (error) {
-    console.error(`Error deleting subscription from ${isPending ? 'pending_subscriptions' : 'subscriptions'}:`, error);
-    throw error;
-  }
-};
-
-// Approve pending subscription
-export const approvePendingSubscription = async (id: string) => {
-  try {
-    // First, get the pending subscription
-    const { data: pendingData, error: fetchError } = await supabase
-      .from('pending_subscriptions')
-      .select('*')
-      .eq('id', id)
-      .single();
-    
-    if (fetchError) throw fetchError;
-    
-    if (!pendingData) {
-      throw new Error('Pending subscription not found');
+    // Gerar código se não fornecido
+    let code = subscription.code;
+    if (!code) {
+      const { data: genCode, error: codeError } = await supabase.rpc('generate_subscription_code');
+      if (codeError) throw codeError;
+      code = genCode;
     }
     
-    // Map the pending subscription to a regular subscription
-    const subscriptionData = {
-      title: pendingData.title,
-      price: pendingData.price,
-      payment_method: pendingData.payment_method,
-      status: pendingData.status,
-      access: pendingData.access,
-      header_color: pendingData.header_color,
-      price_color: pendingData.price_color,
-      whatsapp_number: pendingData.whatsapp_number,
-      telegram_username: pendingData.telegram_username,
-      icon: pendingData.icon,
-      pix_qr_code: pendingData.pix_qr_code,
-      pix_key: pendingData.pix_key,
-      payment_proof_image: pendingData.payment_proof_image,
-      added_date: pendingData.added_date || new Date().toLocaleDateString('pt-BR'),
-      code: pendingData.code,
-      user_id: pendingData.user_id
-    };
-    
-    // Insert into subscriptions
-    const { error: insertError } = await supabase
+    const newSubscription = { ...subscription, code };
+    const { data, error } = await supabase
       .from('subscriptions')
-      .insert([subscriptionData]);
+      .insert(mapToDbFormat(newSubscription))
+      .select()
+      .single();
     
-    if (insertError) throw insertError;
-    
-    // Update status of pending subscription
-    const { error: updateError } = await supabase
-      .from('pending_subscriptions')
-      .update({ 
-        status_approval: 'approved',
-        reviewed_at: new Date().toISOString()
-      })
-      .eq('id', id);
-    
-    if (updateError) throw updateError;
-    
-    return true;
-  } catch (error) {
-    console.error('Error approving subscription:', error);
+    if (error) throw error;
+    return mapToSubscriptionData(data);
+  } catch (error: any) {
+    console.error('Erro ao adicionar assinatura:', error);
     throw error;
   }
-};
+}
 
-// Reject pending subscription
-export const rejectPendingSubscription = async (id: string, reason: string) => {
+// Atualizar uma assinatura existente
+export async function updateSubscription(id: string, subscription: SubscriptionData): Promise<SubscriptionData> {
+  try {
+    const { data, error } = await supabase
+      .from('subscriptions')
+      .update(mapToDbFormat(subscription))
+      .eq('id', id)
+      .select()
+      .single();
+    
+    if (error) throw error;
+    return mapToSubscriptionData(data);
+  } catch (error: any) {
+    console.error('Erro ao atualizar assinatura:', error);
+    throw error;
+  }
+}
+
+// Excluir uma assinatura
+export async function deleteSubscription(id: string): Promise<void> {
   try {
     const { error } = await supabase
-      .from('pending_subscriptions')
-      .update({ 
-        status_approval: 'rejected',
-        rejection_reason: reason,
-        reviewed_at: new Date().toISOString()
-      })
+      .from('subscriptions')
+      .delete()
       .eq('id', id);
     
     if (error) throw error;
-    
-    return true;
-  } catch (error) {
-    console.error('Error rejecting subscription:', error);
+  } catch (error: any) {
+    console.error('Erro ao excluir assinatura:', error);
     throw error;
   }
-};
+}
 
-// Generate subscription code
-export const generateSubscriptionCode = async () => {
+// Alternar o status de destaque de uma assinatura
+export async function toggleFeaturedStatus(id: string, featured: boolean): Promise<SubscriptionData> {
   try {
-    const { data, error } = await supabase.rpc('generate_subscription_code');
+    const { data, error } = await supabase
+      .from('subscriptions')
+      .update({ featured })
+      .eq('id', id)
+      .select()
+      .single();
     
     if (error) throw error;
-    
-    return data;
-  } catch (error) {
-    console.error('Error generating subscription code:', error);
-    // Fallback to a random code if the RPC fails
-    return `SF${Math.floor(1000 + Math.random() * 9000)}`;
+    return mapToSubscriptionData(data);
+  } catch (error: any) {
+    console.error('Erro ao alternar status de destaque:', error);
+    throw error;
   }
-};
+}
 
-// Log error
-export const logError = async (errorMessage: string, errorContext?: string, errorCode?: string, stackTrace?: string) => {
+// Função para registrar erros
+export async function logError(
+  errorMessage: string, 
+  errorContext: string = '', 
+  errorCode: string = '', 
+  stackTrace: string = ''
+): Promise<void> {
   try {
     await supabase.rpc('log_error', {
       error_msg: errorMessage,
@@ -271,6 +190,6 @@ export const logError = async (errorMessage: string, errorContext?: string, erro
       stack_tr: stackTrace
     });
   } catch (error) {
-    console.error('Error logging to database:', error);
+    console.error('Erro ao registrar erro:', error);
   }
-};
+}
