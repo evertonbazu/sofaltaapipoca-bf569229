@@ -120,8 +120,21 @@ const SubscriptionForm: React.FC = () => {
     setIsLoading(true);
     
     try {
+      // Garantir que todos os campos obrigatórios estejam preenchidos
       const formattedData: SubscriptionData = {
-        ...data,
+        title: data.title,
+        price: data.price,
+        paymentMethod: data.paymentMethod,
+        status: data.status,
+        access: data.access,
+        headerColor: data.headerColor,
+        priceColor: data.priceColor,
+        whatsappNumber: data.whatsappNumber,
+        telegramUsername: data.telegramUsername,
+        icon: data.icon,
+        addedDate: data.addedDate,
+        featured: data.featured,
+        code: data.code
       };
       
       if (isEditing) {
