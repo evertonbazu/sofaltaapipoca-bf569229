@@ -22,6 +22,7 @@ const formSchema = z.object({
   customPaymentMethod: z.string().optional(),
   status: z.string().min(1, { message: "O status é obrigatório" }),
   access: z.string().min(1, { message: "O acesso é obrigatório" }),
+  customAccess: z.string().optional(),
   whatsappNumber: z.string().min(1, { message: "O número do WhatsApp é obrigatório" }),
   telegramUsername: z.string().min(1, { message: "O usuário do Telegram é obrigatório" }),
   pixKey: z.string().optional(),
@@ -34,6 +35,7 @@ const SubmitSubscriptionForm = () => {
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<string>("");
+  const [selectedAccess, setSelectedAccess] = useState<string>("");
   const [userId, setUserId] = useState<string | null>(null);
   
   // Verificar se o usuário está logado
@@ -53,11 +55,12 @@ const SubmitSubscriptionForm = () => {
     resolver: zodResolver(formSchema),
     defaultValues: {
       title: "",
-      price: "",
+      price: "R$ ",
       paymentMethod: "PIX (Mensal)",
       customPaymentMethod: "",
       status: "Assinado",
-      access: "",
+      access: "LOGIN E SENHA",
+      customAccess: "",
       whatsappNumber: "",
       telegramUsername: "",
       pixKey: "",
@@ -74,6 +77,16 @@ const SubmitSubscriptionForm = () => {
     }
   };
   
+  // Manipular mudança de tipo de acesso
+  const handleAccessChange = (value: string) => {
+    setSelectedAccess(value);
+    form.setValue("access", value);
+    
+    if (value !== "OUTRO") {
+      form.setValue("customAccess", "");
+    }
+  };
+  
   // Manipulador para envio do formulário
   const onSubmit = async (data: FormValues) => {
     setIsLoading(true);
@@ -81,6 +94,9 @@ const SubmitSubscriptionForm = () => {
     try {
       // Processar método de pagamento personalizado
       const finalPaymentMethod = data.paymentMethod === "OUTRA FORMA" ? data.customPaymentMethod : data.paymentMethod;
+      
+      // Processar tipo de acesso personalizado
+      const finalAccess = data.access === "OUTRO" ? data.customAccess : data.access;
       
       // Gerar código único
       const { data: code, error: codeError } = await supabase.rpc('generate_subscription_code');
@@ -92,7 +108,7 @@ const SubmitSubscriptionForm = () => {
         price: data.price,
         paymentMethod: finalPaymentMethod,
         status: data.status,
-        access: data.access.toUpperCase(),
+        access: finalAccess.toUpperCase(),
         headerColor: 'bg-blue-600',
         priceColor: 'text-blue-600',
         whatsappNumber: data.whatsappNumber,
@@ -285,13 +301,43 @@ const SubmitSubscriptionForm = () => {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Envio</FormLabel>
-                    <FormControl>
-                      <Input placeholder="LOGIN E SENHA" {...field} />
-                    </FormControl>
+                    <Select
+                      onValueChange={handleAccessChange}
+                      defaultValue={field.value}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecione o tipo de envio" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="LOGIN E SENHA">LOGIN E SENHA</SelectItem>
+                        <SelectItem value="ATIVAÇÃO">ATIVAÇÃO</SelectItem>
+                        <SelectItem value="CONVITE">CONVITE</SelectItem>
+                        <SelectItem value="OUTRO">OUTRO</SelectItem>
+                      </SelectContent>
+                    </Select>
                     <FormMessage />
                   </FormItem>
                 )}
               />
+              
+              {/* Acesso personalizado */}
+              {selectedAccess === "OUTRO" && (
+                <FormField
+                  control={form.control}
+                  name="customAccess"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Tipo de Envio Personalizado</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Especifique o tipo de envio" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              )}
               
               {/* WhatsApp */}
               <FormField

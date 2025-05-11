@@ -40,7 +40,33 @@ const PendingSubscriptions = () => {
           .order('submitted_at', { ascending: false });
         
         if (pendingError) throw pendingError;
-        setPendingSubscriptions(pendingData as PendingSubscriptionData[]);
+        
+        // Map database response to PendingSubscriptionData format
+        const mappedPendingData: PendingSubscriptionData[] = pendingData.map(item => ({
+          id: item.id,
+          title: item.title,
+          price: item.price,
+          paymentMethod: item.payment_method,
+          status: item.status,
+          access: item.access,
+          headerColor: item.header_color,
+          priceColor: item.price_color,
+          whatsappNumber: item.whatsapp_number,
+          telegramUsername: item.telegram_username,
+          icon: item.icon,
+          addedDate: item.added_date,
+          code: item.code,
+          userId: item.user_id,
+          pixKey: item.pix_key,
+          paymentProofImage: item.payment_proof_image,
+          pixQrCode: item.pix_qr_code,
+          statusApproval: item.status_approval,
+          rejectionReason: item.rejection_reason,
+          submitted_at: item.submitted_at,
+          reviewed_at: item.reviewed_at
+        }));
+        
+        setPendingSubscriptions(mappedPendingData);
 
         // Fetch rejected subscriptions
         const { data: rejectedData, error: rejectedError } = await supabase
@@ -50,7 +76,33 @@ const PendingSubscriptions = () => {
           .order('reviewed_at', { ascending: false });
         
         if (rejectedError) throw rejectedError;
-        setRejectedSubscriptions(rejectedData as PendingSubscriptionData[]);
+        
+        // Map database response to PendingSubscriptionData format
+        const mappedRejectedData: PendingSubscriptionData[] = rejectedData.map(item => ({
+          id: item.id,
+          title: item.title,
+          price: item.price,
+          paymentMethod: item.payment_method,
+          status: item.status,
+          access: item.access,
+          headerColor: item.header_color,
+          priceColor: item.price_color,
+          whatsappNumber: item.whatsapp_number,
+          telegramUsername: item.telegram_username,
+          icon: item.icon,
+          addedDate: item.added_date,
+          code: item.code,
+          userId: item.user_id,
+          pixKey: item.pix_key,
+          paymentProofImage: item.payment_proof_image,
+          pixQrCode: item.pix_qr_code,
+          statusApproval: item.status_approval,
+          rejectionReason: item.rejection_reason,
+          submitted_at: item.submitted_at,
+          reviewed_at: item.reviewed_at
+        }));
+        
+        setRejectedSubscriptions(mappedRejectedData);
 
         // Fetch approved subscriptions
         const { data: approvedData, error: approvedError } = await supabase
@@ -60,7 +112,33 @@ const PendingSubscriptions = () => {
           .order('reviewed_at', { ascending: false });
         
         if (approvedError) throw approvedError;
-        setApprovedSubscriptions(approvedData as PendingSubscriptionData[]);
+        
+        // Map database response to PendingSubscriptionData format
+        const mappedApprovedData: PendingSubscriptionData[] = approvedData.map(item => ({
+          id: item.id,
+          title: item.title,
+          price: item.price,
+          paymentMethod: item.payment_method,
+          status: item.status,
+          access: item.access,
+          headerColor: item.header_color,
+          priceColor: item.price_color,
+          whatsappNumber: item.whatsapp_number,
+          telegramUsername: item.telegram_username,
+          icon: item.icon,
+          addedDate: item.added_date,
+          code: item.code,
+          userId: item.user_id,
+          pixKey: item.pix_key,
+          paymentProofImage: item.payment_proof_image,
+          pixQrCode: item.pix_qr_code,
+          statusApproval: item.status_approval,
+          rejectionReason: item.rejection_reason,
+          submitted_at: item.submitted_at,
+          reviewed_at: item.reviewed_at
+        }));
+        
+        setApprovedSubscriptions(mappedApprovedData);
 
       } catch (error) {
         console.error('Erro ao buscar assinaturas pendentes:', error);

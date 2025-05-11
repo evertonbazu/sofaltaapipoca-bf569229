@@ -55,7 +55,7 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children, title }) => {
     },
     { 
       name: 'Solicitações Pendentes', 
-      path: '/admin/pending', 
+      path: '/admin/subscriptions/pending', 
       icon: <Clock className="h-5 w-5 mr-2" /> 
     },
     { 
