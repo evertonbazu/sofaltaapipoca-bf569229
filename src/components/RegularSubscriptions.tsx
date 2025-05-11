@@ -1,7 +1,6 @@
 
 import React, { useEffect, useState } from "react";
 import SubscriptionItem from "./SubscriptionItem";
-import { useIsMobile } from "@/hooks/use-mobile";
 import { SubscriptionData } from "@/types/subscriptionTypes";
 
 interface RegularSubscriptionsProps {
@@ -16,7 +15,6 @@ const RegularSubscriptions: React.FC<RegularSubscriptionsProps> = ({
   subscriptionList = []
 }) => {
   const [visibleSubscriptions, setVisibleSubscriptions] = useState<SubscriptionData[]>(subscriptionList);
-  const isMobile = useIsMobile();
 
   // Atualizar lista quando subscriptionList mudar
   useEffect(() => {
@@ -52,7 +50,7 @@ const RegularSubscriptions: React.FC<RegularSubscriptionsProps> = ({
   }
 
   return (
-    <div className={`grid gap-6 ${isMobile ? 'grid-cols-1' : 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3'}`}>
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
       {visibleSubscriptions.map((subscription) => (
         <SubscriptionItem
           key={`${subscription.id}-${subscription.title}`}

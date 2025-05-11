@@ -7,12 +7,15 @@ import {
   Star, 
   StarOff, 
   Search, 
-  Info 
+  Info,
+  CheckSquare,
+  Square
 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useToast } from "@/components/ui/use-toast";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -33,6 +36,8 @@ const SubscriptionList = () => {
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [deleteDialogOpen, setDeleteDialogOpen] = useState<boolean>(false);
   const [subscriptionToDelete, setSubscriptionToDelete] = useState<string | null>(null);
+  const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
+  const [isMultiDeleteDialogOpen, setIsMultiDeleteDialogOpen] = useState<boolean>(false);
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -137,18 +142,95 @@ const SubscriptionList = () => {
     }
   };
 
+  // Gerenciar seleção de itens
+  const toggleItemSelection = (id: string) => {
+    const newSelectedItems = new Set(selectedItems);
+    if (newSelectedItems.has(id)) {
+      newSelectedItems.delete(id);
+    } else {
+      newSelectedItems.add(id);
+    }
+    setSelectedItems(newSelectedItems);
+  };
+
+  // Selecionar todos os itens
+  const selectAll = () => {
+    if (selectedItems.size === filteredSubscriptions.length) {
+      // Se todos já estão selecionados, desmarcar todos
+      setSelectedItems(new Set());
+    } else {
+      // Senão, selecionar todos
+      const allIds = filteredSubscriptions.map(sub => sub.id!);
+      setSelectedItems(new Set(allIds));
+    }
+  };
+
+  // Excluir múltiplos itens
+  const handleDeleteMultipleConfirm = async () => {
+    try {
+      let successCount = 0;
+      let errorCount = 0;
+
+      // Converter o Set para um Array para poder usar o Promise.all
+      const deletePromises = Array.from(selectedItems).map(async (id) => {
+        try {
+          await deleteSubscription(id);
+          successCount++;
+        } catch (error) {
+          errorCount++;
+          console.error(`Erro ao excluir assinatura ${id}:`, error);
+        }
+      });
+
+      await Promise.all(deletePromises);
+      
+      toast({
+        title: `${successCount} assinaturas excluídas`,
+        description: errorCount > 0 
+          ? `${errorCount} assinaturas não foram excluídas devido a erros.` 
+          : "Todas as assinaturas selecionadas foram excluídas com sucesso.",
+        variant: errorCount > 0 ? "destructive" : "default",
+      });
+      
+      // Limpar seleção e atualizar lista
+      setSelectedItems(new Set());
+      fetchSubscriptions();
+    } catch (error) {
+      toast({
+        title: "Erro ao excluir assinaturas",
+        description: "Ocorreu um erro ao excluir as assinaturas selecionadas.",
+        variant: "destructive",
+      });
+      console.error('Erro ao excluir múltiplas assinaturas:', error);
+    } finally {
+      setIsMultiDeleteDialogOpen(false);
+    }
+  };
+
   return (
     <div className="space-y-4">
-      {/* Barra de pesquisa */}
-      <div className="flex items-center border rounded-md bg-white p-2">
-        <Search className="h-5 w-5 text-gray-400 mr-2" />
-        <Input
-          type="text"
-          placeholder="Buscar assinaturas..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className="border-0 focus-visible:ring-0 focus-visible:ring-transparent"
-        />
+      {/* Barra de pesquisa e ações em lote */}
+      <div className="flex flex-col md:flex-row gap-4">
+        <div className="flex items-center border rounded-md bg-white p-2 flex-1">
+          <Search className="h-5 w-5 text-gray-400 mr-2" />
+          <Input
+            type="text"
+            placeholder="Buscar assinaturas..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="border-0 focus-visible:ring-0 focus-visible:ring-transparent"
+          />
+        </div>
+        {selectedItems.size > 0 && (
+          <Button 
+            variant="destructive"
+            onClick={() => setIsMultiDeleteDialogOpen(true)}
+            className="whitespace-nowrap"
+          >
+            <Trash2 className="h-4 w-4 mr-2" />
+            Excluir {selectedItems.size} selecionados
+          </Button>
+        )}
       </div>
 
       {isLoading ? (
@@ -158,6 +240,14 @@ const SubscriptionList = () => {
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead className="w-12">
+                  <div className="flex items-center justify-center">
+                    <Checkbox
+                      checked={selectedItems.size === filteredSubscriptions.length && filteredSubscriptions.length > 0}
+                      onCheckedChange={selectAll}
+                    />
+                  </div>
+                </TableHead>
                 <TableHead>Título</TableHead>
                 <TableHead>Preço</TableHead>
                 <TableHead className="hidden md:table-cell">Status</TableHead>
@@ -171,6 +261,14 @@ const SubscriptionList = () => {
             <TableBody>
               {filteredSubscriptions.map((subscription) => (
                 <TableRow key={subscription.id}>
+                  <TableCell>
+                    <div className="flex items-center justify-center">
+                      <Checkbox
+                        checked={selectedItems.has(subscription.id!)}
+                        onCheckedChange={() => toggleItemSelection(subscription.id!)}
+                      />
+                    </div>
+                  </TableCell>
                   <TableCell className="font-medium">{subscription.title}</TableCell>
                   <TableCell>{subscription.price}</TableCell>
                   <TableCell className="hidden md:table-cell">{subscription.status}</TableCell>
@@ -239,7 +337,7 @@ const SubscriptionList = () => {
         </div>
       )}
 
-      {/* Diálogo de confirmação para exclusão */}
+      {/* Diálogo de confirmação para exclusão única */}
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -255,6 +353,27 @@ const SubscriptionList = () => {
               className="bg-red-500 hover:bg-red-600"
             >
               Excluir
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Diálogo de confirmação para exclusão múltipla */}
+      <AlertDialog open={isMultiDeleteDialogOpen} onOpenChange={setIsMultiDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir {selectedItems.size} assinaturas?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta ação não pode ser desfeita. As assinaturas selecionadas serão permanentemente excluídas.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleDeleteMultipleConfirm}
+              className="bg-red-500 hover:bg-red-600"
+            >
+              Excluir {selectedItems.size} assinaturas
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

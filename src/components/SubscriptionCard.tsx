@@ -66,9 +66,9 @@ const SubscriptionCard = ({
   const titleBackgroundColor = "bg-blue-600";
   
   return (
-    <div className={`card bg-white rounded-xl overflow-hidden shadow-lg ${isSearchResult ? 'search-highlight' : ''}`}>
-      <div className={`${titleBackgroundColor} p-4`}>
-        <h2 className={`text-xl font-bold text-white flex items-center ${centerTitle ? 'justify-center' : ''}`}>
+    <div className={`card h-full bg-white rounded-xl overflow-hidden shadow-lg ${isSearchResult ? 'search-highlight' : ''}`}>
+      <div className={`${titleBackgroundColor} p-4 h-[80px] flex items-center`}>
+        <h2 className={`text-xl font-bold text-white flex items-center ${centerTitle ? 'justify-center w-full' : ''}`}>
           {renderIcon()} {title}
         </h2>
       </div>
