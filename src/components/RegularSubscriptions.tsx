@@ -31,8 +31,9 @@ const RegularSubscriptions: React.FC<RegularSubscriptionsProps> = ({
     }
     
     const filtered = subscriptionList.filter(sub => {
-      // Filtrar pelo título (case insensitive)
-      return sub.title.toLowerCase().includes(searchTerm.toLowerCase());
+      // Filtrar pelo título, preço ou método de pagamento (case insensitive)
+      const content = `${sub.title} ${sub.price} ${sub.paymentMethod}`.toLowerCase();
+      return content.includes(searchTerm.toLowerCase());
     });
     
     setVisibleSubscriptions(filtered);
@@ -64,6 +65,7 @@ const RegularSubscriptions: React.FC<RegularSubscriptionsProps> = ({
           telegramUsername={subscription.telegramUsername}
           icon={subscription.icon}
           addedDate={subscription.addedDate}
+          isSearchResult={false}
         />
       ))}
     </div>

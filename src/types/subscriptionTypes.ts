@@ -14,6 +14,7 @@ export interface SubscriptionData {
   addedDate?: string;
   featured?: boolean;
   code?: string;
+  userId?: string;
 }
 
 export interface PendingSubscriptionData extends SubscriptionData {
@@ -22,5 +23,6 @@ export interface PendingSubscriptionData extends SubscriptionData {
   pixKey?: string;
   statusApproval?: string;
   rejectionReason?: string;
-  userId?: string;
+  submitted_at?: string;
+  reviewed_at?: string;
 }

@@ -12,7 +12,10 @@ import Dashboard from "./pages/admin/Dashboard";
 import Subscriptions from "./pages/admin/Subscriptions";
 import SubscriptionEditor from "./pages/admin/SubscriptionEditor";
 import ChatSubscriptionEditor from "./pages/admin/ChatSubscriptionEditor";
+import PendingSubscriptions from "./pages/admin/PendingSubscriptions";
 import Settings from "./pages/admin/Settings";
+import Profile from "./pages/Profile";
+import SubmitSubscription from "./pages/SubmitSubscription";
 
 const queryClient = new QueryClient();
 
@@ -26,6 +29,8 @@ const App = () => (
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/auth" element={<Auth />} />
+            <Route path="/profile" element={<Profile />} />
+            <Route path="/submit-subscription" element={<SubmitSubscription />} />
             
             {/* Rotas Administrativas */}
             <Route path="/admin" element={<Dashboard />} />
@@ -33,6 +38,7 @@ const App = () => (
             <Route path="/admin/subscriptions/new" element={<SubscriptionEditor />} />
             <Route path="/admin/subscriptions/edit/:id" element={<SubscriptionEditor />} />
             <Route path="/admin/subscriptions/chat" element={<ChatSubscriptionEditor />} />
+            <Route path="/admin/subscriptions/pending" element={<PendingSubscriptions />} />
             <Route path="/admin/settings" element={<Settings />} />
             
             {/* Rota de fallback */}

@@ -14,13 +14,15 @@ import { useToast } from "@/components/ui/use-toast";
 import { Loader2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { SubscriptionData } from '@/types/subscriptionTypes';
-import { addSubscription, updateSubscription, logError } from '@/services/subscription-service';
+import { addSubscription, updateSubscription, logError, getAllSubscriptions } from '@/services/subscription-service';
 
 // Schema para validação do formulário
 const formSchema = z.object({
   title: z.string().min(1, { message: "O título é obrigatório" }),
+  customTitle: z.string().optional(),
   price: z.string().min(1, { message: "O preço é obrigatório" }),
   paymentMethod: z.string().min(1, { message: "O método de pagamento é obrigatório" }),
+  customPaymentMethod: z.string().optional(),
   status: z.string().min(1, { message: "O status é obrigatório" }),
   access: z.string().min(1, { message: "O acesso é obrigatório" }),
   headerColor: z.string().min(1, { message: "A cor do cabeçalho é obrigatória" }),
@@ -42,21 +44,58 @@ const SubscriptionForm: React.FC = () => {
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [isFetchingData, setIsFetchingData] = useState<boolean>(isEditing);
+  const [isAdmin, setIsAdmin] = useState<boolean>(false);
+  const [existingTitles, setExistingTitles] = useState<string[]>([]);
+  const [selectedTitle, setSelectedTitle] = useState<string>("");
+  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<string>("");
+  
+  // Verificar se o usuário é administrador
+  useEffect(() => {
+    const checkIfAdmin = async () => {
+      try {
+        const { data, error } = await supabase.rpc('is_admin');
+        if (error) throw error;
+        setIsAdmin(data);
+      } catch (error) {
+        console.error('Erro ao verificar se o usuário é administrador:', error);
+        setIsAdmin(false);
+      }
+    };
+    
+    checkIfAdmin();
+  }, []);
 
+  // Buscar títulos existentes
+  useEffect(() => {
+    const fetchExistingTitles = async () => {
+      try {
+        const subscriptions = await getAllSubscriptions();
+        const titles = [...new Set(subscriptions.map(sub => sub.title.toUpperCase()))];
+        setExistingTitles(titles);
+      } catch (error) {
+        console.error('Erro ao buscar títulos existentes:', error);
+      }
+    };
+    
+    fetchExistingTitles();
+  }, []);
+  
   // Configurar formulário
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       title: "",
+      customTitle: "",
       price: "",
       paymentMethod: "",
-      status: "",
+      customPaymentMethod: "",
+      status: "Assinado",
       access: "",
-      headerColor: "bg-gradient-indigo",
-      priceColor: "text-indigo-600",
+      headerColor: "bg-blue-600",
+      priceColor: "text-blue-600",
       whatsappNumber: "",
       telegramUsername: "",
-      icon: "none", // Changed from "" to "none"
+      icon: "none",
       addedDate: new Date().toLocaleDateString('pt-BR'),
       featured: false,
       code: "",
@@ -77,21 +116,33 @@ const SubscriptionForm: React.FC = () => {
           if (error) throw error;
           
           if (data) {
+            // Verifica se o título está na lista de títulos existentes
+            const isTitleInList = existingTitles.includes(data.title.toUpperCase());
+            
+            // Verifica se o método de pagamento é um dos predefinidos
+            const paymentMethod = data.payment_method;
+            const isPreDefinedPayment = ["PIX (Mensal)", "PIX (Anual)"].includes(paymentMethod);
+            
             form.reset({
-              title: data.title,
+              title: isTitleInList ? data.title.toUpperCase() : "PERSONALIZADO",
+              customTitle: isTitleInList ? "" : data.title,
               price: data.price,
-              paymentMethod: data.payment_method,
-              status: data.status,
+              paymentMethod: isPreDefinedPayment ? data.payment_method : "OUTRA FORMA",
+              customPaymentMethod: isPreDefinedPayment ? "" : data.payment_method,
+              status: data.status || "Assinado",
               access: data.access,
-              headerColor: data.header_color,
-              priceColor: data.price_color,
+              headerColor: data.header_color || "bg-blue-600",
+              priceColor: data.price_color || "text-blue-600",
               whatsappNumber: data.whatsapp_number,
               telegramUsername: data.telegram_username,
-              icon: data.icon || 'none', // Changed from '' to 'none'
+              icon: data.icon || 'none',
               addedDate: data.added_date || new Date().toLocaleDateString('pt-BR'),
               featured: data.featured || false,
               code: data.code,
             });
+            
+            setSelectedTitle(isTitleInList ? data.title.toUpperCase() : "PERSONALIZADO");
+            setSelectedPaymentMethod(isPreDefinedPayment ? data.payment_method : "OUTRA FORMA");
           }
         } catch (error) {
           console.error('Erro ao buscar assinatura:', error);
@@ -113,25 +164,51 @@ const SubscriptionForm: React.FC = () => {
 
       fetchSubscription();
     }
-  }, [id, isEditing, form, toast]);
+  }, [id, isEditing, form, toast, existingTitles]);
+
+  // Manipular mudança de título
+  const handleTitleChange = (value: string) => {
+    setSelectedTitle(value);
+    form.setValue("title", value);
+    
+    if (value !== "PERSONALIZADO") {
+      form.setValue("customTitle", "");
+    }
+  };
+  
+  // Manipular mudança de método de pagamento
+  const handlePaymentMethodChange = (value: string) => {
+    setSelectedPaymentMethod(value);
+    form.setValue("paymentMethod", value);
+    
+    if (value !== "OUTRA FORMA") {
+      form.setValue("customPaymentMethod", "");
+    }
+  };
 
   // Manipulador para envio do formulário
   const onSubmit = async (data: FormValues) => {
     setIsLoading(true);
     
     try {
+      // Processar título personalizado
+      const finalTitle = data.title === "PERSONALIZADO" ? data.customTitle : data.title;
+      
+      // Processar método de pagamento personalizado
+      const finalPaymentMethod = data.paymentMethod === "OUTRA FORMA" ? data.customPaymentMethod : data.paymentMethod;
+      
       // Garantir que todos os campos obrigatórios estejam preenchidos
       const formattedData: SubscriptionData = {
-        title: data.title,
+        title: finalTitle,
         price: data.price,
-        paymentMethod: data.paymentMethod,
+        paymentMethod: finalPaymentMethod,
         status: data.status,
         access: data.access,
         headerColor: data.headerColor,
         priceColor: data.priceColor,
         whatsappNumber: data.whatsappNumber,
         telegramUsername: data.telegramUsername,
-        icon: data.icon === 'none' ? '' : data.icon, // Convert 'none' back to '' when saving
+        icon: data.icon === 'none' ? '' : data.icon,
         addedDate: data.addedDate,
         featured: data.featured,
         code: data.code
@@ -187,6 +264,23 @@ const SubscriptionForm: React.FC = () => {
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Código (somente para edição) */}
+              {isEditing && (
+                <FormField
+                  control={form.control}
+                  name="code"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Código (não editável)</FormLabel>
+                      <FormControl>
+                        <Input disabled {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              )}
+              
               {/* Título */}
               <FormField
                 control={form.control}
@@ -194,13 +288,44 @@ const SubscriptionForm: React.FC = () => {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Título</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Netflix Premium" {...field} />
-                    </FormControl>
+                    <Select
+                      onValueChange={handleTitleChange}
+                      defaultValue={field.value}
+                      value={field.value}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecione um título" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {existingTitles.map((title) => (
+                          <SelectItem key={title} value={title}>{title}</SelectItem>
+                        ))}
+                        <SelectItem value="PERSONALIZADO">PERSONALIZADO</SelectItem>
+                      </SelectContent>
+                    </Select>
                     <FormMessage />
                   </FormItem>
                 )}
               />
+              
+              {/* Título personalizado */}
+              {selectedTitle === "PERSONALIZADO" && (
+                <FormField
+                  control={form.control}
+                  name="customTitle"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Título Personalizado</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Insira um título personalizado" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              )}
               
               {/* Preço */}
               <FormField
@@ -224,13 +349,43 @@ const SubscriptionForm: React.FC = () => {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Método de Pagamento</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Pix, Boleto, etc" {...field} />
-                    </FormControl>
+                    <Select
+                      onValueChange={handlePaymentMethodChange}
+                      defaultValue={field.value}
+                      value={field.value}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecione um método" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="PIX (Mensal)">PIX (Mensal)</SelectItem>
+                        <SelectItem value="PIX (Anual)">PIX (Anual)</SelectItem>
+                        <SelectItem value="OUTRA FORMA">OUTRA FORMA</SelectItem>
+                      </SelectContent>
+                    </Select>
                     <FormMessage />
                   </FormItem>
                 )}
               />
+              
+              {/* Método de pagamento personalizado */}
+              {selectedPaymentMethod === "OUTRA FORMA" && (
+                <FormField
+                  control={form.control}
+                  name="customPaymentMethod"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Método de Pagamento Personalizado</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Insira um método de pagamento" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              )}
               
               {/* Status */}
               <FormField
@@ -239,9 +394,20 @@ const SubscriptionForm: React.FC = () => {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Status</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Disponível" {...field} />
-                    </FormControl>
+                    <Select
+                      onValueChange={field.onChange}
+                      defaultValue={field.value}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecione um status" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="Assinado">Assinado</SelectItem>
+                        <SelectItem value="Aguardando Membros">Aguardando Membros</SelectItem>
+                      </SelectContent>
+                    </Select>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -253,99 +419,10 @@ const SubscriptionForm: React.FC = () => {
                 name="access"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Acesso</FormLabel>
+                    <FormLabel>Envio</FormLabel>
                     <FormControl>
-                      <Input placeholder="Login e senha" {...field} />
+                      <Input placeholder="LOGIN E SENHA" {...field} />
                     </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
-              {/* Ícone */}
-              <FormField
-                control={form.control}
-                name="icon"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Ícone</FormLabel>
-                    <Select
-                      onValueChange={field.onChange}
-                      defaultValue={field.value}
-                    >
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Selecione um ícone" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="none">Nenhum</SelectItem>
-                        <SelectItem value="tv">TV</SelectItem>
-                        <SelectItem value="youtube">YouTube</SelectItem>
-                        <SelectItem value="apple">Apple</SelectItem>
-                        <SelectItem value="monitor">Monitor</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
-              {/* Cor do Cabeçalho */}
-              <FormField
-                control={form.control}
-                name="headerColor"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Cor do Cabeçalho</FormLabel>
-                    <Select
-                      onValueChange={field.onChange}
-                      defaultValue={field.value}
-                    >
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Selecione uma cor" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="bg-gradient-indigo">Índigo</SelectItem>
-                        <SelectItem value="bg-gradient-purple">Roxo</SelectItem>
-                        <SelectItem value="bg-gradient-blue">Azul</SelectItem>
-                        <SelectItem value="bg-gradient-green">Verde</SelectItem>
-                        <SelectItem value="bg-gradient-red">Vermelho</SelectItem>
-                        <SelectItem value="bg-gradient-orange">Laranja</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
-              {/* Cor do Preço */}
-              <FormField
-                control={form.control}
-                name="priceColor"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Cor do Preço</FormLabel>
-                    <Select
-                      onValueChange={field.onChange}
-                      defaultValue={field.value}
-                    >
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Selecione uma cor" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="text-indigo-600">Índigo</SelectItem>
-                        <SelectItem value="text-purple-600">Roxo</SelectItem>
-                        <SelectItem value="text-blue-600">Azul</SelectItem>
-                        <SelectItem value="text-green-600">Verde</SelectItem>
-                        <SelectItem value="text-red-600">Vermelho</SelectItem>
-                        <SelectItem value="text-orange-600">Laranja</SelectItem>
-                      </SelectContent>
-                    </Select>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -357,9 +434,9 @@ const SubscriptionForm: React.FC = () => {
                 name="addedDate"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Data de Adição</FormLabel>
+                    <FormLabel>Data de Adição (não editável)</FormLabel>
                     <FormControl>
-                      <Input placeholder="DD/MM/AAAA" {...field} />
+                      <Input disabled {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -396,42 +473,119 @@ const SubscriptionForm: React.FC = () => {
                 )}
               />
               
-              {/* Código (somente para edição) */}
-              {isEditing && (
-                <FormField
-                  control={form.control}
-                  name="code"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Código</FormLabel>
-                      <FormControl>
-                        <Input disabled {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+              {/* Campos apenas para administradores */}
+              {isAdmin && (
+                <>
+                  {/* Cor do Cabeçalho */}
+                  <FormField
+                    control={form.control}
+                    name="headerColor"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Cor do Cabeçalho (admin)</FormLabel>
+                        <Select
+                          onValueChange={field.onChange}
+                          defaultValue={field.value}
+                        >
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Selecione uma cor" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="bg-blue-600">Azul</SelectItem>
+                            <SelectItem value="bg-gradient-indigo">Índigo</SelectItem>
+                            <SelectItem value="bg-gradient-purple">Roxo</SelectItem>
+                            <SelectItem value="bg-gradient-green">Verde</SelectItem>
+                            <SelectItem value="bg-gradient-red">Vermelho</SelectItem>
+                            <SelectItem value="bg-gradient-orange">Laranja</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  {/* Cor do Preço */}
+                  <FormField
+                    control={form.control}
+                    name="priceColor"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Cor do Preço (admin)</FormLabel>
+                        <Select
+                          onValueChange={field.onChange}
+                          defaultValue={field.value}
+                        >
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Selecione uma cor" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="text-blue-600">Azul</SelectItem>
+                            <SelectItem value="text-indigo-600">Índigo</SelectItem>
+                            <SelectItem value="text-purple-600">Roxo</SelectItem>
+                            <SelectItem value="text-green-600">Verde</SelectItem>
+                            <SelectItem value="text-red-600">Vermelho</SelectItem>
+                            <SelectItem value="text-orange-600">Laranja</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  {/* Ícone */}
+                  <FormField
+                    control={form.control}
+                    name="icon"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Ícone (admin)</FormLabel>
+                        <Select
+                          onValueChange={field.onChange}
+                          defaultValue={field.value}
+                        >
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Selecione um ícone" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="none">Nenhum</SelectItem>
+                            <SelectItem value="tv">TV</SelectItem>
+                            <SelectItem value="youtube">YouTube</SelectItem>
+                            <SelectItem value="apple">Apple</SelectItem>
+                            <SelectItem value="monitor">Monitor</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  {/* Destaque */}
+                  <FormField
+                    control={form.control}
+                    name="featured"
+                    render={({ field }) => (
+                      <FormItem className="flex flex-row items-center space-x-3 space-y-0">
+                        <FormControl>
+                          <Checkbox
+                            checked={field.value}
+                            onCheckedChange={field.onChange}
+                          />
+                        </FormControl>
+                        <FormLabel className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                          Destacar esta assinatura (admin)
+                        </FormLabel>
+                      </FormItem>
+                    )}
+                  />
+                </>
               )}
             </div>
-            
-            {/* Destaque */}
-            <FormField
-              control={form.control}
-              name="featured"
-              render={({ field }) => (
-                <FormItem className="flex flex-row items-center space-x-3 space-y-0">
-                  <FormControl>
-                    <Checkbox
-                      checked={field.value}
-                      onCheckedChange={field.onChange}
-                    />
-                  </FormControl>
-                  <FormLabel className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-                    Destacar esta assinatura
-                  </FormLabel>
-                </FormItem>
-              )}
-            />
             
             {/* Botões */}
             <div className="flex justify-end space-x-2">

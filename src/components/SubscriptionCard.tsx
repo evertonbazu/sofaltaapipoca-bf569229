@@ -67,18 +67,25 @@ const SubscriptionCard = ({
     }
   };
   
+  // Determine the background color class based on the headerColor prop
+  const bgColorClass = headerColor || 'bg-blue-600';
+  
+  // Determine the price color class based on the priceColor prop
+  const priceColorClass = priceColor || 'text-blue-600';
+  
   return (
     <div className={`card h-full bg-white rounded-xl overflow-hidden shadow-lg ${isSearchResult ? 'search-highlight' : ''}`}>
-      <div className="bg-blue-600 p-4 flex items-center justify-center h-20">
+      <div className={`${bgColorClass} p-4 flex items-center justify-center h-20`}>
         <h2 className="text-xl font-bold text-white flex items-center text-center uppercase">
           🖥 {title}
         </h2>
       </div>
       <div className="p-5 space-y-3">
         <div className="space-y-2 text-center">
-          <p className="text-gray-900 font-medium uppercase">🏦 {price} - {paymentMethod}</p>
-          <p className="text-gray-900 font-medium uppercase">📌 Assinado</p>
-          <p className="text-gray-900 font-medium uppercase">🔐 {access}</p>
+          <p className={`${priceColorClass} font-medium uppercase`}>Valor: {price}</p>
+          <p className="text-gray-900 font-medium uppercase">Forma de Pagamento: {paymentMethod}</p>
+          <p className="text-gray-900 font-medium uppercase">Status: Assinado</p>
+          <p className="text-gray-900 font-medium uppercase">Envio: {access}</p>
         </div>
         
         {addedDate && (
