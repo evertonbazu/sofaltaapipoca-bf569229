@@ -3,23 +3,23 @@ import FeaturedSubscriptions from "./FeaturedSubscriptions";
 import RegularSubscriptions from "./RegularSubscriptions";
 import { SubscriptionData } from "@/types/subscriptionTypes";
 import { getAllSubscriptions, getFeaturedSubscriptions, getPendingSubscriptions } from "@/services/subscription-service";
-
 interface SubscriptionListProps {
-  subscriptionRefs: React.MutableRefObject<{[key: string]: HTMLDivElement | null}>;
+  subscriptionRefs: React.MutableRefObject<{
+    [key: string]: HTMLDivElement | null;
+  }>;
   searchTerm: string;
   setHasResults: React.Dispatch<React.SetStateAction<boolean>>;
 }
-
-const SubscriptionList: React.FC<SubscriptionListProps> = ({ 
-  subscriptionRefs, 
-  searchTerm, 
-  setHasResults 
+const SubscriptionList: React.FC<SubscriptionListProps> = ({
+  subscriptionRefs,
+  searchTerm,
+  setHasResults
 }) => {
   const [featuredList, setFeaturedList] = useState<SubscriptionData[]>([]);
   const [regularList, setRegularList] = useState<SubscriptionData[]>([]);
   const [memberSubmissionsList, setMemberSubmissionsList] = useState<SubscriptionData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  
+
   // Buscar assinaturas do banco de dados
   useEffect(() => {
     const fetchSubscriptions = async () => {
@@ -27,17 +27,16 @@ const SubscriptionList: React.FC<SubscriptionListProps> = ({
         setIsLoading(true);
         const featured = await getFeaturedSubscriptions();
         const all = await getAllSubscriptions();
-        
+
         // Get all visible pending submissions
         const pendingSubmissions = await getPendingSubscriptions();
         const memberSubmissions = pendingSubmissions.map(sub => ({
           ...sub,
           isMemberSubmission: true
         }));
-        
+
         // Filtrar assinaturas regulares (todas exceto as destacadas)
         const regular = all.filter(sub => !sub.featured);
-        
         setFeaturedList(featured);
         setRegularList(regular);
         setMemberSubmissionsList(memberSubmissions);
@@ -47,29 +46,24 @@ const SubscriptionList: React.FC<SubscriptionListProps> = ({
         setIsLoading(false);
       }
     };
-    
     fetchSubscriptions();
   }, []);
-  
   useEffect(() => {
     // Verificar resultados da busca para todas as listas
     const lowercaseSearchTerm = searchTerm.toLowerCase();
-    
     const hasFeaturedResults = featuredList.some(sub => {
       const content = `${sub.title} ${sub.price} ${sub.paymentMethod} ${sub.status} ${sub.access}`.toLowerCase();
       return content.includes(lowercaseSearchTerm);
     });
-    
     const hasRegularResults = regularList.some(sub => {
       const content = `${sub.title} ${sub.price} ${sub.paymentMethod} ${sub.status} ${sub.access}`.toLowerCase();
       return content.includes(lowercaseSearchTerm);
     });
-
     const hasMemberSubmissionResults = memberSubmissionsList.some(sub => {
       const content = `${sub.title} ${sub.price} ${sub.paymentMethod} ${sub.status} ${sub.access}`.toLowerCase();
       return content.includes(lowercaseSearchTerm);
     });
-    
+
     // Se o termo de busca estiver vazio, sempre mostra resultados
     if (searchTerm === "") {
       setHasResults(true);
@@ -78,45 +72,23 @@ const SubscriptionList: React.FC<SubscriptionListProps> = ({
       setHasResults(hasFeaturedResults || hasRegularResults || hasMemberSubmissionResults);
     }
   }, [searchTerm, featuredList, regularList, memberSubmissionsList, setHasResults]);
-  
   if (isLoading) {
-    return (
-      <div className="flex justify-center items-center p-8">
+    return <div className="flex justify-center items-center p-8">
         <div className="animate-pulse text-center">
           <div className="h-8 w-48 bg-gray-300 rounded mx-auto mb-4"></div>
           <div className="h-4 w-64 bg-gray-200 rounded mx-auto"></div>
         </div>
-      </div>
-    );
+      </div>;
   }
-  
-  return (
-    <div className="space-y-6">
-      <FeaturedSubscriptions 
-        subscriptionRefs={subscriptionRefs} 
-        searchTerm={searchTerm}
-        setHasResults={setHasResults}
-        subscriptionList={featuredList}
-      />
+  return <div className="space-y-6">
+      <FeaturedSubscriptions subscriptionRefs={subscriptionRefs} searchTerm={searchTerm} setHasResults={setHasResults} subscriptionList={featuredList} />
       
-      {memberSubmissionsList.length > 0 && (
-        <div className="mb-8">
-          <h2 className="text-xl font-semibold mb-4">Anúncios de Membros</h2>
-          <RegularSubscriptions 
-            searchTerm={searchTerm}
-            setHasResults={setHasResults}
-            subscriptionList={memberSubmissionsList}
-          />
-        </div>
-      )}
+      {memberSubmissionsList.length > 0 && <div className="mb-8">
+          
+          <RegularSubscriptions searchTerm={searchTerm} setHasResults={setHasResults} subscriptionList={memberSubmissionsList} />
+        </div>}
       
-      <RegularSubscriptions 
-        searchTerm={searchTerm}
-        setHasResults={setHasResults}
-        subscriptionList={regularList}
-      />
-    </div>
-  );
+      <RegularSubscriptions searchTerm={searchTerm} setHasResults={setHasResults} subscriptionList={regularList} />
+    </div>;
 };
-
 export default SubscriptionList;
