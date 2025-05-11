@@ -13,7 +13,7 @@ const SearchBar: React.FC<SearchBarProps> = ({ onSearch }) => {
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     setSearchTerm(value);
-    onSearch(value.toLowerCase().trim());
+    onSearch(value);
   };
 
   // Inicializar a busca com string vazia quando o componente for montado

@@ -26,6 +26,7 @@ const Index: React.FC = () => {
       
       <header className="bg-gradient-to-r from-indigo-600 to-indigo-800 text-white py-4 sm:py-6">
         <div className="container mx-auto px-3 sm:px-4">
+          <h1 className="text-center text-xl sm:text-2xl font-bold mb-1">🍿 Só Falta a Pipoca</h1>
           <p className="text-center text-base sm:text-lg mt-2">Assinaturas premium com preços exclusivos</p>
           
           {/* Botões de Anunciar e Fale Conosco */}

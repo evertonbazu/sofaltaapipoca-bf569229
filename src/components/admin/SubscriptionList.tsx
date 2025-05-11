@@ -52,7 +52,9 @@ const SubscriptionList = () => {
           subscription.title.toLowerCase().includes(lowercaseSearchTerm) ||
           subscription.price.toLowerCase().includes(lowercaseSearchTerm) ||
           subscription.status.toLowerCase().includes(lowercaseSearchTerm) ||
-          subscription.paymentMethod.toLowerCase().includes(lowercaseSearchTerm)
+          subscription.paymentMethod.toLowerCase().includes(lowercaseSearchTerm) ||
+          subscription.telegramUsername?.toLowerCase().includes(lowercaseSearchTerm) ||
+          subscription.whatsappNumber?.toLowerCase().includes(lowercaseSearchTerm)
         );
       });
       setFilteredSubscriptions(filtered);
@@ -160,6 +162,8 @@ const SubscriptionList = () => {
                 <TableHead>Preço</TableHead>
                 <TableHead className="hidden md:table-cell">Status</TableHead>
                 <TableHead className="hidden md:table-cell">Pagamento</TableHead>
+                <TableHead className="hidden md:table-cell">Telegram</TableHead>
+                <TableHead className="hidden md:table-cell">WhatsApp</TableHead>
                 <TableHead className="hidden md:table-cell">Destaque</TableHead>
                 <TableHead>Ações</TableHead>
               </TableRow>
@@ -171,6 +175,8 @@ const SubscriptionList = () => {
                   <TableCell>{subscription.price}</TableCell>
                   <TableCell className="hidden md:table-cell">{subscription.status}</TableCell>
                   <TableCell className="hidden md:table-cell">{subscription.paymentMethod}</TableCell>
+                  <TableCell className="hidden md:table-cell">{subscription.telegramUsername || '-'}</TableCell>
+                  <TableCell className="hidden md:table-cell">{subscription.whatsappNumber || '-'}</TableCell>
                   <TableCell className="hidden md:table-cell">
                     {subscription.featured ? 'Sim' : 'Não'}
                   </TableCell>
