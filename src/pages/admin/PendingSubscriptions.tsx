@@ -1,11 +1,13 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import AdminLayout from '@/components/admin/AdminLayout';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/components/ui/use-toast";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { Input } from "@/components/ui/input";
 import { Loader2, Check, X, Edit, Trash } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -15,14 +17,17 @@ import { addSubscription, logError } from '@/services/subscription-service';
 const PendingSubscriptions = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [isLoading, setIsLoading] = React.useState(true);
-  const [pendingSubscriptions, setPendingSubscriptions] = React.useState<PendingSubscriptionData[]>([]);
-  const [rejectedSubscriptions, setRejectedSubscriptions] = React.useState<PendingSubscriptionData[]>([]);
-  const [approvedSubscriptions, setApprovedSubscriptions] = React.useState<PendingSubscriptionData[]>([]);
-  const [actionInProgress, setActionInProgress] = React.useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [pendingSubscriptions, setPendingSubscriptions] = useState<PendingSubscriptionData[]>([]);
+  const [rejectedSubscriptions, setRejectedSubscriptions] = useState<PendingSubscriptionData[]>([]);
+  const [approvedSubscriptions, setApprovedSubscriptions] = useState<PendingSubscriptionData[]>([]);
+  const [actionInProgress, setActionInProgress] = useState<string | null>(null);
+  const [showRejectDialog, setShowRejectDialog] = useState(false);
+  const [currentSubscription, setCurrentSubscription] = useState<PendingSubscriptionData | null>(null);
+  const [rejectionReason, setRejectionReason] = useState('');
 
   // Fetch pending subscriptions
-  React.useEffect(() => {
+  useEffect(() => {
     const fetchPendingSubscriptions = async () => {
       try {
         setIsLoading(true);
@@ -103,6 +108,7 @@ const PendingSubscriptions = () => {
         addedDate: subscription.addedDate || new Date().toLocaleDateString('pt-BR'),
         code: subscription.code,
         pixKey: subscription.pixKey,
+        userId: subscription.userId
       });
 
       // Update lists
@@ -132,30 +138,39 @@ const PendingSubscriptions = () => {
     }
   };
 
+  // Open reject dialog
+  const openRejectDialog = (subscription: PendingSubscriptionData) => {
+    setCurrentSubscription(subscription);
+    setRejectionReason('');
+    setShowRejectDialog(true);
+  };
+
   // Function to reject a subscription
-  const handleReject = async (subscription: PendingSubscriptionData, rejectionReason: string = "Não atende aos critérios") => {
+  const handleReject = async () => {
+    if (!currentSubscription) return;
+    
     try {
-      setActionInProgress(subscription.id || '');
+      setActionInProgress(currentSubscription.id || '');
 
       // Update the status of the pending subscription
       const { error: updateError } = await supabase
         .from('pending_subscriptions')
         .update({
           status_approval: 'rejected',
-          rejection_reason: rejectionReason,
+          rejection_reason: rejectionReason || "Não atende aos critérios",
           reviewed_at: new Date().toISOString()
         })
-        .eq('id', subscription.id);
+        .eq('id', currentSubscription.id);
       
       if (updateError) throw updateError;
 
       // Update lists
-      setPendingSubscriptions(prev => prev.filter(item => item.id !== subscription.id));
+      setPendingSubscriptions(prev => prev.filter(item => item.id !== currentSubscription.id));
       setRejectedSubscriptions(prev => [
         { 
-          ...subscription, 
+          ...currentSubscription, 
           statusApproval: 'rejected', 
-          rejectionReason: rejectionReason, 
+          rejectionReason: rejectionReason || "Não atende aos critérios", 
           reviewed_at: new Date().toISOString() 
         }, 
         ...prev
@@ -166,6 +181,10 @@ const PendingSubscriptions = () => {
         description: "A assinatura foi rejeitada com sucesso.",
       });
 
+      setShowRejectDialog(false);
+      setCurrentSubscription(null);
+      setRejectionReason('');
+
     } catch (error) {
       console.error('Erro ao rejeitar assinatura:', error);
       toast({
@@ -175,7 +194,7 @@ const PendingSubscriptions = () => {
       });
       logError(
         'Erro ao rejeitar assinatura pendente',
-        JSON.stringify(subscription),
+        JSON.stringify(currentSubscription),
         'REJECT_ERROR',
         JSON.stringify(error)
       );
@@ -186,7 +205,7 @@ const PendingSubscriptions = () => {
 
   // Function to edit a pending subscription
   const handleEdit = (subscription: PendingSubscriptionData) => {
-    navigate(`/admin/subscription-editor/${subscription.id}?source=pending`);
+    navigate(`/admin/subscriptions/edit/${subscription.id}?source=pending`);
   };
 
   // Function to delete a pending subscription
@@ -279,12 +298,13 @@ const PendingSubscriptions = () => {
                   disabled={isProcessing}
                   size="sm"
                   className="flex-1"
+                  variant="default"
                 >
                   {isProcessing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Check className="mr-2 h-4 w-4" />}
                   Aprovar
                 </Button>
                 <Button 
-                  onClick={() => handleReject(subscription)} 
+                  onClick={() => openRejectDialog(subscription)} 
                   variant="destructive" 
                   disabled={isProcessing}
                   size="sm"
@@ -382,6 +402,42 @@ const PendingSubscriptions = () => {
           )}
         </TabsContent>
       </Tabs>
+
+      {/* Reject Dialog */}
+      <AlertDialog open={showRejectDialog} onOpenChange={setShowRejectDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Rejeitar Assinatura</AlertDialogTitle>
+            <AlertDialogDescription>
+              Informe o motivo da rejeição desta assinatura. Esta informação será visível para o usuário.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          
+          <div className="py-4">
+            <Input 
+              placeholder="Motivo da rejeição"
+              value={rejectionReason}
+              onChange={(e) => setRejectionReason(e.target.value)}
+              className="w-full"
+            />
+          </div>
+          
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => {
+              setShowRejectDialog(false);
+              setCurrentSubscription(null);
+            }}>
+              Cancelar
+            </AlertDialogCancel>
+            <AlertDialogAction onClick={handleReject}>
+              {actionInProgress === (currentSubscription?.id || '') ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : null}
+              Confirmar Rejeição
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </AdminLayout>
   );
 };

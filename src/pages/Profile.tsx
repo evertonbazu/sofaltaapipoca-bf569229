@@ -15,6 +15,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { SubscriptionData } from '@/types/subscriptionTypes';
 import { deleteSubscription } from '@/services/subscription-service';
 import NavBar from '@/components/NavBar';
+import { useAuth } from '@/contexts/AuthContext';
 
 // Schema para o formulário de perfil
 const profileFormSchema = z.object({
@@ -41,8 +42,8 @@ const Profile = () => {
   const [user, setUser] = useState<any>(null);
   const [userProfile, setUserProfile] = useState<any>(null);
   const [userSubscriptions, setUserSubscriptions] = useState<SubscriptionData[]>([]);
-  const [pendingSubscriptions, setPendingSubscriptions] = useState<any[]>([]);
   const [actionInProgress, setActionInProgress] = useState<string | null>(null);
+  const { signOut } = useAuth();
 
   // Formulário de perfil
   const profileForm = useForm<ProfileFormValues>({
@@ -105,18 +106,6 @@ const Profile = () => {
           console.error('Erro ao buscar assinaturas do usuário:', subscriptionsError);
         } else {
           setUserSubscriptions(subscriptions || []);
-        }
-        
-        // Buscar assinaturas pendentes do usuário
-        const { data: pending, error: pendingError } = await supabase
-          .from('pending_subscriptions')
-          .select('*')
-          .eq('user_id', session.user.id);
-        
-        if (pendingError) {
-          console.error('Erro ao buscar assinaturas pendentes do usuário:', pendingError);
-        } else {
-          setPendingSubscriptions(pending || []);
         }
       } catch (error) {
         console.error('Erro ao verificar usuário:', error);
@@ -219,42 +208,10 @@ const Profile = () => {
     }
   };
   
-  // Função para excluir uma solicitação pendente
-  const handleDeletePending = async (id: string) => {
-    try {
-      setActionInProgress(id);
-      
-      const { error } = await supabase
-        .from('pending_subscriptions')
-        .delete()
-        .eq('id', id);
-      
-      if (error) throw error;
-      
-      toast({
-        title: "Solicitação excluída",
-        description: "Sua solicitação foi excluída com sucesso.",
-      });
-      
-      // Atualizar a lista de solicitações pendentes
-      setPendingSubscriptions(prev => prev.filter(item => item.id !== id));
-      
-    } catch (error) {
-      console.error('Erro ao excluir solicitação:', error);
-      toast({
-        title: "Erro",
-        description: "Não foi possível excluir sua solicitação.",
-        variant: "destructive",
-      });
-    } finally {
-      setActionInProgress(null);
-    }
-  };
-  
   // Função para fazer logout
   const handleLogout = async () => {
     try {
-      await supabase.auth.signOut();
+      await signOut();
       navigate('/');
     } catch (error) {
       console.error('Erro ao fazer logout:', error);
@@ -282,10 +239,9 @@ const Profile = () => {
         </h1>
         
         <Tabs defaultValue="profile">
-          <TabsList className="grid w-full grid-cols-3 mb-8">
+          <TabsList className="grid w-full grid-cols-2 mb-8">
             <TabsTrigger value="profile">Meus Dados</TabsTrigger>
             <TabsTrigger value="subscriptions">Minhas Assinaturas</TabsTrigger>
-            <TabsTrigger value="pending">Solicitações Pendentes ({pendingSubscriptions.length})</TabsTrigger>
           </TabsList>
           
           {/* Aba de Perfil */}
@@ -457,80 +413,6 @@ const Profile = () => {
                           <>
                             <Trash2 className="mr-2 h-4 w-4" />
                             Excluir Assinatura
-                          </>
-                        )}
-                      </Button>
-                    </CardFooter>
-                  </Card>
-                ))}
-              </div>
-            )}
-          </TabsContent>
-          
-          {/* Aba de Solicitações Pendentes */}
-          <TabsContent value="pending">
-            <h2 className="text-xl font-medium mb-4">Solicitações Pendentes</h2>
-            
-            {pendingSubscriptions.length === 0 ? (
-              <Card>
-                <CardContent className="p-8 text-center">
-                  <p className="text-gray-500">Você não possui solicitações pendentes.</p>
-                  <Button 
-                    className="mt-4"
-                    onClick={() => navigate('/submit-subscription')}
-                  >
-                    Criar nova solicitação
-                  </Button>
-                </CardContent>
-              </Card>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {pendingSubscriptions.map((subscription) => (
-                  <Card key={subscription.id} className={
-                    subscription.status_approval === 'approved' ? 'border-green-500' :
-                    subscription.status_approval === 'rejected' ? 'border-red-500' :
-                    'border-yellow-500'
-                  }>
-                    <CardHeader>
-                      <CardTitle className="flex justify-between items-center">
-                        {subscription.title}
-                        <span className={
-                          subscription.status_approval === 'approved' ? 'text-green-500' :
-                          subscription.status_approval === 'rejected' ? 'text-red-500' :
-                          'text-yellow-500'
-                        }>
-                          {subscription.status_approval === 'approved' ? 'Aprovado' :
-                           subscription.status_approval === 'rejected' ? 'Rejeitado' :
-                           'Pendente'}
-                        </span>
-                      </CardTitle>
-                      <CardDescription>
-                        {subscription.price} - {subscription.payment_method}
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="space-y-2">
-                        <p><strong>Envio:</strong> {subscription.access}</p>
-                        <p><strong>Status:</strong> {subscription.status}</p>
-                        <p><strong>Enviado em:</strong> {new Date(subscription.submitted_at).toLocaleDateString('pt-BR')}</p>
-                        {subscription.rejection_reason && (
-                          <p className="text-red-500"><strong>Motivo da rejeição:</strong> {subscription.rejection_reason}</p>
-                        )}
-                      </div>
-                    </CardContent>
-                    <CardFooter>
-                      <Button 
-                        variant="destructive" 
-                        className="w-full"
-                        disabled={!!actionInProgress}
-                        onClick={() => handleDeletePending(subscription.id)}
-                      >
-                        {actionInProgress === subscription.id ? (
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                        ) : (
-                          <>
-                            <Trash2 className="mr-2 h-4 w-4" />
-                            Excluir Solicitação
                           </>
                         )}
                       </Button>

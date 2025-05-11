@@ -7,6 +7,7 @@ import { useDebounced } from '@/hooks/useDebounced';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/components/ui/use-toast';
+import { useAuth } from '@/contexts/AuthContext';
 
 const NavBar: React.FC = () => {
   const [isAdmin, setIsAdmin] = useState(false);
@@ -15,6 +16,7 @@ const NavBar: React.FC = () => {
   const isMobile = useIsMobile();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { signOut } = useAuth();
 
   // Verificar se o usuário está logado e se é administrador
   useEffect(() => {
@@ -53,7 +55,7 @@ const NavBar: React.FC = () => {
 
   const handleLogout = async () => {
     try {
-      await supabase.auth.signOut();
+      await signOut();
       toast({
         title: "Logout realizado",
         description: "Você foi desconectado com sucesso",
@@ -119,9 +121,6 @@ const NavBar: React.FC = () => {
                 </Button>
               </Link>
             )}
-            <Link to="/submit-subscription">
-              <Button variant="outline" size="sm">Anunciar</Button>
-            </Link>
           </div>
         )}
       </div>
@@ -165,11 +164,6 @@ const NavBar: React.FC = () => {
                 </Button>
               </Link>
             )}
-            <Link to="/submit-subscription" onClick={() => setMenuOpen(false)}>
-              <Button variant="outline" size="sm" className="w-full justify-start">
-                Anunciar
-              </Button>
-            </Link>
           </div>
         </div>
       )}

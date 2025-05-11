@@ -21,7 +21,6 @@ export interface SubscriptionData {
 export interface PendingSubscriptionData extends SubscriptionData {
   paymentProofImage?: string;
   pixQrCode?: string;
-  pixKey?: string;
   statusApproval?: string;
   rejectionReason?: string;
   submitted_at?: string;
