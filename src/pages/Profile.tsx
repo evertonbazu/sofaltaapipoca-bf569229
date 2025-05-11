@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
@@ -43,7 +42,7 @@ const Profile = () => {
   const [userProfile, setUserProfile] = useState<any>(null);
   const [userSubscriptions, setUserSubscriptions] = useState<SubscriptionData[]>([]);
   const [actionInProgress, setActionInProgress] = useState<string | null>(null);
-  const { signOut } = useAuth();
+  const { signOut, authState } = useAuth();
 
   // Formulário de perfil
   const profileForm = useForm<ProfileFormValues>({
@@ -69,21 +68,19 @@ const Profile = () => {
       try {
         setIsLoading(true);
         
-        // Buscar sessão do usuário
-        const { data: { session } } = await supabase.auth.getSession();
-        
-        if (!session || !session.user) {
+        // Usar o estado de autenticação do contexto
+        if (!authState.session || !authState.user) {
           navigate('/auth');
           return;
         }
         
-        setUser(session.user);
+        setUser(authState.user);
         
         // Buscar perfil do usuário
         const { data: profileData, error: profileError } = await supabase
           .from('profiles')
           .select('*')
-          .eq('id', session.user.id)
+          .eq('id', authState.user.id)
           .single();
         
         if (profileError && profileError.code !== 'PGRST116') {
@@ -91,7 +88,7 @@ const Profile = () => {
         } else if (profileData) {
           setUserProfile(profileData);
           profileForm.reset({
-            email: session.user.email || '',
+            email: authState.user.email || '',
             username: profileData.username || '',
           });
         }
@@ -100,7 +97,7 @@ const Profile = () => {
         const { data: subscriptions, error: subscriptionsError } = await supabase
           .from('subscriptions')
           .select('*')
-          .eq('user_id', session.user.id);
+          .eq('user_id', authState.user.id);
         
         if (subscriptionsError) {
           console.error('Erro ao buscar assinaturas do usuário:', subscriptionsError);
@@ -116,7 +113,7 @@ const Profile = () => {
     };
     
     checkUser();
-  }, [navigate]);
+  }, [navigate, authState]);
   
   // Função para atualizar o perfil
   const onUpdateProfile = async (data: ProfileFormValues) => {
@@ -215,6 +212,11 @@ const Profile = () => {
       navigate('/');
     } catch (error) {
       console.error('Erro ao fazer logout:', error);
+      toast({
+        title: "Erro",
+        description: "Não foi possível realizar o logout.",
+        variant: "destructive",
+      });
     }
   };
   

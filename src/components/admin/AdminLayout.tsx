@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
@@ -29,25 +28,22 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children, title }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const { toast } = useToast();
-  const { signOut } = useAuth();
+  const { signOut, authState } = useAuth();
 
   // Verificar se o usuário é um administrador
   useEffect(() => {
     const checkAdminStatus = async () => {
       try {
-        // Verificar se o usuário está logado
-        const { data: { session } } = await supabase.auth.getSession();
-        if (!session) {
+        // Usar o estado de autenticação do contexto
+        if (!authState.session) {
           // Não logado, redirecionar para login
           navigate('/auth');
           return;
         }
         
-        // Verificar se o usuário é administrador
-        const { data: isAdminData, error } = await supabase.rpc('is_admin');
-        if (error) throw error;
+        setIsAdmin(authState.isAdmin);
         
-        if (!isAdminData) {
+        if (!authState.isAdmin) {
           // Não é admin, redirecionar para home
           toast({
             title: "Acesso Negado",
@@ -57,9 +53,6 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children, title }) => {
           navigate('/');
           return;
         }
-        
-        // É admin, permitir acesso
-        setIsAdmin(true);
       } catch (error) {
         console.error('Erro ao verificar status de administrador:', error);
         toast({
@@ -72,7 +65,7 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children, title }) => {
     };
     
     checkAdminStatus();
-  }, [navigate, toast]);
+  }, [navigate, toast, authState]);
 
   const handleLogout = async () => {
     try {
@@ -89,6 +82,10 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children, title }) => {
         description: "Não foi possível realizar o logout.",
         variant: "destructive",
       });
+    } finally {
+      if (isMobileMenuOpen) {
+        setIsMobileMenuOpen(false);
+      }
     }
   };
 

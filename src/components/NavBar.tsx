@@ -16,38 +16,15 @@ const NavBar: React.FC = () => {
   const isMobile = useIsMobile();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { signOut } = useAuth();
+  const { signOut, authState } = useAuth();
 
   // Verificar se o usuário está logado e se é administrador
   useEffect(() => {
-    const checkAuth = async () => {
-      try {
-        const { data: { session } } = await supabase.auth.getSession();
-        setIsLoggedIn(!!session);
-        
-        if (session) {
-          const { data: isAdminData, error } = await supabase.rpc('is_admin');
-          if (error) throw error;
-          setIsAdmin(!!isAdminData);
-        } else {
-          setIsAdmin(false);
-        }
-      } catch (error) {
-        console.error('Erro ao verificar autenticação:', error);
-        setIsAdmin(false);
-      }
-    };
+    // Usar o estado da autenticação do contexto
+    setIsLoggedIn(!!authState.session);
+    setIsAdmin(authState.isAdmin);
     
-    checkAuth();
-    
-    // Configurar listener para mudanças de autenticação
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setIsLoggedIn(!!session);
-      if (!session) setIsAdmin(false);
-    });
-    
-    return () => subscription.unsubscribe();
-  }, []);
+  }, [authState]);
 
   const toggleMenu = () => {
     setMenuOpen(!menuOpen);
@@ -56,10 +33,7 @@ const NavBar: React.FC = () => {
   const handleLogout = async () => {
     try {
       await signOut();
-      toast({
-        title: "Logout realizado",
-        description: "Você foi desconectado com sucesso",
-      });
+      // O estado será atualizado pelo contexto de autenticação
       navigate('/');
     } catch (error) {
       console.error('Erro ao fazer logout:', error);
@@ -68,6 +42,11 @@ const NavBar: React.FC = () => {
         description: "Não foi possível realizar o logout",
         variant: "destructive",
       });
+    } finally {
+      // Feche o menu móvel se estiver aberto
+      if (menuOpen) {
+        setMenuOpen(false);
+      }
     }
   };
 
@@ -147,10 +126,7 @@ const NavBar: React.FC = () => {
                 <Button 
                   variant="outline" 
                   size="sm" 
-                  onClick={() => {
-                    handleLogout();
-                    setMenuOpen(false);
-                  }}
+                  onClick={handleLogout}
                   className="w-full justify-start flex items-center"
                 >
                   <LogOut className="mr-1 h-4 w-4" />

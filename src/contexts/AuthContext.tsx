@@ -167,12 +167,33 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  // Função para fazer logout
+  // Função para fazer logout - Com tratamento adequado
   const signOut = async () => {
     try {
+      // Verificar primeiro se existe uma sessão antes de tentar fazer logout
+      const { data: sessionData } = await supabase.auth.getSession();
+      
+      if (!sessionData.session) {
+        // Se não há sessão, apenas atualizar o estado
+        setAuthState({
+          user: null,
+          session: null,
+          isLoading: false,
+          isAdmin: false
+        });
+        
+        toast({
+          title: "Logout realizado",
+          description: "Você foi desconectado.",
+        });
+        return;
+      }
+      
+      // Se houver sessão, então fazer logout
       const { error } = await supabase.auth.signOut();
       
       if (error) {
+        console.error('Erro ao fazer logout:', error);
         toast({
           title: "Erro ao fazer logout",
           description: error.message,
@@ -181,12 +202,27 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         throw error;
       }
 
+      // Atualizar estado após logout bem-sucedido
+      setAuthState({
+        user: null,
+        session: null,
+        isLoading: false,
+        isAdmin: false
+      });
+
       toast({
         title: "Logout realizado com sucesso",
         description: "Você foi desconectado.",
       });
     } catch (error: any) {
       console.error('Erro ao fazer logout:', error);
+      // Em caso de erro, tente garantir que o estado local seja limpo
+      setAuthState({
+        user: null,
+        session: null,
+        isLoading: false,
+        isAdmin: false
+      });
       throw error;
     }
   };
