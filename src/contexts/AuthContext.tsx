@@ -1,4 +1,5 @@
 
+// Certifica que o React é importado corretamente
 import React, { createContext, useState, useEffect, useContext } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
@@ -19,6 +20,7 @@ export interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  // Utilizando useState do React
   const [authState, setAuthState] = useState<AuthContextType['authState']>({
     user: null,
     session: null,
