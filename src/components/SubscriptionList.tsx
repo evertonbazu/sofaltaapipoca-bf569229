@@ -47,19 +47,17 @@ const SubscriptionList: React.FC<SubscriptionListProps> = ({
   
   useEffect(() => {
     // Verificar resultados da busca para ambas as listas
-    const hasFeaturedResults = featuredList.some(sub => 
-      sub.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      sub.paymentMethod.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      sub.status.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      sub.access.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+    const lowercaseSearchTerm = searchTerm.toLowerCase();
     
-    const hasRegularResults = regularList.some(sub => 
-      sub.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      sub.paymentMethod.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      sub.status.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      sub.access.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+    const hasFeaturedResults = featuredList.some(sub => {
+      const content = `${sub.title} ${sub.price} ${sub.paymentMethod} ${sub.status} ${sub.access}`.toLowerCase();
+      return content.includes(lowercaseSearchTerm);
+    });
+    
+    const hasRegularResults = regularList.some(sub => {
+      const content = `${sub.title} ${sub.price} ${sub.paymentMethod} ${sub.status} ${sub.access}`.toLowerCase();
+      return content.includes(lowercaseSearchTerm);
+    });
     
     // Se o termo de busca estiver vazio, sempre mostra resultados
     if (searchTerm === "") {

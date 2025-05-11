@@ -30,7 +30,7 @@ const RegularSubscriptions: React.FC<RegularSubscriptionsProps> = ({
     }
     
     const filtered = subscriptionList.filter(sub => {
-      // Incluir todos os campos relevantes na busca
+      // Incluir todos os campos relevantes na busca (case insensitive)
       const content = `${sub.title} ${sub.price} ${sub.paymentMethod} ${sub.status} ${sub.access}`.toLowerCase();
       return content.includes(searchTerm.toLowerCase());
     });
