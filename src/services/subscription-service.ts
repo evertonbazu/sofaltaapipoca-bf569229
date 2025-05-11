@@ -19,7 +19,8 @@ function mapToSubscriptionData(data: any): SubscriptionData {
     icon: data.icon,
     addedDate: data.added_date,
     featured: data.featured,
-    code: data.code
+    code: data.code,
+    pixKey: data.pix_key
   };
 }
 
@@ -43,10 +44,8 @@ function mapToDbFormat(subscription: SubscriptionData | PendingSubscriptionData)
       (subscription as PendingSubscriptionData).paymentProofImage : undefined,
     pix_qr_code: 'pixQrCode' in subscription ? 
       (subscription as PendingSubscriptionData).pixQrCode : undefined,
-    pix_key: 'pixKey' in subscription ? 
-      (subscription as PendingSubscriptionData).pixKey : undefined,
-    user_id: 'userId' in subscription ? 
-      (subscription as PendingSubscriptionData).userId : undefined
+    pix_key: 'pixKey' in subscription ? subscription.pixKey : undefined,
+    user_id: 'userId' in subscription ? subscription.userId : undefined
   };
 }
 
@@ -110,9 +109,11 @@ export async function addSubscription(subscription: SubscriptionData): Promise<S
     }
     
     const newSubscription = { ...subscription, code };
+    const mappedData = mapToDbFormat(newSubscription);
+    
     const { data, error } = await supabase
       .from('subscriptions')
-      .insert(mapToDbFormat(newSubscription))
+      .insert(mappedData)
       .select()
       .single();
     
