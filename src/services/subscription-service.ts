@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { SubscriptionData, PendingSubscriptionData } from '@/types/subscriptionTypes';
 import { toast } from '@/components/ui/use-toast';
@@ -141,6 +142,27 @@ export async function getPendingSubscriptions(): Promise<PendingSubscriptionData
   }
 }
 
+// Obter assinaturas criadas por membros
+export async function getMemberSubscriptions(): Promise<SubscriptionData[]> {
+  try {
+    const { data, error } = await supabase
+      .from('subscriptions')
+      .select('*')
+      .not('user_id', 'is', null);
+    
+    if (error) throw error;
+    
+    // Marcar como submissões de membros
+    return data.map(item => mapToSubscriptionData({
+      ...item,
+      user_id: item.user_id // Isso garantirá que isMemberSubmission seja true
+    }));
+  } catch (error: any) {
+    console.error('Erro ao obter assinaturas de membros:', error);
+    throw error;
+  }
+}
+
 // Obter todas as categorias disponíveis
 export async function getAllCategories(): Promise<string[]> {
   try {
@@ -200,6 +222,88 @@ export async function updateSubscription(id: string, subscription: SubscriptionD
     return mapToSubscriptionData(data);
   } catch (error: any) {
     console.error('Erro ao atualizar assinatura:', error);
+    throw error;
+  }
+}
+
+// Aprovar uma submissão pendente e move-la para a tabela de assinaturas
+export async function approvePendingSubscription(pendingId: string): Promise<SubscriptionData> {
+  try {
+    // Primeiro, obter os dados da submissão pendente
+    const { data: pendingData, error: fetchError } = await supabase
+      .from('pending_subscriptions')
+      .select('*')
+      .eq('id', pendingId)
+      .single();
+    
+    if (fetchError) throw fetchError;
+    
+    // Preparar os dados para inserção na tabela de assinaturas
+    const subscriptionData = {
+      title: pendingData.title,
+      price: pendingData.price,
+      payment_method: pendingData.payment_method,
+      status: pendingData.status,
+      access: pendingData.access,
+      header_color: pendingData.header_color,
+      price_color: pendingData.price_color,
+      whatsapp_number: pendingData.whatsapp_number,
+      telegram_username: pendingData.telegram_username,
+      icon: pendingData.icon,
+      added_date: pendingData.added_date || new Date().toLocaleDateString('pt-BR'),
+      featured: false,
+      code: pendingData.code,
+      payment_proof_image: pendingData.payment_proof_image,
+      pix_qr_code: pendingData.pix_qr_code,
+      pix_key: pendingData.pix_key,
+      user_id: pendingData.user_id,
+      category: pendingData.category,
+    };
+    
+    // Inserir na tabela de assinaturas
+    const { data: insertedData, error: insertError } = await supabase
+      .from('subscriptions')
+      .insert(subscriptionData)
+      .select()
+      .single();
+    
+    if (insertError) throw insertError;
+    
+    // Atualizar status da submissão pendente
+    const { error: updateError } = await supabase
+      .from('pending_subscriptions')
+      .update({ 
+        status_approval: 'approved',
+        reviewed_at: new Date().toISOString(),
+        visible: false
+      })
+      .eq('id', pendingId);
+    
+    if (updateError) throw updateError;
+    
+    return mapToSubscriptionData(insertedData);
+  } catch (error: any) {
+    console.error('Erro ao aprovar submissão pendente:', error);
+    throw error;
+  }
+}
+
+// Rejeitar uma submissão pendente
+export async function rejectPendingSubscription(pendingId: string, rejectionReason: string): Promise<void> {
+  try {
+    const { error } = await supabase
+      .from('pending_subscriptions')
+      .update({ 
+        status_approval: 'rejected',
+        rejection_reason: rejectionReason,
+        reviewed_at: new Date().toISOString(),
+        visible: false
+      })
+      .eq('id', pendingId);
+    
+    if (error) throw error;
+  } catch (error: any) {
+    console.error('Erro ao rejeitar submissão pendente:', error);
     throw error;
   }
 }

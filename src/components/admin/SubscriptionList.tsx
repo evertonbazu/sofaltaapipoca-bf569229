@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
@@ -7,16 +8,16 @@ import {
   StarOff, 
   Search, 
   Info,
-  CheckSquare,
-  Square,
   ArrowUp,
-  ArrowDown
+  ArrowDown,
+  Users
 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useToast } from "@/components/ui/use-toast";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Badge } from "@/components/ui/badge";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -30,7 +31,11 @@ import {
 import { SubscriptionData } from '@/types/subscriptionTypes';
 import { deleteSubscription, getAllSubscriptions, toggleFeaturedStatus } from '@/services/subscription-service';
 
-type SortField = 'title' | 'price' | 'status' | 'paymentMethod' | 'telegramUsername' | 'whatsappNumber' | 'featured' | 'addedDate';
+import SubscriptionTableHeader from './SubscriptionTableHeader';
+import SubscriptionTableRow from './SubscriptionTableRow';
+import DeleteConfirmation from './DeleteConfirmation';
+
+type SortField = 'title' | 'price' | 'status' | 'paymentMethod' | 'telegramUsername' | 'whatsappNumber' | 'featured' | 'addedDate' | 'isMemberSubmission';
 type SortDirection = 'asc' | 'desc';
 
 const SubscriptionList = () => {
@@ -111,6 +116,10 @@ const SubscriptionList = () => {
         case 'featured':
           valueA = a.featured || false;
           valueB = b.featured || false;
+          break;
+        case 'isMemberSubmission':
+          valueA = a.isMemberSubmission || false;
+          valueB = b.isMemberSubmission || false;
           break;
         case 'addedDate':
           // Para datas no formato DD/MM/YYYY, convertemos para YYYY/MM/DD para ordenação
@@ -401,6 +410,12 @@ const SubscriptionList = () => {
                 >
                   Destaque {renderSortIndicator('featured')}
                 </TableHead>
+                <TableHead 
+                  className="hidden md:table-cell cursor-pointer"
+                  onClick={() => handleSort('isMemberSubmission')}
+                >
+                  Tipo {renderSortIndicator('isMemberSubmission')}
+                </TableHead>
                 <TableHead>Ações</TableHead>
               </TableRow>
             </TableHeader>
@@ -416,7 +431,7 @@ const SubscriptionList = () => {
                     </div>
                   </TableCell>
                   <TableCell className="font-medium">
-                    {subscription.isMemberSubmission ? `* ${subscription.title}` : subscription.title}
+                    {subscription.title}
                   </TableCell>
                   <TableCell>{subscription.price}</TableCell>
                   <TableCell className="hidden md:table-cell">{subscription.status}</TableCell>
@@ -426,6 +441,11 @@ const SubscriptionList = () => {
                   <TableCell className="hidden md:table-cell">{subscription.addedDate || '-'}</TableCell>
                   <TableCell className="hidden md:table-cell">
                     {subscription.featured ? 'Sim' : 'Não'}
+                  </TableCell>
+                  <TableCell className="hidden md:table-cell">
+                    {subscription.isMemberSubmission ? 
+                      <Badge variant="outline" className="bg-blue-50 text-blue-600 hover:bg-blue-50">Membro</Badge> : 
+                      <Badge variant="outline" className="bg-green-50 text-green-600 hover:bg-green-50">Admin</Badge>}
                   </TableCell>
                   <TableCell>
                     <div className="flex space-x-1">

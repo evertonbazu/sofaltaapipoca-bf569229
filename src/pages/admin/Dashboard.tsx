@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Loader2, Package, Clock, CheckCircle, AlertTriangle } from 'lucide-react';
+import { Loader2, Package, Clock, CheckCircle, AlertTriangle, Users } from 'lucide-react';
 import AdminLayout from '@/components/admin/AdminLayout';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -11,6 +11,7 @@ const Dashboard = () => {
     featuredSubscriptions: 0,
     pendingApproval: 0,
     errors: 0,
+    memberSubscriptions: 0,
   });
   const [isLoading, setIsLoading] = useState(true);
 
@@ -34,13 +35,19 @@ const Dashboard = () => {
           .select('*', { count: 'exact', head: true })
           .eq('status_approval', 'pending');
 
+        // Obter contagem de assinaturas enviadas por membros
+        const { count: memberCount, error: memberError } = await supabase
+          .from('subscriptions')
+          .select('*', { count: 'exact', head: true })
+          .not('user_id', 'is', null);
+
         // Obter contagem de erros
         const { count: errorsCount, error: errorsError } = await supabase
           .from('error_logs')
           .select('*', { count: 'exact', head: true })
           .eq('resolved', false);
 
-        if (totalError || featuredError || pendingError || errorsError) {
+        if (totalError || featuredError || pendingError || errorsError || memberError) {
           throw new Error('Erro ao buscar estatísticas');
         }
 
@@ -49,6 +56,7 @@ const Dashboard = () => {
           featuredSubscriptions: featuredCount || 0,
           pendingApproval: pendingCount || 0,
           errors: errorsCount || 0,
+          memberSubscriptions: memberCount || 0,
         });
       } catch (error) {
         console.error('Erro ao buscar estatísticas:', error);
@@ -67,7 +75,7 @@ const Dashboard = () => {
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>
       ) : (
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">
@@ -109,6 +117,21 @@ const Dashboard = () => {
               <div className="text-2xl font-bold">{stats.pendingApproval}</div>
               <p className="text-xs text-muted-foreground">
                 Aguardando aprovação
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">
+                Anúncios de Membros
+              </CardTitle>
+              <Users className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{stats.memberSubscriptions}</div>
+              <p className="text-xs text-muted-foreground">
+                Enviados por membros
               </p>
             </CardContent>
           </Card>
