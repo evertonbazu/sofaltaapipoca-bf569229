@@ -3,7 +3,7 @@ import React, { useEffect, useState } from "react";
 import FeaturedSubscriptions from "./FeaturedSubscriptions";
 import RegularSubscriptions from "./RegularSubscriptions";
 import { SubscriptionData } from "@/types/subscriptionTypes";
-import { getAllSubscriptions, getFeaturedSubscriptions, getPendingSubscriptions } from "@/services/subscription-service";
+import { getAllSubscriptions, getFeaturedSubscriptions } from "@/services/subscription-service";
 
 interface SubscriptionListProps {
   subscriptionRefs: React.MutableRefObject<{
@@ -38,6 +38,8 @@ const SubscriptionList: React.FC<SubscriptionListProps> = ({
         
         setFeaturedList(featured);
         setRegularList(regular);
+        console.log("Regular subscriptions:", regular);
+        console.log("Featured subscriptions:", featured);
       } catch (error) {
         console.error("Erro ao buscar assinaturas:", error);
       } finally {
@@ -89,6 +91,7 @@ const SubscriptionList: React.FC<SubscriptionListProps> = ({
         searchTerm={searchTerm} 
         setHasResults={setHasResults} 
         subscriptionList={regularList} 
+        title="Todas as Assinaturas"
       />
     </div>;
 };
