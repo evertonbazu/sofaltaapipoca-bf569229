@@ -19,6 +19,42 @@ export const getAllSubscriptions = async () => {
   }
 };
 
+// Get featured subscriptions
+export const getFeaturedSubscriptions = async () => {
+  try {
+    const { data, error } = await supabase
+      .from('subscriptions')
+      .select('*')
+      .eq('featured', true)
+      .order('title');
+      
+    if (error) throw error;
+    
+    return data || [];
+  } catch (error) {
+    console.error('Error fetching featured subscriptions:', error);
+    return [];
+  }
+};
+
+// Toggle featured status of a subscription
+export const toggleFeaturedStatus = async (id: string, isFeatured: boolean) => {
+  try {
+    const { data, error } = await supabase
+      .from('subscriptions')
+      .update({ featured: isFeatured })
+      .eq('id', id)
+      .select();
+      
+    if (error) throw error;
+    
+    return data;
+  } catch (error) {
+    console.error('Error toggling featured status:', error);
+    throw error;
+  }
+};
+
 // Get pending subscriptions
 export const getPendingSubscriptions = async () => {
   try {
