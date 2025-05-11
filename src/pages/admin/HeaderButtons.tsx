@@ -1,382 +1,445 @@
 
-import React, { useEffect, useState } from 'react';
-import { Button } from "@/components/ui/button";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Plus, Pencil, Trash2, Eye, EyeOff } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
 import AdminLayout from '@/components/admin/AdminLayout';
-import { supabase } from '@/integrations/supabase/client';
-import { HeaderButton } from '@/types/subscriptionTypes';
-import { useToast } from '@/components/ui/use-toast';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import { Pencil, Trash2, Plus, ArrowUp, ArrowDown, Save, X } from 'lucide-react';
+import { useToast } from "@/components/ui/use-toast";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { HeaderButton } from '@/types/subscriptionTypes';
+import { getAllHeaderButtons, addHeaderButton, updateHeaderButton, deleteHeaderButton } from '@/services/subscription-service';
 
-const HeaderButtons: React.FC = () => {
-  const navigate = useNavigate();
-  const { toast } = useToast();
+const HeaderButtons = () => {
   const [buttons, setButtons] = useState<HeaderButton[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [currentButton, setCurrentButton] = useState<HeaderButton | null>(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [buttonToDelete, setButtonToDelete] = useState<string | null>(null);
+  const [editingButton, setEditingButton] = useState<HeaderButton | null>(null);
+  const [isCreating, setIsCreating] = useState(false);
+  const [newButton, setNewButton] = useState<Partial<HeaderButton>>({
+    title: '',
+    icon: '🔗',
+    url: '/',
+    visible: true,
+    position: 0,
+  });
   
-  // Estados para o formulário
-  const [title, setTitle] = useState("");
-  const [url, setUrl] = useState("");
-  const [icon, setIcon] = useState("");
-  const [visible, setVisible] = useState(true);
-  const [position, setPosition] = useState(0);
+  const { toast } = useToast();
 
-  // Carregar botões
+  // Buscar botões quando o componente montar
   useEffect(() => {
     fetchButtons();
   }, []);
 
+  // Função para buscar botões do cabeçalho
   const fetchButtons = async () => {
+    setIsLoading(true);
     try {
-      setIsLoading(true);
-      const { data, error } = await supabase
-        .from('header_buttons')
-        .select('*')
-        .order('position', { ascending: true });
-
-      if (error) throw error;
-      setButtons(data || []);
+      const data = await getAllHeaderButtons();
+      setButtons(data);
     } catch (error) {
-      console.error('Erro ao buscar botões:', error);
       toast({
-        title: "Erro",
-        description: "Não foi possível carregar os botões do cabeçalho.",
+        title: "Erro ao carregar botões",
+        description: "Não foi possível carregar a lista de botões do cabeçalho.",
         variant: "destructive",
       });
+      console.error('Erro ao buscar botões:', error);
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Abrir diálogo para edição ou criação
-  const handleOpenDialog = (button?: HeaderButton) => {
-    if (button) {
-      setCurrentButton(button);
-      setTitle(button.title);
-      setUrl(button.url);
-      setIcon(button.icon);
-      setVisible(button.visible);
-      setPosition(button.position);
-    } else {
-      setCurrentButton(null);
-      setTitle("");
-      setUrl("");
-      setIcon("");
-      setVisible(true);
-      setPosition(buttons.length > 0 ? Math.max(...buttons.map(b => b.position)) + 1 : 1);
-    }
-    setIsDialogOpen(true);
-  };
-
-  // Salvar botão (criar ou atualizar)
-  const handleSaveButton = async () => {
-    try {
-      // Validações básicas
-      if (!title.trim() || !url.trim() || !icon.trim()) {
-        toast({
-          title: "Erro",
-          description: "Todos os campos são obrigatórios.",
-          variant: "destructive",
-        });
-        return;
-      }
-
-      const buttonData = {
-        title,
-        url,
-        icon,
-        visible,
-        position
-      };
-
-      let result;
-      
-      if (currentButton) {
-        // Atualizar botão existente
-        result = await supabase
-          .from('header_buttons')
-          .update(buttonData)
-          .eq('id', currentButton.id);
-      } else {
-        // Criar novo botão
-        result = await supabase
-          .from('header_buttons')
-          .insert([buttonData]);
-      }
-
-      if (result.error) throw result.error;
-
-      toast({
-        title: currentButton ? "Botão atualizado" : "Botão criado",
-        description: currentButton ? 
-          "O botão foi atualizado com sucesso." : 
-          "O botão foi adicionado com sucesso.",
-      });
-
-      setIsDialogOpen(false);
-      fetchButtons();
-    } catch (error) {
-      console.error('Erro ao salvar botão:', error);
-      toast({
-        title: "Erro",
-        description: "Não foi possível salvar o botão.",
-        variant: "destructive",
-      });
-    }
-  };
-
-  // Alternar visibilidade do botão
-  const toggleButtonVisibility = async (button: HeaderButton) => {
-    try {
-      const { error } = await supabase
-        .from('header_buttons')
-        .update({ visible: !button.visible })
-        .eq('id', button.id);
-
-      if (error) throw error;
-
-      toast({
-        title: button.visible ? "Botão ocultado" : "Botão exibido",
-        description: button.visible ? 
-          "O botão foi ocultado na página inicial." : 
-          "O botão será exibido na página inicial.",
-      });
-
-      fetchButtons();
-    } catch (error) {
-      console.error('Erro ao atualizar visibilidade:', error);
-      toast({
-        title: "Erro",
-        description: "Não foi possível atualizar a visibilidade do botão.",
-        variant: "destructive",
-      });
-    }
+  // Abrir diálogo de confirmação para excluir
+  const handleDeleteClick = (id: string) => {
+    setButtonToDelete(id);
+    setDeleteDialogOpen(true);
   };
 
   // Excluir botão
-  const handleDeleteButton = async (button: HeaderButton) => {
-    if (!confirm(`Tem certeza que deseja excluir o botão "${button.title}"?`)) {
-      return;
-    }
-
+  const handleDeleteConfirm = async () => {
+    if (!buttonToDelete) return;
+    
     try {
-      const { error } = await supabase
-        .from('header_buttons')
-        .delete()
-        .eq('id', button.id);
-
-      if (error) throw error;
-
+      await deleteHeaderButton(buttonToDelete);
+      
       toast({
         title: "Botão excluído",
-        description: "O botão foi removido com sucesso.",
+        description: "O botão foi excluído com sucesso.",
       });
-
+      
+      // Atualizar lista após exclusão
       fetchButtons();
     } catch (error) {
-      console.error('Erro ao excluir botão:', error);
       toast({
-        title: "Erro",
+        title: "Erro ao excluir botão",
         description: "Não foi possível excluir o botão.",
         variant: "destructive",
       });
+      console.error('Erro ao excluir botão:', error);
+    } finally {
+      setDeleteDialogOpen(false);
+      setButtonToDelete(null);
     }
   };
 
-  return (
-    <AdminLayout title="Botões do Cabeçalho">
-      <div className="mb-4 flex justify-between items-center">
+  // Iniciar edição de botão
+  const handleEditClick = (button: HeaderButton) => {
+    setEditingButton({ ...button });
+  };
+
+  // Salvar alterações no botão em edição
+  const handleSaveEdit = async () => {
+    if (!editingButton) return;
+    
+    try {
+      await updateHeaderButton(editingButton.id, {
+        title: editingButton.title,
+        icon: editingButton.icon,
+        url: editingButton.url,
+        visible: editingButton.visible,
+        position: editingButton.position,
+      });
+      
+      toast({
+        title: "Botão atualizado",
+        description: "O botão foi atualizado com sucesso.",
+      });
+      
+      setEditingButton(null);
+      fetchButtons();
+    } catch (error) {
+      toast({
+        title: "Erro ao atualizar botão",
+        description: "Não foi possível atualizar o botão.",
+        variant: "destructive",
+      });
+      console.error('Erro ao atualizar botão:', error);
+    }
+  };
+
+  // Cancelar edição
+  const handleCancelEdit = () => {
+    setEditingButton(null);
+  };
+
+  // Criar novo botão
+  const handleCreateButton = async () => {
+    try {
+      // Determinar a próxima posição se não estiver definida
+      if (newButton.position === 0) {
+        const maxPosition = buttons.length > 0 
+          ? Math.max(...buttons.map(b => b.position)) 
+          : 0;
+        newButton.position = maxPosition + 1;
+      }
+      
+      await addHeaderButton({
+        title: newButton.title || 'Novo Botão',
+        icon: newButton.icon || '🔗',
+        url: newButton.url || '/',
+        visible: newButton.visible !== undefined ? newButton.visible : true,
+        position: newButton.position || 1,
+      });
+      
+      toast({
+        title: "Botão criado",
+        description: "O botão foi criado com sucesso.",
+      });
+      
+      setIsCreating(false);
+      setNewButton({
+        title: '',
+        icon: '🔗',
+        url: '/',
+        visible: true,
+        position: 0,
+      });
+      fetchButtons();
+    } catch (error) {
+      toast({
+        title: "Erro ao criar botão",
+        description: "Não foi possível criar o botão.",
+        variant: "destructive",
+      });
+      console.error('Erro ao criar botão:', error);
+    }
+  };
+
+  // Cancelar criação
+  const handleCancelCreate = () => {
+    setIsCreating(false);
+    setNewButton({
+      title: '',
+      icon: '🔗',
+      url: '/',
+      visible: true,
+      position: 0,
+    });
+  };
+
+  // Mover botão para cima ou para baixo na ordem
+  const handleMoveButton = async (button: HeaderButton, direction: 'up' | 'down') => {
+    const currentIndex = buttons.findIndex(b => b.id === button.id);
+    if (
+      (direction === 'up' && currentIndex === 0) || 
+      (direction === 'down' && currentIndex === buttons.length - 1)
+    ) {
+      return; // Não pode mover mais
+    }
+    
+    const targetIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1;
+    const targetButton = buttons[targetIndex];
+    
+    try {
+      // Trocar posições
+      await updateHeaderButton(button.id, { position: targetButton.position });
+      await updateHeaderButton(targetButton.id, { position: button.position });
+      
+      fetchButtons();
+    } catch (error) {
+      toast({
+        title: "Erro ao reordenar botões",
+        description: "Não foi possível alterar a ordem dos botões.",
+        variant: "destructive",
+      });
+      console.error('Erro ao reordenar botões:', error);
+    }
+  };
+
+  // Renderizar formulário de edição
+  const renderEditForm = (button: HeaderButton) => (
+    <div className="border rounded-md p-4 bg-gray-50 space-y-4">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div>
-          <h2 className="text-lg font-medium">Gerenciar Botões do Cabeçalho</h2>
-          <p className="text-sm text-gray-500">
-            Adicione, edite ou remova os botões que aparecem na página inicial.
-          </p>
+          <Label htmlFor={`title-${button.id}`}>Título</Label>
+          <Input
+            id={`title-${button.id}`}
+            value={editingButton?.title || ''}
+            onChange={(e) => setEditingButton({ ...editingButton!, title: e.target.value })}
+          />
         </div>
-        <Button onClick={() => handleOpenDialog()} className="flex items-center gap-1">
-          <Plus className="h-4 w-4" />
-          Novo Botão
+        <div>
+          <Label htmlFor={`icon-${button.id}`}>Ícone (emoji)</Label>
+          <Input
+            id={`icon-${button.id}`}
+            value={editingButton?.icon || ''}
+            onChange={(e) => setEditingButton({ ...editingButton!, icon: e.target.value })}
+          />
+        </div>
+        <div>
+          <Label htmlFor={`url-${button.id}`}>URL</Label>
+          <Input
+            id={`url-${button.id}`}
+            value={editingButton?.url || ''}
+            onChange={(e) => setEditingButton({ ...editingButton!, url: e.target.value })}
+          />
+        </div>
+      </div>
+      <div className="flex items-center space-x-2">
+        <Switch
+          id={`visible-${button.id}`}
+          checked={editingButton?.visible}
+          onCheckedChange={(checked) => 
+            setEditingButton({ ...editingButton!, visible: checked })
+          }
+        />
+        <Label htmlFor={`visible-${button.id}`}>Visível</Label>
+      </div>
+      <div className="flex justify-end space-x-2">
+        <Button variant="outline" size="sm" onClick={handleCancelEdit}>
+          <X className="h-4 w-4 mr-1" />
+          Cancelar
+        </Button>
+        <Button size="sm" onClick={handleSaveEdit}>
+          <Save className="h-4 w-4 mr-1" />
+          Salvar
         </Button>
       </div>
+    </div>
+  );
 
-      {isLoading ? (
-        <div className="flex justify-center my-8">
-          <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full"></div>
+  // Renderizar formulário de criação
+  const renderCreateForm = () => (
+    <div className="border rounded-md p-4 bg-gray-50 space-y-4 mb-6">
+      <h3 className="text-lg font-medium">Novo Botão</h3>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div>
+          <Label htmlFor="new-title">Título</Label>
+          <Input
+            id="new-title"
+            value={newButton.title}
+            onChange={(e) => setNewButton({ ...newButton, title: e.target.value })}
+          />
         </div>
-      ) : (
-        <div className="bg-white rounded-md shadow">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="w-14">Posição</TableHead>
-                <TableHead>Título</TableHead>
-                <TableHead>Ícone</TableHead>
-                <TableHead>URL</TableHead>
-                <TableHead>Visível</TableHead>
-                <TableHead className="text-right">Ações</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {buttons.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={6} className="text-center py-4 text-gray-500">
-                    Nenhum botão encontrado. Clique em "Novo Botão" para adicionar.
-                  </TableCell>
-                </TableRow>
-              ) : (
-                buttons.map((button) => (
-                  <TableRow key={button.id}>
-                    <TableCell>{button.position}</TableCell>
-                    <TableCell>{button.title}</TableCell>
-                    <TableCell>{button.icon}</TableCell>
-                    <TableCell className="max-w-[200px] truncate">
-                      <a href={button.url} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
-                        {button.url}
-                      </a>
-                    </TableCell>
-                    <TableCell>
-                      {button.visible ? (
-                        <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                          <Eye className="h-3 w-3 mr-1" />
-                          Sim
-                        </span>
-                      ) : (
-                        <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
-                          <EyeOff className="h-3 w-3 mr-1" />
-                          Não
-                        </span>
-                      )}
-                    </TableCell>
-                    <TableCell className="text-right space-x-1">
-                      <Button 
-                        variant="ghost" 
-                        size="icon" 
-                        onClick={() => toggleButtonVisibility(button)}
-                        title={button.visible ? "Ocultar botão" : "Exibir botão"}
-                      >
-                        {button.visible ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                      </Button>
-                      <Button 
-                        variant="ghost" 
-                        size="icon" 
-                        onClick={() => handleOpenDialog(button)}
-                        title="Editar botão"
-                      >
-                        <Pencil className="h-4 w-4" />
-                      </Button>
-                      <Button 
-                        variant="ghost" 
-                        size="icon" 
-                        onClick={() => handleDeleteButton(button)}
-                        title="Excluir botão"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
+        <div>
+          <Label htmlFor="new-icon">Ícone (emoji)</Label>
+          <Input
+            id="new-icon"
+            value={newButton.icon}
+            onChange={(e) => setNewButton({ ...newButton, icon: e.target.value })}
+          />
         </div>
-      )}
+        <div>
+          <Label htmlFor="new-url">URL</Label>
+          <Input
+            id="new-url"
+            value={newButton.url}
+            onChange={(e) => setNewButton({ ...newButton, url: e.target.value })}
+          />
+        </div>
+      </div>
+      <div className="flex items-center space-x-2">
+        <Switch
+          id="new-visible"
+          checked={newButton.visible}
+          onCheckedChange={(checked) => 
+            setNewButton({ ...newButton, visible: checked })
+          }
+        />
+        <Label htmlFor="new-visible">Visível</Label>
+      </div>
+      <div className="flex justify-end space-x-2">
+        <Button variant="outline" size="sm" onClick={handleCancelCreate}>
+          <X className="h-4 w-4 mr-1" />
+          Cancelar
+        </Button>
+        <Button size="sm" onClick={handleCreateButton}>
+          <Save className="h-4 w-4 mr-1" />
+          Criar
+        </Button>
+      </div>
+    </div>
+  );
 
-      {/* Diálogo para criar/editar botão */}
-      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>
-              {currentButton ? "Editar Botão" : "Novo Botão"}
-            </DialogTitle>
-          </DialogHeader>
-          
-          <div className="grid gap-4 py-4">
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="title" className="text-right">
-                Título
-              </Label>
-              <Input
-                id="title"
-                className="col-span-3"
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                placeholder="Ex: Fale Conosco"
-              />
-            </div>
-            
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="url" className="text-right">
-                URL
-              </Label>
-              <Input
-                id="url"
-                className="col-span-3"
-                value={url}
-                onChange={(e) => setUrl(e.target.value)}
-                placeholder="Ex: https://wa.me/123456789"
-              />
-            </div>
-            
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="icon" className="text-right">
-                Ícone
-              </Label>
-              <Input
-                id="icon"
-                className="col-span-3"
-                value={icon}
-                onChange={(e) => setIcon(e.target.value)}
-                placeholder="Ex: MessageSquare"
-              />
-            </div>
-            
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="position" className="text-right">
-                Posição
-              </Label>
-              <Input
-                id="position"
-                type="number"
-                className="col-span-3"
-                value={position}
-                onChange={(e) => setPosition(parseInt(e.target.value))}
-                min={1}
-              />
-            </div>
-            
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="visible" className="text-right">
-                Visível
-              </Label>
-              <div className="flex items-center col-span-3 space-x-2">
-                <Switch
-                  id="visible"
-                  checked={visible}
-                  onCheckedChange={setVisible}
-                />
-                <Label htmlFor="visible">
-                  {visible ? "Sim" : "Não"}
-                </Label>
-              </div>
-            </div>
+  return (
+    <AdminLayout title="Botões do Cabeçalho">
+      <div className="space-y-6">
+        <div className="flex justify-between items-center">
+          <div>
+            <h2 className="text-lg font-medium">Gerenciar Botões do Cabeçalho</h2>
+            <p className="text-sm text-gray-500">
+              Adicione, edite ou remova botões que aparecem no cabeçalho da página inicial.
+            </p>
           </div>
-          
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
-              Cancelar
-            </Button>
-            <Button onClick={handleSaveButton}>
-              Salvar
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+          <Button onClick={() => setIsCreating(true)} disabled={isCreating}>
+            <Plus className="h-4 w-4 mr-1" />
+            Novo Botão
+          </Button>
+        </div>
+
+        {isCreating && renderCreateForm()}
+
+        {isLoading ? (
+          <div className="text-center py-8">Carregando botões...</div>
+        ) : (
+          <div className="bg-white rounded-md shadow overflow-hidden">
+            {buttons.length > 0 ? (
+              <div className="divide-y">
+                {buttons.map((button) => (
+                  <div key={button.id} className="p-4">
+                    {editingButton?.id === button.id ? (
+                      renderEditForm(button)
+                    ) : (
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-4">
+                          <div className="flex-shrink-0 text-2xl">
+                            {button.icon}
+                          </div>
+                          <div>
+                            <h3 className="font-medium">{button.title}</h3>
+                            <p className="text-sm text-gray-500">{button.url}</p>
+                          </div>
+                          <div className="px-2 py-1 rounded-full text-xs font-medium bg-gray-100">
+                            Posição: {button.position}
+                          </div>
+                          {button.visible ? (
+                            <div className="px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                              Visível
+                            </div>
+                          ) : (
+                            <div className="px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                              Oculto
+                            </div>
+                          )}
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <Button
+                            variant="outline"
+                            size="icon"
+                            onClick={() => handleMoveButton(button, 'up')}
+                            disabled={buttons.indexOf(button) === 0}
+                          >
+                            <ArrowUp className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="icon"
+                            onClick={() => handleMoveButton(button, 'down')}
+                            disabled={buttons.indexOf(button) === buttons.length - 1}
+                          >
+                            <ArrowDown className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="icon"
+                            onClick={() => handleEditClick(button)}
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="icon"
+                            onClick={() => handleDeleteClick(button.id)}
+                            className="text-red-500 hover:text-red-700"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="p-8 text-center">
+                <p className="text-gray-500">Nenhum botão encontrado. Clique em "Novo Botão" para adicionar.</p>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Diálogo de confirmação para exclusão */}
+        <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Você tem certeza?</AlertDialogTitle>
+              <AlertDialogDescription>
+                Esta ação não pode ser desfeita. O botão será permanentemente excluído.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancelar</AlertDialogCancel>
+              <AlertDialogAction 
+                onClick={handleDeleteConfirm}
+                className="bg-red-500 hover:bg-red-600"
+              >
+                Excluir
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      </div>
     </AdminLayout>
   );
 };

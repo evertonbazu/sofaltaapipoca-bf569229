@@ -1,117 +1,123 @@
 
-import React, { useState, useEffect, useRef } from 'react';
-import { Link } from 'react-router-dom';
-import SubscriptionList from '@/components/SubscriptionList';
-import NoResults from '@/components/NoResults';
-import { MessageSquare, Megaphone, User, LucideIcon } from 'lucide-react';
-import NavBar from '@/components/NavBar';
-import FilterSearch from '@/components/FilterSearch';
-import { supabase } from '@/integrations/supabase/client';
-import { HeaderButton } from '@/types/subscriptionTypes';
-import * as LucideIcons from 'lucide-react';
+import React, { useState, useRef, useEffect } from "react";
+import NavBar from "../components/NavBar";
+import SearchBar from "../components/SearchBar";
+import FilterSearch from "../components/FilterSearch";
+import NoResults from "../components/NoResults";
+import SubscriptionList from "../components/SubscriptionList";
+import { Link } from "react-router-dom";
+import { getAllHeaderButtons } from "@/services/subscription-service";
+import { HeaderButton } from "@/types/subscriptionTypes";
+import { useAuth } from "@/contexts/AuthContext";
 
-const Index: React.FC = () => {
+const Index = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [hasResults, setHasResults] = useState(true);
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [headerButtons, setHeaderButtons] = useState<HeaderButton[]>([]);
-  const subscriptionRefs = useRef<{ [key: string]: HTMLDivElement | null }>({});
-  const appVersion = "2.1.0"; // Versão do aplicativo
-
-  // Verificar se o usuário está logado
-  useEffect(() => {
-    const checkAuth = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      setIsLoggedIn(!!session);
-    };
-    
-    checkAuth();
-    
-    // Configurar listener para mudanças de autenticação
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setIsLoggedIn(!!session);
-    });
-    
-    return () => subscription.unsubscribe();
-  }, []);
-
-  // Carregar botões do cabeçalho
+  const { authState } = useAuth();
+  
+  // Criar referência para os elementos de assinatura para rolagem suave
+  const subscriptionRefs = useRef<{[key: string]: HTMLDivElement | null}>({});
+  
   useEffect(() => {
     const fetchHeaderButtons = async () => {
       try {
-        const { data, error } = await supabase
-          .from('header_buttons')
-          .select('*')
-          .eq('visible', true)
-          .order('position', { ascending: true });
-        
-        if (error) throw error;
-        setHeaderButtons(data || []);
+        const buttons = await getAllHeaderButtons();
+        // Filtrar apenas botões visíveis
+        setHeaderButtons(buttons.filter((btn: HeaderButton) => btn.visible));
       } catch (error) {
-        console.error('Erro ao buscar botões do cabeçalho:', error);
+        console.error("Erro ao buscar botões do cabeçalho:", error);
       }
     };
     
     fetchHeaderButtons();
   }, []);
-
-  const handleSearch = (term: string) => {
-    setSearchTerm(term.toLowerCase());
-    // Make sure we show all results when search is cleared
-    if (!term) {
-      setHasResults(true);
+  
+  // Função para rolagem suave até a seção
+  const scrollToSection = (sectionTitle: string) => {
+    if (subscriptionRefs.current[sectionTitle]) {
+      subscriptionRefs.current[sectionTitle]?.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
     }
   };
-
-  // Função para renderizar o ícone com base no nome
-  const renderIcon = (iconName: string) => {
-    // @ts-ignore - O tipo do LucideIcons não consegue capturar todas as possibilidades
-    const Icon: LucideIcon = LucideIcons[iconName] || LucideIcons.Bookmark;
-    return <Icon className="h-5 w-5 mb-1" />;
-  };
-
+  
   return (
-    <div className="min-h-screen bg-gray-100">
+    <div className="min-h-screen bg-gray-50">
       <NavBar />
       
-      <header className="bg-gradient-to-r from-indigo-600 to-indigo-800 text-white py-4 sm:py-6">
-        <div className="container mx-auto px-3 sm:px-4">
-          <h1 className="text-center text-xl sm:text-2xl font-bold mb-1">🍿 Só Falta a Pipoca</h1>
-          <p className="text-center text-base sm:text-lg mt-2">Assinaturas premium com preços exclusivos</p>
+      {/* Hero Section */}
+      <div className="bg-gradient-to-r from-blue-700 to-purple-700 text-white py-10 md:py-24">
+        <div className="container mx-auto px-4">
+          <h1 className="text-3xl md:text-5xl font-bold mb-4 text-center">
+            Gerencie suas assinaturas.
+          </h1>
+          <p className="text-xl md:text-2xl mb-8 text-center">
+            Encontre, organize e acompanhe todas as suas assinaturas em um só lugar.
+          </p>
           
-          {/* Botões dinâmicos do cabeçalho */}
-          <div className="flex gap-2 sm:gap-3 mx-auto max-w-xs sm:max-w-sm mt-4 flex-wrap justify-center">
-            {headerButtons.map((button) => (
-              <Link 
-                key={button.id}
-                to={button.url.startsWith('/') ? button.url : ''} 
-                href={!button.url.startsWith('/') ? button.url : undefined}
-                target={!button.url.startsWith('/') ? "_blank" : undefined}
-                rel={!button.url.startsWith('/') ? "noreferrer" : undefined}
-                className="flex-1 min-w-[100px] flex flex-col items-center justify-center bg-yellow-500 hover:bg-yellow-600 text-white rounded-lg font-medium py-2 px-3 transition-all duration-200 hover:-translate-y-1"
-              >
-                {renderIcon(button.icon)}
-                <span className="text-xs sm:text-sm">{button.title}</span>
-              </Link>
-            ))}
+          <div className="flex flex-col md:flex-row justify-center gap-4 items-center mb-8">
+            <SearchBar 
+              searchTerm={searchTerm}
+              setSearchTerm={setSearchTerm}
+            />
+            <FilterSearch 
+              onCategoryClick={scrollToSection}
+            />
+          </div>
+          
+          <div className="flex flex-wrap justify-center gap-2 md:gap-4">
+            {/* Botões do cabeçalho dinamicamente gerados a partir do banco */}
+            {headerButtons.map(button => {
+              const icon = button.icon;
+              const isExternal = button.url.startsWith('http');
+              
+              if (isExternal) {
+                return (
+                  <a 
+                    key={button.id}
+                    href={button.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="bg-white text-blue-700 hover:bg-blue-50 font-medium rounded-full px-6 py-3 flex items-center gap-2 transition-colors"
+                  >
+                    {/* Usando ícone dinâmico (limitado a alguns pré-definidos) */}
+                    <span className="text-xl">{icon}</span>
+                    {button.title}
+                  </a>
+                );
+              } else {
+                return (
+                  <Link 
+                    key={button.id}
+                    to={button.url}
+                    className="bg-white text-blue-700 hover:bg-blue-50 font-medium rounded-full px-6 py-3 flex items-center gap-2 transition-colors"
+                  >
+                    <span className="text-xl">{icon}</span>
+                    {button.title}
+                  </Link>
+                );
+              }
+            })}
             
-            {/* Botão do perfil só aparece quando logado */}
-            {isLoggedIn && (
+            {/* Adicionar botão para submeter assinatura, visível para usuários logados */}
+            {authState.isAuthenticated && (
               <Link 
-                to="/profile"
-                className="flex-1 min-w-[100px] flex flex-col items-center justify-center bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-medium py-2 px-3 transition-all duration-200 hover:-translate-y-1"
+                to="/submit-subscription" 
+                className="bg-green-600 text-white hover:bg-green-700 font-medium rounded-full px-6 py-3 flex items-center gap-2 transition-colors"
               >
-                <User className="h-5 w-5 mb-1" />
-                <span className="text-xs sm:text-sm">Meu Perfil</span>
+                <span className="text-xl">➕</span>
+                Submeter Assinatura
               </Link>
             )}
           </div>
         </div>
-      </header>
-
-      <main className="container mx-auto px-3 sm:px-4 py-5 sm:py-8">
-        <FilterSearch onFilter={handleSearch} />
-        
+      </div>
+      
+      {/* Lista de assinaturas */}
+      <div className="container mx-auto px-4 py-8">
+        {/* Mostrar lista ou mensagem de sem resultados */}
         {hasResults ? (
           <SubscriptionList 
             subscriptionRefs={subscriptionRefs} 
@@ -119,14 +125,16 @@ const Index: React.FC = () => {
             setHasResults={setHasResults}
           />
         ) : (
-          <NoResults />
+          <NoResults searchTerm={searchTerm} />
         )}
-      </main>
-
-      <footer className="bg-gray-800 text-white py-3 sm:py-4">
-        <div className="container mx-auto px-3 sm:px-4 text-center">
-          <p className="text-sm sm:text-base">&copy; 2025 Só Falta a Pipoca. Todos os direitos reservados.</p>
-          <p className="text-xs text-gray-400 mt-1">v{appVersion}</p>
+      </div>
+      
+      {/* Footer */}
+      <footer className="bg-gray-800 text-white py-8">
+        <div className="container mx-auto px-4 text-center">
+          <p className="text-sm">
+            &copy; {new Date().getFullYear()} Sistema de Gerenciamento de Assinaturas. Todos os direitos reservados.
+          </p>
         </div>
       </footer>
     </div>
