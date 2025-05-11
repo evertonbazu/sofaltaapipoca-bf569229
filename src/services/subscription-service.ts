@@ -5,6 +5,9 @@ import { toast } from '@/components/ui/use-toast';
 
 // Função para mapear dados do banco de dados para o formato da aplicação
 function mapToSubscriptionData(data: any): SubscriptionData {
+  // Ensuring isMemberSubmission is correctly set based on user_id presence
+  const isMemberSubmission = data.user_id !== null;
+  
   return {
     id: data.id,
     title: data.title,
@@ -22,7 +25,8 @@ function mapToSubscriptionData(data: any): SubscriptionData {
     code: data.code,
     pixKey: data.pix_key,
     category: data.category,
-    isMemberSubmission: data.user_id ? true : false
+    userId: data.user_id,
+    isMemberSubmission: isMemberSubmission
   };
 }
 
@@ -55,13 +59,18 @@ function mapToDbFormat(subscription: SubscriptionData | PendingSubscriptionData)
 // Obter todas as assinaturas
 export async function getAllSubscriptions(): Promise<SubscriptionData[]> {
   try {
+    console.log("Fetching all subscriptions");
     const { data, error } = await supabase
       .from('subscriptions')
       .select('*')
       .order('featured', { ascending: false });
     
     if (error) throw error;
-    return data.map(mapToSubscriptionData);
+    
+    console.log("Raw subscription data:", data);
+    const mappedData = data.map(mapToSubscriptionData);
+    console.log("Mapped subscription data with member flags:", mappedData);
+    return mappedData;
   } catch (error: any) {
     console.error('Erro ao obter assinaturas:', error);
     throw error;
@@ -145,6 +154,7 @@ export async function getPendingSubscriptions(): Promise<PendingSubscriptionData
 // Obter assinaturas criadas por membros
 export async function getMemberSubscriptions(): Promise<SubscriptionData[]> {
   try {
+    console.log("Fetching member subscriptions");
     const { data, error } = await supabase
       .from('subscriptions')
       .select('*')
@@ -152,11 +162,9 @@ export async function getMemberSubscriptions(): Promise<SubscriptionData[]> {
     
     if (error) throw error;
     
-    // Marcar como submissões de membros
-    return data.map(item => mapToSubscriptionData({
-      ...item,
-      user_id: item.user_id // Isso garantirá que isMemberSubmission seja true
-    }));
+    const mappedData = data.map(mapToSubscriptionData);
+    console.log("Member subscriptions:", mappedData);
+    return mappedData;
   } catch (error: any) {
     console.error('Erro ao obter assinaturas de membros:', error);
     throw error;

@@ -184,7 +184,9 @@ const SubscriptionList = () => {
   const fetchSubscriptions = async () => {
     setIsLoading(true);
     try {
+      console.log("Fetching subscriptions for admin panel");
       const data = await getAllSubscriptions();
+      console.log("Admin subscriptions data:", data);
       setSubscriptions(data);
       setFilteredSubscriptions(data);
     } catch (error) {
@@ -432,6 +434,7 @@ const SubscriptionList = () => {
                   </TableCell>
                   <TableCell className="font-medium">
                     {subscription.title}
+                    {subscription.isMemberSubmission && <span className="ml-1 text-blue-500">*</span>}
                   </TableCell>
                   <TableCell>{subscription.price}</TableCell>
                   <TableCell className="hidden md:table-cell">{subscription.status}</TableCell>

@@ -27,19 +27,22 @@ const SubscriptionList: React.FC<SubscriptionListProps> = ({
     const fetchSubscriptions = async () => {
       try {
         setIsLoading(true);
+        
         // Get featured subscriptions
         const featured = await getFeaturedSubscriptions();
         
-        // Get all subscriptions including member submissions that are already approved
+        // Get all subscriptions including member submissions
         const all = await getAllSubscriptions();
         
         // Filtrar assinaturas regulares (todas exceto as destacadas)
         const regular = all.filter(sub => !sub.featured);
         
+        console.log("All subscriptions:", all);
+        console.log("Featured subscriptions:", featured);
+        console.log("Regular subscriptions:", regular);
+        
         setFeaturedList(featured);
         setRegularList(regular);
-        console.log("Regular subscriptions:", regular);
-        console.log("Featured subscriptions:", featured);
       } catch (error) {
         console.error("Erro ao buscar assinaturas:", error);
       } finally {
