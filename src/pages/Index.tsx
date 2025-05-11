@@ -1,16 +1,17 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
-import SearchBar from '@/components/SearchBar';
 import SubscriptionList from '@/components/SubscriptionList';
 import NoResults from '@/components/NoResults';
 import { MessageSquare, Megaphone } from 'lucide-react';
 import NavBar from '@/components/NavBar';
+import FilterSearch from '@/components/FilterSearch';
 
 const Index: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [hasResults, setHasResults] = useState(true);
   const subscriptionRefs = useRef<{ [key: string]: HTMLDivElement | null }>({});
+  const appVersion = "2.1.0"; // Versão do aplicativo
 
   const handleSearch = (term: string) => {
     setSearchTerm(term.toLowerCase());
@@ -52,7 +53,7 @@ const Index: React.FC = () => {
       </header>
 
       <main className="container mx-auto px-3 sm:px-4 py-5 sm:py-8">
-        <SearchBar onSearch={handleSearch} />
+        <FilterSearch onFilter={handleSearch} />
         
         {hasResults ? (
           <SubscriptionList 
@@ -68,7 +69,7 @@ const Index: React.FC = () => {
       <footer className="bg-gray-800 text-white py-3 sm:py-4">
         <div className="container mx-auto px-3 sm:px-4 text-center">
           <p className="text-sm sm:text-base">&copy; 2025 Só Falta a Pipoca. Todos os direitos reservados.</p>
-          <p className="text-xs text-gray-400 mt-1">v2.0.0</p>
+          <p className="text-xs text-gray-400 mt-1">v{appVersion}</p>
         </div>
       </footer>
     </div>

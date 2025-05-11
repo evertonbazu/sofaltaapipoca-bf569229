@@ -43,7 +43,12 @@ const SubscriptionCard = ({
   };
   
   const handleTelegramClick = () => {
-    const telegramUrl = `https://t.me/${telegramUsername}`;
+    // Remove @ if present at the beginning of the username
+    const cleanUsername = telegramUsername.startsWith('@') 
+      ? telegramUsername.substring(1) 
+      : telegramUsername;
+    
+    const telegramUrl = `https://telegram.me/${cleanUsername}`;
     window.open(telegramUrl, '_blank');
   };
 

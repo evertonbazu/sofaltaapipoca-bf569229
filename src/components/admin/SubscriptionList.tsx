@@ -9,7 +9,9 @@ import {
   Search, 
   Info,
   CheckSquare,
-  Square
+  Square,
+  ArrowUp,
+  ArrowDown
 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -29,6 +31,9 @@ import {
 import { SubscriptionData } from '@/types/subscriptionTypes';
 import { deleteSubscription, getAllSubscriptions, toggleFeaturedStatus } from '@/services/subscription-service';
 
+type SortField = 'title' | 'price' | 'status' | 'paymentMethod' | 'telegramUsername' | 'whatsappNumber' | 'featured' | 'addedDate';
+type SortDirection = 'asc' | 'desc';
+
 const SubscriptionList = () => {
   const [subscriptions, setSubscriptions] = useState<SubscriptionData[]>([]);
   const [filteredSubscriptions, setFilteredSubscriptions] = useState<SubscriptionData[]>([]);
@@ -38,6 +43,8 @@ const SubscriptionList = () => {
   const [subscriptionToDelete, setSubscriptionToDelete] = useState<string | null>(null);
   const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
   const [isMultiDeleteDialogOpen, setIsMultiDeleteDialogOpen] = useState<boolean>(false);
+  const [sortField, setSortField] = useState<SortField | null>(null);
+  const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -59,12 +66,111 @@ const SubscriptionList = () => {
           subscription.status.toLowerCase().includes(lowercaseSearchTerm) ||
           subscription.paymentMethod.toLowerCase().includes(lowercaseSearchTerm) ||
           subscription.telegramUsername?.toLowerCase().includes(lowercaseSearchTerm) ||
-          subscription.whatsappNumber?.toLowerCase().includes(lowercaseSearchTerm)
+          subscription.whatsappNumber?.toLowerCase().includes(lowercaseSearchTerm) ||
+          subscription.addedDate?.toLowerCase().includes(lowercaseSearchTerm)
         );
       });
       setFilteredSubscriptions(filtered);
     }
   }, [searchTerm, subscriptions]);
+
+  // Ordenar assinaturas quando o campo ou direção de ordenação mudar
+  useEffect(() => {
+    if (!sortField) {
+      return;
+    }
+    
+    const sorted = [...filteredSubscriptions].sort((a, b) => {
+      let valueA: string | boolean = '';
+      let valueB: string | boolean = '';
+      
+      switch (sortField) {
+        case 'title':
+          valueA = a.title?.toLowerCase() || '';
+          valueB = b.title?.toLowerCase() || '';
+          break;
+        case 'price':
+          valueA = a.price?.toLowerCase() || '';
+          valueB = b.price?.toLowerCase() || '';
+          break;
+        case 'status':
+          valueA = a.status?.toLowerCase() || '';
+          valueB = b.status?.toLowerCase() || '';
+          break;
+        case 'paymentMethod':
+          valueA = a.paymentMethod?.toLowerCase() || '';
+          valueB = b.paymentMethod?.toLowerCase() || '';
+          break;
+        case 'telegramUsername':
+          valueA = a.telegramUsername?.toLowerCase() || '';
+          valueB = b.telegramUsername?.toLowerCase() || '';
+          break;
+        case 'whatsappNumber':
+          valueA = a.whatsappNumber?.toLowerCase() || '';
+          valueB = b.whatsappNumber?.toLowerCase() || '';
+          break;
+        case 'featured':
+          valueA = a.featured || false;
+          valueB = b.featured || false;
+          break;
+        case 'addedDate':
+          // Para datas no formato DD/MM/YYYY, convertemos para YYYY/MM/DD para ordenação
+          if (a.addedDate && b.addedDate) {
+            const partsA = a.addedDate.split('/');
+            const partsB = b.addedDate.split('/');
+            if (partsA.length === 3 && partsB.length === 3) {
+              valueA = `${partsA[2]}/${partsA[1]}/${partsA[0]}`;
+              valueB = `${partsB[2]}/${partsB[1]}/${partsB[0]}`;
+            } else {
+              valueA = a.addedDate;
+              valueB = b.addedDate;
+            }
+          } else {
+            valueA = a.addedDate || '';
+            valueB = b.addedDate || '';
+          }
+          break;
+      }
+      
+      if (typeof valueA === 'boolean' && typeof valueB === 'boolean') {
+        return sortDirection === 'asc' ? 
+          Number(valueA) - Number(valueB) : 
+          Number(valueB) - Number(valueA);
+      }
+      
+      if (sortDirection === 'asc') {
+        return valueA < valueB ? -1 : valueA > valueB ? 1 : 0;
+      } else {
+        return valueA > valueB ? -1 : valueA < valueB ? 1 : 0;
+      }
+    });
+    
+    setFilteredSubscriptions(sorted);
+  }, [sortField, sortDirection]);
+
+  // Função para alterar a ordenação ao clicar em um cabeçalho da tabela
+  const handleSort = (field: SortField) => {
+    if (sortField === field) {
+      // Se já estamos ordenando por este campo, alternar a direção
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      // Caso contrário, definir o novo campo de ordenação e resetar para ascendente
+      setSortField(field);
+      setSortDirection('asc');
+    }
+  };
+
+  // Renderizar indicador de ordenação
+  const renderSortIndicator = (field: SortField) => {
+    if (sortField !== field) {
+      return null;
+    }
+    return sortDirection === 'asc' ? (
+      <ArrowUp className="h-4 w-4 inline ml-1" />
+    ) : (
+      <ArrowDown className="h-4 w-4 inline ml-1" />
+    );
+  };
 
   // Função para buscar assinaturas
   const fetchSubscriptions = async () => {
@@ -236,7 +342,7 @@ const SubscriptionList = () => {
       {isLoading ? (
         <div className="text-center py-8">Carregando assinaturas...</div>
       ) : filteredSubscriptions.length > 0 ? (
-        <div className="bg-white rounded-md shadow">
+        <div className="bg-white rounded-md shadow overflow-x-auto">
           <Table>
             <TableHeader>
               <TableRow>
@@ -248,13 +354,54 @@ const SubscriptionList = () => {
                     />
                   </div>
                 </TableHead>
-                <TableHead>Título</TableHead>
-                <TableHead>Preço</TableHead>
-                <TableHead className="hidden md:table-cell">Status</TableHead>
-                <TableHead className="hidden md:table-cell">Pagamento</TableHead>
-                <TableHead className="hidden md:table-cell">Telegram</TableHead>
-                <TableHead className="hidden md:table-cell">WhatsApp</TableHead>
-                <TableHead className="hidden md:table-cell">Destaque</TableHead>
+                <TableHead 
+                  className="cursor-pointer"
+                  onClick={() => handleSort('title')}
+                >
+                  Título {renderSortIndicator('title')}
+                </TableHead>
+                <TableHead 
+                  className="cursor-pointer"
+                  onClick={() => handleSort('price')}
+                >
+                  Preço {renderSortIndicator('price')}
+                </TableHead>
+                <TableHead 
+                  className="hidden md:table-cell cursor-pointer"
+                  onClick={() => handleSort('status')}
+                >
+                  Status {renderSortIndicator('status')}
+                </TableHead>
+                <TableHead 
+                  className="hidden md:table-cell cursor-pointer"
+                  onClick={() => handleSort('paymentMethod')}
+                >
+                  Pagamento {renderSortIndicator('paymentMethod')}
+                </TableHead>
+                <TableHead 
+                  className="hidden md:table-cell cursor-pointer"
+                  onClick={() => handleSort('telegramUsername')}
+                >
+                  Telegram {renderSortIndicator('telegramUsername')}
+                </TableHead>
+                <TableHead 
+                  className="hidden md:table-cell cursor-pointer"
+                  onClick={() => handleSort('whatsappNumber')}
+                >
+                  WhatsApp {renderSortIndicator('whatsappNumber')}
+                </TableHead>
+                <TableHead 
+                  className="hidden md:table-cell cursor-pointer"
+                  onClick={() => handleSort('addedDate')}
+                >
+                  Adicionado em {renderSortIndicator('addedDate')}
+                </TableHead>
+                <TableHead 
+                  className="hidden md:table-cell cursor-pointer"
+                  onClick={() => handleSort('featured')}
+                >
+                  Destaque {renderSortIndicator('featured')}
+                </TableHead>
                 <TableHead>Ações</TableHead>
               </TableRow>
             </TableHeader>
@@ -275,6 +422,7 @@ const SubscriptionList = () => {
                   <TableCell className="hidden md:table-cell">{subscription.paymentMethod}</TableCell>
                   <TableCell className="hidden md:table-cell">{subscription.telegramUsername || '-'}</TableCell>
                   <TableCell className="hidden md:table-cell">{subscription.whatsappNumber || '-'}</TableCell>
+                  <TableCell className="hidden md:table-cell">{subscription.addedDate || '-'}</TableCell>
                   <TableCell className="hidden md:table-cell">
                     {subscription.featured ? 'Sim' : 'Não'}
                   </TableCell>
