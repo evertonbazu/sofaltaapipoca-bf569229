@@ -1,14 +1,18 @@
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Link } from 'react-router-dom';
 import SearchBar from '@/components/SearchBar';
 import SubscriptionList from '@/components/SubscriptionList';
 import NoResults from '@/components/NoResults';
-import { MessageSquare, Megaphone } from 'lucide-react';
+import { MessageSquare, Megaphone, Settings } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
+import { Button } from '@/components/ui/button';
 
 const Index: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [hasResults, setHasResults] = useState(true);
   const subscriptionRefs = useRef<{ [key: string]: HTMLDivElement | null }>({});
+  const { authState } = useAuth();
 
   const handleSearch = (term: string) => {
     setSearchTerm(term.toLowerCase());
@@ -22,7 +26,40 @@ const Index: React.FC = () => {
     <div className="min-h-screen bg-gray-100">
       <header className="bg-gradient-indigo text-white py-4 sm:py-6">
         <div className="container mx-auto px-3 sm:px-4">
-          <h1 className="text-2xl sm:text-3xl font-bold text-center">🍿 Só Falta a Pipoca</h1>
+          <div className="flex justify-between items-center">
+            <h1 className="text-2xl sm:text-3xl font-bold">🍿 Só Falta a Pipoca</h1>
+            
+            {/* Mostrar botão de admin se o usuário estiver logado e for admin */}
+            {authState.user && authState.isAdmin && (
+              <Button
+                variant="outline"
+                size="sm"
+                className="text-white border-white hover:bg-white hover:text-indigo-700"
+                asChild
+              >
+                <Link to="/admin">
+                  <Settings className="h-4 w-4 mr-1" />
+                  Admin
+                </Link>
+              </Button>
+            )}
+            
+            {/* Mostrar botão de login se o usuário não estiver logado */}
+            {!authState.user && (
+              <Button
+                variant="outline"
+                size="sm"
+                className="text-white border-white hover:bg-white hover:text-indigo-700"
+                asChild
+              >
+                <Link to="/auth">
+                  <Settings className="h-4 w-4 mr-1" />
+                  Login
+                </Link>
+              </Button>
+            )}
+          </div>
+          
           <p className="text-center text-base sm:text-lg mt-2">Assinaturas premium com preços exclusivos</p>
           
           {/* Botões de Anunciar e Fale Conosco */}
@@ -64,7 +101,7 @@ const Index: React.FC = () => {
       <footer className="bg-gray-800 text-white py-3 sm:py-4">
         <div className="container mx-auto px-3 sm:px-4 text-center">
           <p className="text-sm sm:text-base">&copy; 2025 Só Falta a Pipoca. Todos os direitos reservados.</p>
-          <p className="text-xs text-gray-400 mt-1">v1.1.2</p>
+          <p className="text-xs text-gray-400 mt-1">v2.0.0</p>
         </div>
       </footer>
     </div>

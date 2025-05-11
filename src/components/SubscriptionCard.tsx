@@ -1,7 +1,9 @@
+
 import React from 'react';
-import { Button } from "@/components/ui/button";
 import { Tv, Youtube, Apple, Monitor } from 'lucide-react';
+
 interface SubscriptionCardProps {
+  id?: string;
   title: string;
   price: string;
   paymentMethod: string;
@@ -17,7 +19,9 @@ interface SubscriptionCardProps {
   addedDate?: string;
   version?: string;
 }
+
 const SubscriptionCard = ({
+  id,
   title,
   price,
   paymentMethod,
@@ -31,18 +35,19 @@ const SubscriptionCard = ({
   icon = 'monitor',
   isSearchResult = false,
   addedDate,
-  version = '1.1.0'
+  version = '2.0.0'
 }: SubscriptionCardProps) => {
   const handleWhatsappClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
     const whatsappUrl = `https://api.whatsapp.com/send?phone=${whatsappNumber}`;
     window.open(whatsappUrl, '_blank');
   };
+  
   const handleTelegramClick = () => {
     const telegramUrl = `https://t.me/${telegramUsername}`;
     window.open(telegramUrl, '_blank');
   };
 
-  // Function to render the appropriate icon based on the subscription type
+  // Função para renderizar o ícone apropriado com base no tipo de assinatura
   const renderIcon = () => {
     switch (icon) {
       case 'tv':
@@ -56,7 +61,9 @@ const SubscriptionCard = ({
         return <Monitor size={20} className="mr-2" />;
     }
   };
-  return <div className={`card bg-white rounded-xl overflow-hidden shadow-lg ${isSearchResult ? 'search-highlight' : ''}`}>
+  
+  return (
+    <div className={`card bg-white rounded-xl overflow-hidden shadow-lg ${isSearchResult ? 'search-highlight' : ''}`}>
       <div className={`${headerColor} p-4`}>
         <h2 className={`text-xl font-bold text-white flex items-center ${centerTitle ? 'justify-center' : ''}`}>
           {renderIcon()} {title}
@@ -79,20 +86,29 @@ const SubscriptionCard = ({
           <span className="font-semibold text-gray-700 text-sm sm:text-base">🔐 Acesso:</span>
           <span className="font-medium text-gray-900 text-sm sm:text-base">{access}</span>
         </div>
-        {addedDate && <div className="flex flex-wrap justify-between items-center">
+        {addedDate && (
+          <div className="flex flex-wrap justify-between items-center">
             <span className="font-semibold text-gray-700 text-sm sm:text-base">📅 Adicionado em:</span>
             <span className="font-medium text-gray-900 text-sm sm:text-base">{addedDate}</span>
-          </div>}
+          </div>
+        )}
         <div className="pt-4 space-y-2 sm:space-y-3">
-          <a onClick={handleTelegramClick} className="contact-btn w-full bg-blue-600 hover:bg-blue-700 text-white py-2 sm:py-3 px-4 rounded-lg font-medium flex items-center justify-center cursor-pointer text-sm sm:text-base">
+          <a 
+            onClick={handleTelegramClick} 
+            className="contact-btn w-full bg-blue-600 hover:bg-blue-700 text-white py-2 sm:py-3 px-4 rounded-lg font-medium flex items-center justify-center cursor-pointer text-sm sm:text-base"
+          >
             <span className="mr-2">📩</span> Contato por Telegram
           </a>
-          <a onClick={handleWhatsappClick} className="contact-btn w-full bg-green-600 hover:bg-green-700 text-white py-2 sm:py-3 px-4 rounded-lg font-medium flex items-center justify-center cursor-pointer text-sm sm:text-base">
+          <a 
+            onClick={handleWhatsappClick} 
+            className="contact-btn w-full bg-green-600 hover:bg-green-700 text-white py-2 sm:py-3 px-4 rounded-lg font-medium flex items-center justify-center cursor-pointer text-sm sm:text-base"
+          >
             <span className="mr-2">📱</span> Contato por WhatsApp
           </a>
         </div>
-        
       </div>
-    </div>;
+    </div>
+  );
 };
+
 export default SubscriptionCard;

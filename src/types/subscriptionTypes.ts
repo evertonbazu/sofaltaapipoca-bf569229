@@ -1,5 +1,6 @@
 
 export interface SubscriptionData {
+  id?: string;
   title: string;
   price: string;
   paymentMethod: string;
@@ -11,4 +12,15 @@ export interface SubscriptionData {
   telegramUsername: string;
   icon?: string;
   addedDate?: string;
+  featured?: boolean;
+  code?: string;
+}
+
+export interface PendingSubscriptionData extends SubscriptionData {
+  paymentProofImage?: string;
+  pixQrCode?: string;
+  pixKey?: string;
+  statusApproval?: string;
+  rejectionReason?: string;
+  userId?: string;
 }

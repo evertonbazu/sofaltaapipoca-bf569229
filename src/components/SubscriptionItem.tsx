@@ -3,6 +3,7 @@ import React from "react";
 import SubscriptionCard from "@/components/SubscriptionCard";
 
 interface SubscriptionItemProps {
+  id?: string;
   title: string;
   price: string;
   paymentMethod: string;
@@ -19,6 +20,7 @@ interface SubscriptionItemProps {
 }
 
 const SubscriptionItem: React.FC<SubscriptionItemProps> = ({
+  id,
   title,
   price,
   paymentMethod,
@@ -38,6 +40,7 @@ const SubscriptionItem: React.FC<SubscriptionItemProps> = ({
     return (
       <div ref={el => subscriptionRefs.current[title] = el}>
         <SubscriptionCard
+          id={id}
           title={title}
           price={price}
           paymentMethod={paymentMethod}
@@ -58,6 +61,7 @@ const SubscriptionItem: React.FC<SubscriptionItemProps> = ({
   // Otherwise, render without a ref
   return (
     <SubscriptionCard
+      id={id}
       title={title}
       price={price}
       paymentMethod={paymentMethod}

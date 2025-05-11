@@ -1,23 +1,35 @@
 
 import React, { useEffect, useState } from "react";
-import { regularSubscriptions } from "@/data/subscriptions";
 import SubscriptionItem from "./SubscriptionItem";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { SubscriptionData } from "@/types/subscriptionTypes";
 
 interface RegularSubscriptionsProps {
   searchTerm?: string;
   setHasResults?: React.Dispatch<React.SetStateAction<boolean>>;
+  subscriptionList: SubscriptionData[];
 }
 
 const RegularSubscriptions: React.FC<RegularSubscriptionsProps> = ({ 
   searchTerm = "", 
-  setHasResults 
+  setHasResults,
+  subscriptionList = []
 }) => {
-  const [visibleSubscriptions, setVisibleSubscriptions] = useState(regularSubscriptions);
+  const [visibleSubscriptions, setVisibleSubscriptions] = useState<SubscriptionData[]>(subscriptionList);
   const isMobile = useIsMobile();
 
+  // Atualizar lista quando subscriptionList mudar
   useEffect(() => {
-    const filtered = regularSubscriptions.filter(sub => {
+    setVisibleSubscriptions(subscriptionList);
+  }, [subscriptionList]);
+  
+  useEffect(() => {
+    if (searchTerm.trim() === "") {
+      setVisibleSubscriptions(subscriptionList);
+      return;
+    }
+    
+    const filtered = subscriptionList.filter(sub => {
       // Incluir todos os campos relevantes na busca
       const content = `${sub.title} ${sub.price} ${sub.paymentMethod} ${sub.status} ${sub.access}`.toLowerCase();
       return content.includes(searchTerm.toLowerCase());
@@ -33,7 +45,7 @@ const RegularSubscriptions: React.FC<RegularSubscriptionsProps> = ({
       // Não definimos hasResults como false aqui, pois isso é feito no SubscriptionList
       // baseado na combinação de resultados de ambos os componentes
     }
-  }, [searchTerm, setHasResults]);
+  }, [searchTerm, subscriptionList, setHasResults]);
 
   if (visibleSubscriptions.length === 0) {
     return null;
@@ -41,9 +53,10 @@ const RegularSubscriptions: React.FC<RegularSubscriptionsProps> = ({
 
   return (
     <div className={`grid gap-6 ${isMobile ? 'grid-cols-1' : 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3'}`}>
-      {visibleSubscriptions.map((subscription, index) => (
+      {visibleSubscriptions.map((subscription) => (
         <SubscriptionItem
-          key={`${subscription.title}-${index}`}
+          key={`${subscription.id}-${subscription.title}`}
+          id={subscription.id}
           title={subscription.title}
           price={subscription.price}
           paymentMethod={subscription.paymentMethod}

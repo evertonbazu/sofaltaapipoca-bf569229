@@ -12,7 +12,7 @@ const SearchBar: React.FC<SearchBarProps> = ({ onSearch }) => {
   const [searchTerm, setSearchTerm] = useState("");
   
   const debouncedSearch = useDebounced((value: string) => {
-    onSearch(value);
+    onSearch(value.toLowerCase().trim());
   }, 300);
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
