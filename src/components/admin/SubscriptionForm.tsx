@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -33,17 +32,23 @@ const formSchema = z.object({
   addedDate: z.string().optional(),
   featured: z.boolean().default(false),
   code: z.string().optional(),
+  pixKey: z.string().optional(),
 });
 
 type FormValues = z.infer<typeof formSchema>;
 
-const SubscriptionForm: React.FC = () => {
+// Define the props for the SubscriptionForm component
+interface SubscriptionFormProps {
+  initialData: SubscriptionData | null;
+  isPendingEdit?: boolean;
+}
+
+const SubscriptionForm: React.FC<SubscriptionFormProps> = ({ initialData, isPendingEdit = false }) => {
   const { id } = useParams<{ id: string }>();
   const isEditing = !!id;
   const navigate = useNavigate();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState<boolean>(false);
-  const [isFetchingData, setIsFetchingData] = useState<boolean>(isEditing);
   const [isAdmin, setIsAdmin] = useState<boolean>(false);
   const [existingTitles, setExistingTitles] = useState<string[]>([]);
   const [selectedTitle, setSelectedTitle] = useState<string>("");
@@ -99,72 +104,43 @@ const SubscriptionForm: React.FC = () => {
       addedDate: new Date().toLocaleDateString('pt-BR'),
       featured: false,
       code: "",
+      pixKey: "",
     },
   });
 
-  // Buscar dados para edição
+  // Inicializar o formulário com os dados existentes, se estiver editando
   useEffect(() => {
-    if (isEditing) {
-      const fetchSubscription = async () => {
-        try {
-          const { data, error } = await supabase
-            .from('subscriptions')
-            .select('*')
-            .eq('id', id)
-            .single();
-          
-          if (error) throw error;
-          
-          if (data) {
-            // Verifica se o título está na lista de títulos existentes
-            const isTitleInList = existingTitles.includes(data.title.toUpperCase());
-            
-            // Verifica se o método de pagamento é um dos predefinidos
-            const paymentMethod = data.payment_method;
-            const isPreDefinedPayment = ["PIX (Mensal)", "PIX (Anual)"].includes(paymentMethod);
-            
-            form.reset({
-              title: isTitleInList ? data.title.toUpperCase() : "PERSONALIZADO",
-              customTitle: isTitleInList ? "" : data.title,
-              price: data.price,
-              paymentMethod: isPreDefinedPayment ? data.payment_method : "OUTRA FORMA",
-              customPaymentMethod: isPreDefinedPayment ? "" : data.payment_method,
-              status: data.status || "Assinado",
-              access: data.access,
-              headerColor: data.header_color || "bg-blue-600",
-              priceColor: data.price_color || "text-blue-600",
-              whatsappNumber: data.whatsapp_number,
-              telegramUsername: data.telegram_username,
-              icon: data.icon || 'none',
-              addedDate: data.added_date || new Date().toLocaleDateString('pt-BR'),
-              featured: data.featured || false,
-              code: data.code,
-            });
-            
-            setSelectedTitle(isTitleInList ? data.title.toUpperCase() : "PERSONALIZADO");
-            setSelectedPaymentMethod(isPreDefinedPayment ? data.payment_method : "OUTRA FORMA");
-          }
-        } catch (error) {
-          console.error('Erro ao buscar assinatura:', error);
-          toast({
-            title: "Erro ao carregar dados",
-            description: "Não foi possível carregar os dados da assinatura.",
-            variant: "destructive",
-          });
-          logError(
-            'Erro ao buscar assinatura para edição',
-            JSON.stringify({ id }),
-            'FETCH_ERROR',
-            JSON.stringify(error)
-          );
-        } finally {
-          setIsFetchingData(false);
-        }
-      };
-
-      fetchSubscription();
+    if (initialData) {
+      // Verifica se o título está na lista de títulos existentes
+      const isTitleInList = existingTitles.includes(initialData.title.toUpperCase());
+      
+      // Verifica se o método de pagamento é um dos predefinidos
+      const paymentMethod = initialData.paymentMethod;
+      const isPreDefinedPayment = ["PIX (Mensal)", "PIX (Anual)"].includes(paymentMethod);
+      
+      form.reset({
+        title: isTitleInList ? initialData.title.toUpperCase() : "PERSONALIZADO",
+        customTitle: isTitleInList ? "" : initialData.title,
+        price: initialData.price,
+        paymentMethod: isPreDefinedPayment ? initialData.paymentMethod : "OUTRA FORMA",
+        customPaymentMethod: isPreDefinedPayment ? "" : initialData.paymentMethod,
+        status: initialData.status || "Assinado",
+        access: initialData.access,
+        headerColor: initialData.headerColor || "bg-blue-600",
+        priceColor: initialData.priceColor || "text-blue-600",
+        whatsappNumber: initialData.whatsappNumber,
+        telegramUsername: initialData.telegramUsername,
+        icon: initialData.icon || 'none',
+        addedDate: initialData.addedDate || new Date().toLocaleDateString('pt-BR'),
+        featured: initialData.featured || false,
+        code: initialData.code,
+        pixKey: initialData.pixKey || "",
+      });
+      
+      setSelectedTitle(isTitleInList ? initialData.title.toUpperCase() : "PERSONALIZADO");
+      setSelectedPaymentMethod(isPreDefinedPayment ? initialData.paymentMethod : "OUTRA FORMA");
     }
-  }, [id, isEditing, form, toast, existingTitles]);
+  }, [initialData, existingTitles, form]);
 
   // Manipular mudança de título
   const handleTitleChange = (value: string) => {
@@ -211,11 +187,14 @@ const SubscriptionForm: React.FC = () => {
         icon: data.icon === 'none' ? '' : data.icon,
         addedDate: data.addedDate,
         featured: data.featured,
-        code: data.code
+        code: data.code,
+        pixKey: data.pixKey
       };
       
       if (isEditing) {
-        await updateSubscription(id, formattedData);
+        // Use the correct table based on isPendingEdit flag
+        const tableName = isPendingEdit ? 'pending_subscriptions' : 'subscriptions';
+        await updateSubscription(id, formattedData, isPendingEdit ? tableName : undefined);
         toast({
           title: "Assinatura atualizada",
           description: "A assinatura foi atualizada com sucesso.",
@@ -248,15 +227,6 @@ const SubscriptionForm: React.FC = () => {
       setIsLoading(false);
     }
   };
-
-  if (isFetchingData) {
-    return (
-      <div className="flex items-center justify-center p-8">
-        <Loader2 className="animate-spin h-8 w-8 text-primary" />
-        <span className="ml-2">Carregando dados da assinatura...</span>
-      </div>
-    );
-  }
 
   return (
     <Card>
