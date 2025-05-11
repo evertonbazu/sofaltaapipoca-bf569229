@@ -2,7 +2,6 @@
 import React, { useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Search } from "lucide-react";
-import { useDebounced } from "@/hooks/useDebounced";
 
 interface SearchBarProps {
   onSearch: (searchTerm: string) => void;
@@ -11,14 +10,10 @@ interface SearchBarProps {
 const SearchBar: React.FC<SearchBarProps> = ({ onSearch }) => {
   const [searchTerm, setSearchTerm] = useState("");
   
-  const debouncedSearch = useDebounced((value: string) => {
-    onSearch(value.toLowerCase().trim());
-  }, 300);
-
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     setSearchTerm(value);
-    debouncedSearch(value);
+    onSearch(value.toLowerCase().trim());
   };
 
   // Inicializar a busca com string vazia quando o componente for montado

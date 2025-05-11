@@ -45,12 +45,30 @@ const SubscriptionList: React.FC<SubscriptionListProps> = ({
     fetchSubscriptions();
   }, []);
   
-  // Reset para true quando o termo de busca estiver vazio
   useEffect(() => {
+    // Verificar resultados da busca para ambas as listas
+    const hasFeaturedResults = featuredList.some(sub => 
+      sub.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      sub.paymentMethod.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      sub.status.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      sub.access.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+    
+    const hasRegularResults = regularList.some(sub => 
+      sub.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      sub.paymentMethod.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      sub.status.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      sub.access.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+    
+    // Se o termo de busca estiver vazio, sempre mostra resultados
     if (searchTerm === "") {
       setHasResults(true);
+    } else {
+      // Caso contrário, verifica se há algum resultado em qualquer uma das listas
+      setHasResults(hasFeaturedResults || hasRegularResults);
     }
-  }, [searchTerm, setHasResults]);
+  }, [searchTerm, featuredList, regularList, setHasResults]);
   
   if (isLoading) {
     return (

@@ -11,6 +11,7 @@ import { AuthProvider } from "./contexts/AuthContext";
 import Dashboard from "./pages/admin/Dashboard";
 import Subscriptions from "./pages/admin/Subscriptions";
 import SubscriptionEditor from "./pages/admin/SubscriptionEditor";
+import ChatSubscriptionEditor from "./pages/admin/ChatSubscriptionEditor";
 
 const queryClient = new QueryClient();
 
@@ -30,6 +31,7 @@ const App = () => (
             <Route path="/admin/subscriptions" element={<Subscriptions />} />
             <Route path="/admin/subscriptions/new" element={<SubscriptionEditor />} />
             <Route path="/admin/subscriptions/edit/:id" element={<SubscriptionEditor />} />
+            <Route path="/admin/subscriptions/chat" element={<ChatSubscriptionEditor />} />
             
             {/* Rota de fallback */}
             <Route path="*" element={<NotFound />} />

@@ -3,25 +3,16 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   LayoutDashboard, 
-  LogOut, 
   Menu, 
   Plus, 
   Clock, 
   ListFilter, 
-  Settings, 
-  ChevronDown 
+  Settings
 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useAuth } from '@/contexts/AuthContext';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+import NavBar from '@/components/NavBar';
 
 interface AdminLayoutProps {
   children: React.ReactNode;
@@ -30,7 +21,7 @@ interface AdminLayoutProps {
 
 const AdminLayout: React.FC<AdminLayoutProps> = ({ children, title }) => {
   const navigate = useNavigate();
-  const { signOut, authState } = useAuth();
+  const { authState } = useAuth();
   const [open, setOpen] = React.useState(false);
 
   // Verificar se o usuário é admin e redirecionar se não for
@@ -39,11 +30,6 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children, title }) => {
       navigate('/auth');
     }
   }, [authState, navigate]);
-
-  const handleSignOut = async () => {
-    await signOut();
-    navigate('/auth');
-  };
 
   // Array de links do menu
   const menuLinks = [
@@ -60,6 +46,11 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children, title }) => {
     { 
       name: 'Adicionar Assinatura', 
       path: '/admin/subscriptions/new', 
+      icon: <Plus className="h-5 w-5 mr-2" /> 
+    },
+    { 
+      name: 'Adicionar Assinatura (Chat)', 
+      path: '/admin/subscriptions/chat', 
       icon: <Plus className="h-5 w-5 mr-2" /> 
     },
     { 
@@ -84,9 +75,11 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children, title }) => {
 
   return (
     <div className="min-h-screen bg-gray-100">
+      <NavBar />
+      
       {/* Cabeçalho com menu hamburguer para mobile */}
       <header className="bg-white shadow-sm">
-        <div className="container mx-auto px-4 py-3 flex items-center justify-between">
+        <div className="container mx-auto px-4 py-3 flex items-center">
           <div className="flex items-center space-x-2">
             <Sheet open={open} onOpenChange={setOpen}>
               <SheetTrigger asChild>
@@ -112,41 +105,11 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children, title }) => {
                       </Button>
                     ))}
                   </div>
-                  <div className="pt-4 border-t">
-                    <Button 
-                      variant="ghost" 
-                      className="w-full justify-start text-red-500"
-                      onClick={handleSignOut}
-                    >
-                      <LogOut className="h-5 w-5 mr-2" />
-                      Sair
-                    </Button>
-                  </div>
                 </div>
               </SheetContent>
             </Sheet>
             <h1 className="text-xl font-semibold">{title}</h1>
           </div>
-
-          {/* Menu do usuário */}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" className="gap-2">
-                {authState.user?.email}
-                <ChevronDown size={16} />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuLabel>Minha Conta</DropdownMenuLabel>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={() => navigate('/')}>
-                Ver Site
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={handleSignOut} className="text-red-500">
-                Sair
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
         </div>
       </header>
 
@@ -165,16 +128,6 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children, title }) => {
                 {link.name}
               </Button>
             ))}
-          </div>
-          <div className="p-4 border-t">
-            <Button 
-              variant="ghost" 
-              className="w-full justify-start text-red-500"
-              onClick={handleSignOut}
-            >
-              <LogOut className="h-5 w-5 mr-2" />
-              Sair
-            </Button>
           </div>
         </aside>
 
