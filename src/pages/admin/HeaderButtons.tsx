@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import AdminLayout from '@/components/admin/AdminLayout';
@@ -225,7 +224,7 @@ const HeaderButtons = () => {
   };
 
   return (
-    <AdminLayout>
+    <AdminLayout title="Gerenciar Botões do Cabeçalho">
       <div className="space-y-4">
         <div className="flex justify-between items-center">
           <h1 className="text-2xl font-bold">Gerenciar Botões do Cabeçalho</h1>
