@@ -108,7 +108,7 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children, title }) => {
                 <Button 
                   variant="ghost" 
                   className="w-full justify-start text-red-500 hover:text-red-700 hover:bg-red-50"
-                  onClick={logout}
+                  onClick={() => logout()}
                 >
                   <LogOut className="mr-2 h-4 w-4" />
                   <span>Sair</span>
@@ -146,7 +146,7 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children, title }) => {
               <Button 
                 variant="ghost" 
                 className="w-full justify-start text-red-500 hover:text-red-700 hover:bg-red-50"
-                onClick={logout}
+                onClick={() => logout()}
               >
                 <LogOut className="mr-2 h-4 w-4" />
                 <span>Sair</span>

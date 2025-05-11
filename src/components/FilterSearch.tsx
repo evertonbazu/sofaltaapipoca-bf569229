@@ -1,51 +1,73 @@
 
-import React, { useState, useEffect, useRef } from "react";
-import { Input } from "@/components/ui/input";
-import { Search, X } from "lucide-react";
+import React, { useState } from "react";
+import { Filter } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Separator } from "@/components/ui/separator";
+import { Badge } from "@/components/ui/badge";
+import { getAllCategories } from "@/services/subscription-service";
 
 interface FilterSearchProps {
-  onFilter: (searchTerm: string) => void;
+  onCategoryClick: (category: string) => void;
 }
 
-const FilterSearch: React.FC<FilterSearchProps> = ({ onFilter }) => {
-  const [searchTerm, setSearchTerm] = useState("");
-  const searchInputRef = useRef<HTMLInputElement>(null);
+const FilterSearch: React.FC<FilterSearchProps> = ({ onCategoryClick }) => {
+  const [categories, setCategories] = useState<string[]>([]);
+  const [isOpen, setIsOpen] = useState(false);
   
-  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
-    setSearchTerm(value);
-    onFilter(value);
-  };
+  // Fetch categories quando o componente montar
+  React.useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const fetchedCategories = await getAllCategories();
+        setCategories(fetchedCategories);
+      } catch (error) {
+        console.error("Erro ao buscar categorias:", error);
+      }
+    };
+    
+    fetchCategories();
+  }, []);
   
-  const clearSearch = () => {
-    setSearchTerm("");
-    onFilter("");
-    if (searchInputRef.current) {
-      searchInputRef.current.focus();
-    }
-  };
-
   return (
-    <div className="relative mb-6 w-full max-w-md mx-auto">
-      <Search className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400" />
-      <Input
-        ref={searchInputRef}
-        type="text"
-        placeholder="Filtrar por título..."
-        value={searchTerm}
-        onChange={handleSearchChange}
-        className="pl-10 py-2 w-full bg-white bg-opacity-90 focus:ring-2 focus:ring-indigo-400"
-      />
-      {searchTerm && (
-        <button 
-          onClick={clearSearch}
-          className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-          aria-label="Limpar busca"
-        >
-          <X className="h-4 w-4" />
-        </button>
-      )}
-    </div>
+    <Popover open={isOpen} onOpenChange={setIsOpen}>
+      <PopoverTrigger asChild>
+        <Button variant="outline" size="sm" className="h-10 px-4 py-2 bg-white">
+          <Filter className="mr-2 h-4 w-4" />
+          Filtrar
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-80">
+        <div className="grid gap-4">
+          <div className="space-y-2">
+            <h4 className="font-medium leading-none">Categorias</h4>
+            <p className="text-sm text-muted-foreground">
+              Selecione uma categoria para filtrar as assinaturas
+            </p>
+          </div>
+          <Separator />
+          <div className="flex flex-wrap gap-2">
+            {categories.length > 0 ? (
+              categories.map((category) => (
+                <Badge
+                  key={category}
+                  variant="secondary"
+                  className="cursor-pointer hover:bg-secondary/80"
+                  onClick={() => {
+                    onCategoryClick(category);
+                    setIsOpen(false);
+                  }}
+                >
+                  {category}
+                </Badge>
+              ))
+            ) : (
+              <p className="text-sm text-muted-foreground">Carregando categorias...</p>
+            )}
+          </div>
+        </div>
+      </PopoverContent>
+    </Popover>
   );
 };
 

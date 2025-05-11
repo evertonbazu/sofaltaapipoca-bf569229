@@ -102,7 +102,7 @@ const Index = () => {
             })}
             
             {/* Adicionar botão para submeter assinatura, visível para usuários logados */}
-            {authState.isAuthenticated && (
+            {authState.user && (
               <Link 
                 to="/submit-subscription" 
                 className="bg-green-600 text-white hover:bg-green-700 font-medium rounded-full px-6 py-3 flex items-center gap-2 transition-colors"

@@ -2,112 +2,88 @@
 import React, { useEffect, useState } from "react";
 import FeaturedSubscriptions from "./FeaturedSubscriptions";
 import RegularSubscriptions from "./RegularSubscriptions";
-import { SubscriptionData, PendingSubscriptionData } from "@/types/subscriptionTypes";
-import { getAllSubscriptions, getFeaturedSubscriptions, getPendingSubscriptions } from "@/services/subscription-service";
-import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/contexts/AuthContext";
+import { getAllSubscriptions } from "@/services/subscription-service";
+import { SubscriptionData } from "@/types/subscriptionTypes";
 
 interface SubscriptionListProps {
   subscriptionRefs: React.MutableRefObject<{[key: string]: HTMLDivElement | null}>;
   searchTerm: string;
-  setHasResults: React.Dispatch<React.SetStateAction<boolean>>;
+  setHasResults: (hasResults: boolean) => void;
 }
 
 const SubscriptionList: React.FC<SubscriptionListProps> = ({ 
   subscriptionRefs, 
-  searchTerm, 
-  setHasResults 
+  searchTerm,
+  setHasResults
 }) => {
-  const [featuredList, setFeaturedList] = useState<SubscriptionData[]>([]);
-  const [regularList, setRegularList] = useState<SubscriptionData[]>([]);
-  const [pendingList, setPendingList] = useState<PendingSubscriptionData[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const { authState } = useAuth();
-  
-  // Buscar assinaturas do banco de dados
+  const [subscriptions, setSubscriptions] = useState<{
+    featured: SubscriptionData[];
+    regular: { [category: string]: SubscriptionData[] };
+  }>({
+    featured: [],
+    regular: {}
+  });
+
+  // Função para buscar todas as assinaturas e organizá-las
   useEffect(() => {
     const fetchSubscriptions = async () => {
       try {
-        setIsLoading(true);
-        const featured = await getFeaturedSubscriptions();
-        const all = await getAllSubscriptions();
-        const pending = await getPendingSubscriptions();
+        const allSubscriptions = await getAllSubscriptions();
         
-        // Filtrar assinaturas regulares (todas exceto as destacadas)
-        const regular = all.filter(sub => !sub.featured);
+        // Organizar assinaturas por categoria e tipo (featured ou regular)
+        const featured: SubscriptionData[] = [];
+        const regular: { [category: string]: SubscriptionData[] } = {};
         
-        // Transformar assinaturas pendentes para o formato de SubscriptionData
-        const pendingSubscriptions = pending
-          .filter(sub => sub.statusApproval === 'pending')
-          .map(sub => ({
-            ...sub,
-            title: `${sub.title} *`,  // Adicionar asterisco para indicar que é uma submissão de membro
-            status: "Assinado",
-            isUserSubmission: true
-          }));
+        allSubscriptions.forEach((sub: SubscriptionData) => {
+          // Filtrar por termo de busca se houver
+          const matchesSearch = searchTerm === '' || 
+            sub.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            sub.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            sub.category.toLowerCase().includes(searchTerm.toLowerCase());
+          
+          if (matchesSearch) {
+            if (sub.featured) {
+              featured.push(sub);
+            } else {
+              // Agrupar por categoria
+              if (!regular[sub.category]) {
+                regular[sub.category] = [];
+              }
+              regular[sub.category].push(sub);
+            }
+          }
+        });
         
-        setFeaturedList(featured);
-        setRegularList([...regular, ...pendingSubscriptions]);
-        setPendingList(pendingSubscriptions);
+        // Atualizar state com assinaturas organizadas
+        setSubscriptions({ featured, regular });
+        
+        // Verificar se há resultados
+        const hasResults = featured.length > 0 || Object.keys(regular).length > 0;
+        setHasResults(hasResults);
+        
       } catch (error) {
         console.error("Erro ao buscar assinaturas:", error);
-      } finally {
-        setIsLoading(false);
+        setHasResults(false);
       }
     };
     
     fetchSubscriptions();
-  }, []);
-  
-  useEffect(() => {
-    // Verificar resultados da busca para ambas as listas
-    const lowercaseSearchTerm = searchTerm.toLowerCase();
-    
-    const hasFeaturedResults = featuredList.some(sub => {
-      const content = `${sub.title} ${sub.price} ${sub.paymentMethod} ${sub.status} ${sub.access}`.toLowerCase();
-      return content.includes(lowercaseSearchTerm);
-    });
-    
-    const hasRegularResults = regularList.some(sub => {
-      const content = `${sub.title} ${sub.price} ${sub.paymentMethod} ${sub.status} ${sub.access}`.toLowerCase();
-      return content.includes(lowercaseSearchTerm);
-    });
-    
-    // Se o termo de busca estiver vazio, sempre mostra resultados
-    if (searchTerm === "") {
-      setHasResults(true);
-    } else {
-      // Caso contrário, verifica se há algum resultado em qualquer uma das listas
-      setHasResults(hasFeaturedResults || hasRegularResults);
-    }
-  }, [searchTerm, featuredList, regularList, setHasResults]);
-  
-  if (isLoading) {
-    return (
-      <div className="flex justify-center items-center p-8">
-        <div className="animate-pulse text-center">
-          <div className="h-8 w-48 bg-gray-300 rounded mx-auto mb-4"></div>
-          <div className="h-4 w-64 bg-gray-200 rounded mx-auto"></div>
-        </div>
-      </div>
-    );
-  }
+  }, [searchTerm, setHasResults]);
   
   return (
-    <div className="space-y-6">
-      <FeaturedSubscriptions 
-        subscriptionRefs={subscriptionRefs} 
-        searchTerm={searchTerm}
-        setHasResults={setHasResults}
-        subscriptionList={featuredList}
-        isAdmin={authState.isAdmin}
-      />
-      <RegularSubscriptions 
-        searchTerm={searchTerm}
-        setHasResults={setHasResults}
-        subscriptionList={regularList}
-        isAdmin={authState.isAdmin}
-      />
+    <div className="space-y-10">
+      {/* Assinaturas em Destaque */}
+      {subscriptions.featured.length > 0 && (
+        <FeaturedSubscriptions subscriptions={subscriptions.featured} />
+      )}
+      
+      {/* Assinaturas Regulares */}
+      {Object.keys(subscriptions.regular).length > 0 && (
+        <RegularSubscriptions 
+          categorizedSubscriptions={subscriptions.regular}
+          subscriptionRefs={subscriptionRefs}
+        />
+      )}
     </div>
   );
 };
