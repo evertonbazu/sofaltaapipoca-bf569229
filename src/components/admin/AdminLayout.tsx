@@ -1,137 +1,146 @@
+
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
-import { 
-  LayoutDashboard, 
-  Menu, 
-  Plus, 
-  ListFilter, 
-  Settings,
-  Bookmark
-} from 'lucide-react';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import {
+  LayoutDashboard,
+  List,
+  Settings as SettingsIcon,
+  LogOut,
+  MessageSquare,
+  ButtonsSquare,
+  FormInput
+} from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
-import NavBar from '@/components/NavBar';
 
 interface AdminLayoutProps {
-  children: React.ReactNode;
   title: string;
+  children: React.ReactNode;
 }
 
-const AdminLayout: React.FC<AdminLayoutProps> = ({ children, title }) => {
+const AdminLayout: React.FC<AdminLayoutProps> = ({ title, children }) => {
   const navigate = useNavigate();
-  const { authState } = useAuth();
-  const [open, setOpen] = React.useState(false);
+  const location = useLocation();
+  const { signOut } = useAuth();
 
-  // Verificar se o usuário é admin e redirecionar se não for
-  React.useEffect(() => {
-    if (!authState.isLoading && (!authState.user || !authState.isAdmin)) {
-      navigate('/auth');
+  const handleSignOut = async () => {
+    try {
+      await signOut();
+      navigate('/');
+    } catch (error) {
+      console.error('Erro ao fazer logout:', error);
     }
-  }, [authState, navigate]);
+  };
 
-  // Array de links do menu
-  const menuLinks = [
-    { 
-      name: 'Dashboard', 
-      path: '/admin', 
-      icon: <LayoutDashboard className="h-5 w-5 mr-2" /> 
-    },
-    { 
-      name: 'Assinaturas', 
-      path: '/admin/subscriptions', 
-      icon: <ListFilter className="h-5 w-5 mr-2" /> 
-    },
-    { 
-      name: 'Adicionar Assinatura', 
-      path: '/admin/subscriptions/new', 
-      icon: <Plus className="h-5 w-5 mr-2" /> 
-    },
-    { 
-      name: 'Gerenciar Botões', 
-      path: '/admin/buttons', 
-      icon: <Bookmark className="h-5 w-5 mr-2" /> 
-    },
-    { 
-      name: 'Configurações', 
-      path: '/admin/settings', 
-      icon: <Settings className="h-5 w-5 mr-2" /> 
-    }
-  ];
-
-  // Verificar se o usuário é admin e redirecionar se não for
-  
-
-  if (authState.isLoading) {
-    return (
-      <div className="flex h-screen w-full items-center justify-center">
-        <p>Carregando...</p>
-      </div>
-    );
-  }
+  const isActive = (path: string) => {
+    return location.pathname === path || location.pathname.startsWith(`${path}/`);
+  };
 
   return (
-    <div className="min-h-screen bg-gray-100">
-      <NavBar />
-      
-      {/* Cabeçalho com menu hamburguer para mobile */}
-      <header className="bg-white shadow-sm">
-        <div className="container mx-auto px-4 py-3 flex items-center">
-          <div className="flex items-center space-x-2">
-            <Sheet open={open} onOpenChange={setOpen}>
-              <SheetTrigger asChild>
-                <Button variant="ghost" size="icon" className="md:hidden">
-                  <Menu size={20} />
-                </Button>
-              </SheetTrigger>
-              <SheetContent side="left" className="w-64 pt-12">
-                <div className="flex flex-col h-full">
-                  <div className="flex-1 space-y-1">
-                    {menuLinks.map((link) => (
-                      <Button
-                        key={link.path}
-                        variant="ghost"
-                        className="w-full justify-start"
-                        onClick={() => {
-                          navigate(link.path);
-                          setOpen(false);
-                        }}
-                      >
-                        {link.icon}
-                        {link.name}
-                      </Button>
-                    ))}
-                  </div>
-                </div>
-              </SheetContent>
-            </Sheet>
-            <h1 className="text-xl font-semibold">{title}</h1>
-          </div>
+    <div className="min-h-screen bg-gray-100 flex">
+      {/* Sidebar */}
+      <div className="w-64 bg-white shadow-md hidden md:block">
+        <div className="p-4">
+          <h2 className="text-xl font-bold">Admin</h2>
         </div>
-      </header>
-
-      {/* Menu lateral para desktop */}
-      <div className="flex min-h-[calc(100vh-57px)]">
-        <aside className="hidden md:flex md:w-64 bg-white border-r flex-col">
-          <div className="flex-1 px-4 py-6 space-y-1">
-            {menuLinks.map((link) => (
+        <nav className="mt-4">
+          <ul>
+            <li>
+              <Link to="/admin">
+                <Button
+                  variant={isActive('/admin') && !isActive('/admin/subscriptions') && !isActive('/admin/settings') && !isActive('/admin/buttons') ? "default" : "ghost"}
+                  className="w-full justify-start mb-1"
+                >
+                  <LayoutDashboard className="h-4 w-4 mr-2" />
+                  Dashboard
+                </Button>
+              </Link>
+            </li>
+            <li>
+              <Link to="/admin/subscriptions">
+                <Button
+                  variant={isActive('/admin/subscriptions') ? "default" : "ghost"}
+                  className="w-full justify-start mb-1"
+                >
+                  <List className="h-4 w-4 mr-2" />
+                  Assinaturas
+                </Button>
+              </Link>
+            </li>
+            <li>
+              <Link to="/admin/subscriptions/chat">
+                <Button
+                  variant={isActive('/admin/subscriptions/chat') ? "default" : "ghost"}
+                  className="w-full justify-start mb-1"
+                >
+                  <MessageSquare className="h-4 w-4 mr-2" />
+                  Chat Assinaturas
+                </Button>
+              </Link>
+            </li>
+            <li>
+              <Link to="/admin/buttons">
+                <Button
+                  variant={isActive('/admin/buttons') ? "default" : "ghost"}
+                  className="w-full justify-start mb-1"
+                >
+                  <ButtonsSquare className="h-4 w-4 mr-2" />
+                  Botões
+                </Button>
+              </Link>
+            </li>
+            <li>
+              <Link to="/admin/form-options">
+                <Button
+                  variant={isActive('/admin/form-options') ? "default" : "ghost"}
+                  className="w-full justify-start mb-1"
+                >
+                  <FormInput className="h-4 w-4 mr-2" />
+                  Opções Formulário
+                </Button>
+              </Link>
+            </li>
+            <li>
+              <Link to="/admin/settings">
+                <Button
+                  variant={isActive('/admin/settings') ? "default" : "ghost"}
+                  className="w-full justify-start mb-1"
+                >
+                  <SettingsIcon className="h-4 w-4 mr-2" />
+                  Configurações
+                </Button>
+              </Link>
+            </li>
+            <li className="mt-8">
               <Button
-                key={link.path}
                 variant="ghost"
-                className="w-full justify-start"
-                onClick={() => navigate(link.path)}
+                className="w-full justify-start mb-1 text-red-500 hover:text-red-700 hover:bg-red-50"
+                onClick={handleSignOut}
               >
-                {link.icon}
-                {link.name}
+                <LogOut className="h-4 w-4 mr-2" />
+                Sair
               </Button>
-            ))}
+            </li>
+          </ul>
+        </nav>
+      </div>
+      
+      {/* Main content */}
+      <div className="flex-1">
+        {/* Mobile header */}
+        <div className="bg-white p-4 shadow-sm md:hidden flex justify-between items-center">
+          <h1 className="font-bold">{title}</h1>
+          {/* Mobile menu button would go here */}
+        </div>
+        
+        {/* Content */}
+        <div className="p-6">
+          <div className="mb-6">
+            <h1 className="text-2xl font-bold">{title}</h1>
           </div>
-        </aside>
-
-        {/* Conteúdo principal */}
-        <main className="flex-1 p-4 md:p-6">
+          
           {children}
-        </main>
+        </div>
       </div>
     </div>
   );
