@@ -70,20 +70,20 @@ const SubscriptionCard = ({
   return (
     <div className={`card h-full bg-white rounded-xl overflow-hidden shadow-lg ${isSearchResult ? 'search-highlight' : ''}`}>
       <div className="bg-blue-600 p-4 flex items-center justify-center">
-        <h2 className="text-xl font-bold text-white flex items-center">
+        <h2 className="text-xl font-bold text-white flex items-center text-center uppercase">
           🖥 {title}
         </h2>
       </div>
       <div className="p-5 space-y-3">
-        <div className="space-y-2">
-          <p className="text-gray-900 font-medium">🏦 {price} - {paymentMethod}</p>
-          <p className="text-gray-900 font-medium">📌 {status}</p>
-          <p className="text-gray-900 font-medium">🔐 {access}</p>
+        <div className="space-y-2 text-center">
+          <p className="text-gray-900 font-medium uppercase">🏦 {price} - {paymentMethod}</p>
+          <p className="text-gray-900 font-medium uppercase">📌 Assinado</p>
+          <p className="text-gray-900 font-medium uppercase">🔐 {access}</p>
         </div>
         
         {addedDate && (
-          <div className="py-2 border-t border-gray-200 mt-2">
-            <p className="text-gray-700 text-sm">📅 Adicionado em: {addedDate}</p>
+          <div className="py-2 border-t border-gray-200 mt-2 text-center">
+            <p className="text-gray-700 text-sm uppercase">📅 Adicionado em: {addedDate}</p>
           </div>
         )}
         
@@ -92,15 +92,15 @@ const SubscriptionCard = ({
             href={getTelegramLink()}
             target="_blank"
             rel="noopener noreferrer" 
-            className="contact-btn w-full bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-lg font-medium flex items-center justify-center cursor-pointer"
+            className="contact-btn w-full bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-lg font-medium flex items-center justify-center cursor-pointer uppercase"
           >
-            <span className="mr-2">📩</span> @{telegramUsername.replace('@', '')}
+            <span className="mr-2">📩</span> Contato por Telegram
           </a>
           <a 
             href={getWhatsappLink()}
             target="_blank"
             rel="noopener noreferrer"
-            className="contact-btn w-full bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded-lg font-medium flex items-center justify-center cursor-pointer"
+            className="contact-btn w-full bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded-lg font-medium flex items-center justify-center cursor-pointer uppercase"
           >
             <span className="mr-2">📱</span> Contato por WhatsApp
           </a>
