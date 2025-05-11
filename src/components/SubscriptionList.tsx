@@ -30,34 +30,35 @@ const SubscriptionList: React.FC<SubscriptionListProps> = ({
       try {
         const allSubscriptions = await getAllSubscriptions();
         
-        // Organizar assinaturas por categoria e tipo (featured ou regular)
+        // Organize subscriptions by category and type (featured or regular)
         const featured: SubscriptionData[] = [];
         const regular: { [category: string]: SubscriptionData[] } = {};
         
         allSubscriptions.forEach((sub: SubscriptionData) => {
-          // Filtrar por termo de busca se houver
+          // Filter by search term if there is one
           const matchesSearch = searchTerm === '' || 
             sub.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            sub.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            sub.category.toLowerCase().includes(searchTerm.toLowerCase());
+            (sub.description?.toLowerCase().includes(searchTerm.toLowerCase()) || false) ||
+            (sub.category?.toLowerCase().includes(searchTerm.toLowerCase()) || false);
           
           if (matchesSearch) {
             if (sub.featured) {
               featured.push(sub);
             } else {
-              // Agrupar por categoria
-              if (!regular[sub.category]) {
-                regular[sub.category] = [];
+              // Group by category
+              const category = sub.category || "Outras";
+              if (!regular[category]) {
+                regular[category] = [];
               }
-              regular[sub.category].push(sub);
+              regular[category].push(sub);
             }
           }
         });
         
-        // Atualizar state com assinaturas organizadas
+        // Update state with organized subscriptions
         setSubscriptions({ featured, regular });
         
-        // Verificar se há resultados
+        // Check if there are results
         const hasResults = featured.length > 0 || Object.keys(regular).length > 0;
         setHasResults(hasResults);
         
@@ -72,15 +73,17 @@ const SubscriptionList: React.FC<SubscriptionListProps> = ({
   
   return (
     <div className="space-y-10">
-      {/* Assinaturas em Destaque */}
+      {/* Featured Subscriptions */}
       {subscriptions.featured.length > 0 && (
-        <FeaturedSubscriptions subscriptions={subscriptions.featured} />
+        <FeaturedSubscriptions 
+          subscriptionItems={subscriptions.featured} 
+        />
       )}
       
-      {/* Assinaturas Regulares */}
+      {/* Regular Subscriptions */}
       {Object.keys(subscriptions.regular).length > 0 && (
         <RegularSubscriptions 
-          categorizedSubscriptions={subscriptions.regular}
+          groupedSubscriptions={subscriptions.regular}
           subscriptionRefs={subscriptionRefs}
         />
       )}

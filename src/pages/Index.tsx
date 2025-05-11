@@ -8,22 +8,20 @@ import SubscriptionList from "../components/SubscriptionList";
 import { Link } from "react-router-dom";
 import { getAllHeaderButtons } from "@/services/subscription-service";
 import { HeaderButton } from "@/types/subscriptionTypes";
-import { useAuth } from "@/contexts/AuthContext";
 
 const Index = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [hasResults, setHasResults] = useState(true);
   const [headerButtons, setHeaderButtons] = useState<HeaderButton[]>([]);
-  const { authState } = useAuth();
   
-  // Criar referência para os elementos de assinatura para rolagem suave
+  // Create reference for subscription elements for smooth scrolling
   const subscriptionRefs = useRef<{[key: string]: HTMLDivElement | null}>({});
   
   useEffect(() => {
     const fetchHeaderButtons = async () => {
       try {
         const buttons = await getAllHeaderButtons();
-        // Filtrar apenas botões visíveis
+        // Filter only visible buttons
         setHeaderButtons(buttons.filter((btn: HeaderButton) => btn.visible));
       } catch (error) {
         console.error("Erro ao buscar botões do cabeçalho:", error);
@@ -33,7 +31,7 @@ const Index = () => {
     fetchHeaderButtons();
   }, []);
   
-  // Função para rolagem suave até a seção
+  // Function for smooth scrolling to section
   const scrollToSection = (sectionTitle: string) => {
     if (subscriptionRefs.current[sectionTitle]) {
       subscriptionRefs.current[sectionTitle]?.scrollIntoView({
@@ -68,7 +66,7 @@ const Index = () => {
           </div>
           
           <div className="flex flex-wrap justify-center gap-2 md:gap-4">
-            {/* Botões do cabeçalho dinamicamente gerados a partir do banco */}
+            {/* Dynamically generated header buttons from database */}
             {headerButtons.map(button => {
               const icon = button.icon;
               const isExternal = button.url.startsWith('http');
@@ -82,7 +80,6 @@ const Index = () => {
                     rel="noopener noreferrer"
                     className="bg-white text-blue-700 hover:bg-blue-50 font-medium rounded-full px-6 py-3 flex items-center gap-2 transition-colors"
                   >
-                    {/* Usando ícone dinâmico (limitado a alguns pré-definidos) */}
                     <span className="text-xl">{icon}</span>
                     {button.title}
                   </a>
@@ -101,23 +98,21 @@ const Index = () => {
               }
             })}
             
-            {/* Adicionar botão para submeter assinatura, visível para usuários logados */}
-            {authState.user && (
-              <Link 
-                to="/submit-subscription" 
-                className="bg-green-600 text-white hover:bg-green-700 font-medium rounded-full px-6 py-3 flex items-center gap-2 transition-colors"
-              >
-                <span className="text-xl">➕</span>
-                Submeter Assinatura
-              </Link>
-            )}
+            {/* Submit subscription button */}
+            <Link 
+              to="/submit-subscription" 
+              className="bg-green-600 text-white hover:bg-green-700 font-medium rounded-full px-6 py-3 flex items-center gap-2 transition-colors"
+            >
+              <span className="text-xl">➕</span>
+              Submeter Assinatura
+            </Link>
           </div>
         </div>
       </div>
       
-      {/* Lista de assinaturas */}
+      {/* Subscription list */}
       <div className="container mx-auto px-4 py-8">
-        {/* Mostrar lista ou mensagem de sem resultados */}
+        {/* Show list or no results message */}
         {hasResults ? (
           <SubscriptionList 
             subscriptionRefs={subscriptionRefs} 

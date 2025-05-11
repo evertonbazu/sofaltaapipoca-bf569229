@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Filter } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -15,8 +15,8 @@ const FilterSearch: React.FC<FilterSearchProps> = ({ onCategoryClick }) => {
   const [categories, setCategories] = useState<string[]>([]);
   const [isOpen, setIsOpen] = useState(false);
   
-  // Fetch categories quando o componente montar
-  React.useEffect(() => {
+  // Fetch categories when the component mounts
+  useEffect(() => {
     const fetchCategories = async () => {
       try {
         const fetchedCategories = await getAllCategories();

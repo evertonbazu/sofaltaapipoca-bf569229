@@ -1,6 +1,26 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { SubscriptionData, PendingSubscriptionData } from "@/types/subscriptionTypes";
+
+// Função para buscar todas as categorias distintas
+export const getAllCategories = async (): Promise<string[]> => {
+  try {
+    // Primeiro, obtenha todos os registros
+    const { data, error } = await supabase
+      .from('subscriptions')
+      .select('category');
+    
+    if (error) throw error;
+    
+    // Extrair as categorias e remover duplicatas
+    const categories = Array.from(new Set(data.map(item => item.category).filter(Boolean)));
+    
+    // Ordenar alfabeticamente
+    return categories.sort();
+  } catch (error) {
+    console.error("Erro ao buscar categorias:", error);
+    return [];
+  }
+};
 
 // Função para buscar todas as assinaturas
 export const getAllSubscriptions = async (): Promise<SubscriptionData[]> => {
@@ -29,7 +49,9 @@ export const getAllSubscriptions = async (): Promise<SubscriptionData[]> => {
       featured: item.featured,
       code: item.code,
       userId: item.user_id,
-      pixKey: item.pix_key
+      pixKey: item.pix_key,
+      category: item.category,
+      description: item.description
     }));
   } catch (error) {
     console.error("Erro ao buscar assinaturas:", error);
@@ -65,7 +87,9 @@ export const getFeaturedSubscriptions = async (): Promise<SubscriptionData[]> =>
       featured: item.featured,
       code: item.code,
       userId: item.user_id,
-      pixKey: item.pix_key
+      pixKey: item.pix_key,
+      category: item.category,
+      description: item.description
     }));
   } catch (error) {
     console.error("Erro ao buscar assinaturas em destaque:", error);
@@ -104,7 +128,9 @@ export const getPendingSubscriptions = async (): Promise<PendingSubscriptionData
       pixQrCode: item.pix_qr_code,
       pixKey: item.pix_key,
       rejectionReason: item.rejection_reason,
-      submitted_at: item.submitted_at
+      submitted_at: item.submitted_at,
+      category: item.category,
+      description: item.description
     }));
   } catch (error) {
     console.error("Erro ao buscar assinaturas pendentes:", error);
@@ -131,7 +157,9 @@ export const addSubscription = async (subscriptionData: SubscriptionData): Promi
       featured: subscriptionData.featured || false,
       code: subscriptionData.code,
       user_id: subscriptionData.userId,
-      pix_key: subscriptionData.pixKey
+      pix_key: subscriptionData.pixKey,
+      category: subscriptionData.category,
+      description: subscriptionData.description
     };
     
     const { data, error } = await supabase
@@ -169,7 +197,9 @@ export const updateSubscription = async (id: string, subscriptionData: Subscript
       code: subscriptionData.code,
       user_id: subscriptionData.userId,
       pix_key: subscriptionData.pixKey,
-      updated_at: new Date()
+      updated_at: new Date(),
+      category: subscriptionData.category,
+      description: subscriptionData.description
     };
     
     const { error } = await supabase
