@@ -1,16 +1,20 @@
+
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
-import { Search, User, Menu, X } from 'lucide-react';
+import { Search, User, Menu, X, LogOut } from 'lucide-react';
 import { useDebounced } from '@/hooks/useDebounced';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/components/ui/use-toast';
 
 const NavBar: React.FC = () => {
   const [isAdmin, setIsAdmin] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const isMobile = useIsMobile();
+  const navigate = useNavigate();
+  const { toast } = useToast();
 
   // Verificar se o usuário está logado e se é administrador
   useEffect(() => {
@@ -47,6 +51,24 @@ const NavBar: React.FC = () => {
     setMenuOpen(!menuOpen);
   };
 
+  const handleLogout = async () => {
+    try {
+      await supabase.auth.signOut();
+      toast({
+        title: "Logout realizado",
+        description: "Você foi desconectado com sucesso",
+      });
+      navigate('/');
+    } catch (error) {
+      console.error('Erro ao fazer logout:', error);
+      toast({
+        title: "Erro",
+        description: "Não foi possível realizar o logout",
+        variant: "destructive",
+      });
+    }
+  };
+
   return (
     <nav className="bg-white shadow-sm">
       <div className="container mx-auto px-4 py-3 flex justify-between items-center">
@@ -72,18 +94,24 @@ const NavBar: React.FC = () => {
           <div className="flex items-center space-x-4">
             {isAdmin && (
               <Link to="/admin">
-                <Button variant="ghost" size="sm">
+                <Button variant="outline" size="sm">
                   Painel Admin
                 </Button>
               </Link>
             )}
             {isLoggedIn ? (
-              <Link to="/profile">
-                <Button variant="outline" size="sm" className="flex items-center">
-                  <User className="mr-1 h-4 w-4" />
-                  Meu Perfil
+              <>
+                <Link to="/profile">
+                  <Button variant="outline" size="sm" className="flex items-center">
+                    <User className="mr-1 h-4 w-4" />
+                    Meu Perfil
+                  </Button>
+                </Link>
+                <Button variant="outline" size="sm" onClick={handleLogout} className="flex items-center">
+                  <LogOut className="mr-1 h-4 w-4" />
+                  Sair
                 </Button>
-              </Link>
+              </>
             ) : (
               <Link to="/auth">
                 <Button variant="outline" size="sm">
@@ -92,7 +120,7 @@ const NavBar: React.FC = () => {
               </Link>
             )}
             <Link to="/submit-subscription">
-              <Button size="sm">Anunciar</Button>
+              <Button variant="outline" size="sm">Anunciar</Button>
             </Link>
           </div>
         )}
@@ -104,18 +132,32 @@ const NavBar: React.FC = () => {
           <div className="container mx-auto px-4 flex flex-col space-y-2">
             {isAdmin && (
               <Link to="/admin" onClick={() => setMenuOpen(false)}>
-                <Button variant="ghost" size="sm" className="w-full justify-start">
+                <Button variant="outline" size="sm" className="w-full justify-start">
                   Painel Admin
                 </Button>
               </Link>
             )}
             {isLoggedIn ? (
-              <Link to="/profile" onClick={() => setMenuOpen(false)}>
-                <Button variant="outline" size="sm" className="w-full justify-start flex items-center">
-                  <User className="mr-1 h-4 w-4" />
-                  Meu Perfil
+              <>
+                <Link to="/profile" onClick={() => setMenuOpen(false)}>
+                  <Button variant="outline" size="sm" className="w-full justify-start flex items-center">
+                    <User className="mr-1 h-4 w-4" />
+                    Meu Perfil
+                  </Button>
+                </Link>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={() => {
+                    handleLogout();
+                    setMenuOpen(false);
+                  }}
+                  className="w-full justify-start flex items-center"
+                >
+                  <LogOut className="mr-1 h-4 w-4" />
+                  Sair
                 </Button>
-              </Link>
+              </>
             ) : (
               <Link to="/auth" onClick={() => setMenuOpen(false)}>
                 <Button variant="outline" size="sm" className="w-full justify-start">
@@ -124,7 +166,7 @@ const NavBar: React.FC = () => {
               </Link>
             )}
             <Link to="/submit-subscription" onClick={() => setMenuOpen(false)}>
-              <Button size="sm" className="w-full justify-start">
+              <Button variant="outline" size="sm" className="w-full justify-start">
                 Anunciar
               </Button>
             </Link>

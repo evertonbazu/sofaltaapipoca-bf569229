@@ -1,3 +1,4 @@
+
 import React from 'react';
 import AdminLayout from '@/components/admin/AdminLayout';
 import { Button } from "@/components/ui/button";
@@ -5,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/components/ui/use-toast";
-import { Loader2, Check, X } from 'lucide-react';
+import { Loader2, Check, X, Edit, Trash } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { PendingSubscriptionData } from '@/types/subscriptionTypes';
@@ -100,7 +101,8 @@ const PendingSubscriptions = () => {
         telegramUsername: subscription.telegramUsername,
         icon: subscription.icon || '',
         addedDate: subscription.addedDate || new Date().toLocaleDateString('pt-BR'),
-        code: subscription.code
+        code: subscription.code,
+        pixKey: subscription.pixKey,
       });
 
       // Update lists
@@ -182,6 +184,11 @@ const PendingSubscriptions = () => {
     }
   };
 
+  // Function to edit a pending subscription
+  const handleEdit = (subscription: PendingSubscriptionData) => {
+    navigate(`/admin/subscription-editor/${subscription.id}?source=pending`);
+  };
+
   // Function to delete a pending subscription
   const handleDelete = async (subscription: PendingSubscriptionData) => {
     try {
@@ -250,7 +257,9 @@ const PendingSubscriptions = () => {
             <p><strong>Envio:</strong> {subscription.access}</p>
             <p><strong>Telegram:</strong> {subscription.telegramUsername}</p>
             <p><strong>WhatsApp:</strong> {subscription.whatsappNumber}</p>
+            {subscription.pixKey && <p><strong>Chave PIX:</strong> {subscription.pixKey}</p>}
             {subscription.addedDate && <p><strong>Data Adicionada:</strong> {subscription.addedDate}</p>}
+            {subscription.code && <p><strong>Código:</strong> {subscription.code}</p>}
             {subscription.submitted_at && (
               <p>
                 <strong>Enviado em:</strong> {new Date(subscription.submitted_at).toLocaleString('pt-BR')}
@@ -262,7 +271,7 @@ const PendingSubscriptions = () => {
           </div>
 
           {/* Action buttons */}
-          <div className="flex gap-2 mt-4">
+          <div className="flex flex-wrap gap-2 mt-4">
             {subscription.statusApproval === 'pending' && (
               <>
                 <Button 
@@ -284,6 +293,16 @@ const PendingSubscriptions = () => {
                   {isProcessing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <X className="mr-2 h-4 w-4" />}
                   Rejeitar
                 </Button>
+                <Button 
+                  onClick={() => handleEdit(subscription)} 
+                  variant="outline" 
+                  disabled={isProcessing}
+                  size="sm"
+                  className="flex-1"
+                >
+                  <Edit className="mr-2 h-4 w-4" />
+                  Editar
+                </Button>
               </>
             )}
             <Button 
@@ -293,6 +312,7 @@ const PendingSubscriptions = () => {
               size="sm"
               className="flex-1"
             >
+              <Trash className="mr-2 h-4 w-4" />
               Excluir
             </Button>
           </div>
@@ -306,7 +326,7 @@ const PendingSubscriptions = () => {
       <div className="mb-4">
         <h2 className="text-lg font-medium">Gerenciar Solicitações de Assinatura</h2>
         <p className="text-sm text-gray-500">
-          Revise, aprove ou rejeite solicitações de assinatura enviadas pelos usuários
+          Revise, aprove, edite ou rejeite solicitações de assinatura enviadas pelos usuários
         </p>
       </div>
 

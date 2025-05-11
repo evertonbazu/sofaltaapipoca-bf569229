@@ -15,6 +15,7 @@ export interface SubscriptionData {
   featured?: boolean;
   code?: string;
   userId?: string;
+  pixKey?: string;
 }
 
 export interface PendingSubscriptionData extends SubscriptionData {

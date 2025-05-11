@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Tv, Youtube, Apple, Monitor } from 'lucide-react';
+import { Tv, Youtube, Apple, Monitor, Banknote, HandHelping, Key, Pin } from 'lucide-react';
 
 interface SubscriptionCardProps {
   id?: string;
@@ -82,10 +82,18 @@ const SubscriptionCard = ({
       </div>
       <div className="p-5 space-y-3">
         <div className="space-y-2 text-center">
-          <p className={`${priceColorClass} font-medium uppercase`}>Valor: {price}</p>
-          <p className="text-gray-900 font-medium uppercase">Forma de Pagamento: {paymentMethod}</p>
-          <p className="text-gray-900 font-medium uppercase">Status: Assinado</p>
-          <p className="text-gray-900 font-medium uppercase">Envio: {access}</p>
+          <p className={`${priceColorClass} font-medium uppercase flex items-center justify-center`}>
+            <span className="mr-1">🏦</span> Valor: {price}
+          </p>
+          <p className="text-gray-900 font-medium uppercase flex items-center justify-center">
+            <span className="mr-1">🫱🏼‍🫲🏼</span> Forma de Pagamento: {paymentMethod}
+          </p>
+          <p className="text-gray-900 font-medium uppercase flex items-center justify-center">
+            <span className="mr-1">📌</span> Status: {status}
+          </p>
+          <p className="text-gray-900 font-medium uppercase flex items-center justify-center">
+            <span className="mr-1">🔐</span> Envio: {access}
+          </p>
         </div>
         
         {addedDate && (

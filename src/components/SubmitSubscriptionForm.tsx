@@ -24,6 +24,7 @@ const formSchema = z.object({
   access: z.string().min(1, { message: "O acesso é obrigatório" }),
   whatsappNumber: z.string().min(1, { message: "O número do WhatsApp é obrigatório" }),
   telegramUsername: z.string().min(1, { message: "O usuário do Telegram é obrigatório" }),
+  pixKey: z.string().optional(),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -59,6 +60,7 @@ const SubmitSubscriptionForm = () => {
       access: "",
       whatsappNumber: "",
       telegramUsername: "",
+      pixKey: "",
     },
   });
   
@@ -98,7 +100,8 @@ const SubmitSubscriptionForm = () => {
         addedDate: new Date().toLocaleDateString('pt-BR'),
         code: code,
         userId: userId,
-        statusApproval: 'pending'
+        statusApproval: 'pending',
+        pixKey: data.pixKey,
       };
       
       // Enviar para o banco de dados
@@ -117,7 +120,8 @@ const SubmitSubscriptionForm = () => {
           added_date: pendingSubscription.addedDate,
           code: pendingSubscription.code,
           user_id: pendingSubscription.userId,
-          status_approval: pendingSubscription.statusApproval
+          status_approval: pendingSubscription.statusApproval,
+          pix_key: pendingSubscription.pixKey,
         });
       
       if (error) throw error;
@@ -232,6 +236,21 @@ const SubmitSubscriptionForm = () => {
                   )}
                 />
               )}
+
+              {/* Chave PIX */}
+              <FormField
+                control={form.control}
+                name="pixKey"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Chave PIX</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Sua chave PIX" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
               
               {/* Status */}
               <FormField
