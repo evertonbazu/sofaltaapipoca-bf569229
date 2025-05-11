@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Tv, Youtube, Apple, Monitor, Pencil } from 'lucide-react';
+import { Tv, Youtube, Apple, Monitor, Banknote, HandHelping, Key, Pin } from 'lucide-react';
 
 interface SubscriptionCardProps {
   id?: string;
@@ -18,9 +18,6 @@ interface SubscriptionCardProps {
   isSearchResult?: boolean;
   addedDate?: string;
   version?: string;
-  isAdmin?: boolean;
-  isUserSubmission?: boolean;
-  onEditClick?: (e: React.MouseEvent) => void;
 }
 
 const SubscriptionCard = ({
@@ -38,14 +35,10 @@ const SubscriptionCard = ({
   icon = 'monitor',
   isSearchResult = false,
   addedDate,
-  version = '2.0.0',
-  isAdmin = false,
-  isUserSubmission = false,
-  onEditClick
+  version = '2.0.0'
 }: SubscriptionCardProps) => {
   // Helper function to create WhatsApp link
   const getWhatsappLink = () => {
-    if (!whatsappNumber) return '#';
     return `https://wa.me/${whatsappNumber}`;
   };
   
@@ -87,19 +80,9 @@ const SubscriptionCard = ({
   
   return (
     <div className={`card h-full bg-white rounded-xl overflow-hidden shadow-lg ${isSearchResult ? 'search-highlight' : ''}`}>
-      <div className={`${bgColorClass} p-4 flex items-center justify-center h-20 relative`}>
+      <div className={`${bgColorClass} p-4 flex items-center justify-center h-20`}>
         <h2 className="text-xl font-bold text-white flex items-center text-center uppercase">
           🖥 {title}
-          
-          {isAdmin && (
-            <button 
-              onClick={onEditClick} 
-              className="absolute right-2 top-2 bg-white bg-opacity-20 p-1.5 rounded-full hover:bg-opacity-30 transition-all"
-              aria-label="Editar assinatura"
-            >
-              <Pencil size={16} className="text-white" />
-            </button>
-          )}
         </h2>
       </div>
       <div className="p-5 space-y-3">

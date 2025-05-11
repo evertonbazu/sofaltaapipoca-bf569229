@@ -13,8 +13,7 @@ export const musicSubscriptions: SubscriptionData[] = [
     whatsappNumber: "5588992259940",
     telegramUsername: "pedro127",
     icon: "monitor",
-    addedDate: "01/04/2025",
-    category: "Música"
+    addedDate: "01/04/2025"
   },
   {
     title: "SPOTIFY",
@@ -27,7 +26,6 @@ export const musicSubscriptions: SubscriptionData[] = [
     whatsappNumber: "5511912659702",
     telegramUsername: "BrunnoSSantos",
     icon: "monitor",
-    addedDate: "01/04/2025",
-    category: "Música"
+    addedDate: "01/04/2025"
   }
 ];

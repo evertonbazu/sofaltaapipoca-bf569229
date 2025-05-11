@@ -4,58 +4,48 @@ import SubscriptionItem from "./SubscriptionItem";
 import { SubscriptionData } from "@/types/subscriptionTypes";
 
 interface FeaturedSubscriptionsProps {
-  subscriptionRefs?: React.MutableRefObject<{[key: string]: HTMLDivElement | null}>;
+  subscriptionRefs: React.MutableRefObject<{[key: string]: HTMLDivElement | null}>;
   searchTerm?: string;
   setHasResults?: React.Dispatch<React.SetStateAction<boolean>>;
-  subscriptionList?: SubscriptionData[];
-  subscriptionItems?: SubscriptionData[];  // Adding this for backward compatibility
-  isAdmin?: boolean;
+  subscriptionList: SubscriptionData[];
 }
 
 const FeaturedSubscriptions: React.FC<FeaturedSubscriptionsProps> = ({ 
-  subscriptionRefs = {current: {}}, 
+  subscriptionRefs, 
   searchTerm = "", 
   setHasResults,
-  subscriptionList = [],
-  subscriptionItems = [], // For backward compatibility
-  isAdmin = false
+  subscriptionList = []
 }) => {
-  // Use either subscriptionItems or subscriptionList, prioritizing subscriptionItems for backward compatibility
-  const items = subscriptionItems.length > 0 ? subscriptionItems : subscriptionList;
-  const [visibleSubscriptions, setVisibleSubscriptions] = useState<SubscriptionData[]>(items);
+  const [visibleSubscriptions, setVisibleSubscriptions] = useState<SubscriptionData[]>(subscriptionList);
 
-  // Update list when source items change
+  // Atualizar lista quando subscriptionList mudar
   useEffect(() => {
-    setVisibleSubscriptions(items);
-  }, [items]);
+    setVisibleSubscriptions(subscriptionList);
+  }, [subscriptionList]);
 
   useEffect(() => {
     if (searchTerm.trim() === "") {
-      setVisibleSubscriptions(items);
+      setVisibleSubscriptions(subscriptionList);
       return;
     }
     
-    const filtered = items.filter(sub => {
-      // Filter by title, category, or description (case insensitive)
-      const titleMatch = sub.title.toLowerCase().includes(searchTerm.toLowerCase());
-      const categoryMatch = sub.category?.toLowerCase().includes(searchTerm.toLowerCase()) || false;
-      const descriptionMatch = sub.description?.toLowerCase().includes(searchTerm.toLowerCase()) || false;
-      
-      return titleMatch || categoryMatch || descriptionMatch;
+    const filtered = subscriptionList.filter(sub => {
+      // Filtrar principalmente pelo título (case insensitive)
+      return sub.title.toLowerCase().includes(searchTerm.toLowerCase());
     });
     
     setVisibleSubscriptions(filtered);
     
-    // Update hasResults if the prop is available
+    // Atualizar hasResults se a prop estiver disponível
     if (setHasResults) {
       if (filtered.length > 0) {
         setHasResults(true);
       } else if (searchTerm !== "") {
-        // Only set to false if there's a search term and no results
+        // Só definimos como false se houver um termo de busca e nenhum resultado
         setHasResults(false);
       }
     }
-  }, [searchTerm, items, setHasResults]);
+  }, [searchTerm, subscriptionList, setHasResults]);
 
   if (visibleSubscriptions.length === 0) {
     return null;
@@ -79,8 +69,6 @@ const FeaturedSubscriptions: React.FC<FeaturedSubscriptionsProps> = ({
           icon={subscription.icon}
           addedDate={subscription.addedDate}
           subscriptionRefs={subscriptionRefs}
-          isAdmin={isAdmin}
-          isUserSubmission={subscription.isUserSubmission}
         />
       ))}
     </div>

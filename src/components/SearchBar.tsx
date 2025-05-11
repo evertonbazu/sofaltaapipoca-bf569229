@@ -1,18 +1,30 @@
 
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Search } from "lucide-react";
 
 interface SearchBarProps {
-  searchTerm: string;
-  setSearchTerm: (term: string) => void;
+  onSearch: (searchTerm: string) => void;
 }
 
-const SearchBar: React.FC<SearchBarProps> = ({ searchTerm, setSearchTerm }) => {
+const SearchBar: React.FC<SearchBarProps> = ({ onSearch }) => {
+  const [searchTerm, setSearchTerm] = useState("");
+  
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     setSearchTerm(value);
+    onSearch(value);
   };
+
+  // Inicializar a busca com string vazia quando o componente for montado
+  useEffect(() => {
+    onSearch("");
+    
+    return () => {
+      // Clean up quando componente é desmontado
+      onSearch("");
+    };
+  }, [onSearch]);
 
   return (
     <div className="relative mb-6 w-full max-w-md mx-auto">
