@@ -39,11 +39,16 @@ const SubscriptionCard = ({
 }: SubscriptionCardProps) => {
   // Helper function to create WhatsApp link
   const getWhatsappLink = () => {
-    return `https://wa.me/${whatsappNumber}`;
+    return `https://wa.me/${whatsappNumber || ''}`;
   };
   
   // Helper function to create Telegram link
   const getTelegramLink = () => {
+    // First ensure telegramUsername exists and is a string
+    if (!telegramUsername) {
+      return 'https://telegram.me/'; // Return a default link if username is missing
+    }
+    
     // Remove @ if present at the beginning of the username
     const cleanUsername = telegramUsername.startsWith('@') 
       ? telegramUsername.substring(1) 
@@ -52,7 +57,7 @@ const SubscriptionCard = ({
     return `https://telegram.me/${cleanUsername}`;
   };
   
-  // Função para renderizar o ícone apropriado com base no tipo de assinatura
+  // Function to render the appropriate icon based on the type of subscription
   const renderIcon = () => {
     switch (icon) {
       case 'tv':
@@ -103,22 +108,27 @@ const SubscriptionCard = ({
         )}
         
         <div className="pt-3 space-y-2">
-          <a 
-            href={getTelegramLink()}
-            target="_blank"
-            rel="noopener noreferrer" 
-            className="contact-btn w-full bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-lg font-medium flex items-center justify-center cursor-pointer uppercase"
-          >
-            <span className="mr-2">📩</span> Contato por Telegram
-          </a>
-          <a 
-            href={getWhatsappLink()}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="contact-btn w-full bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded-lg font-medium flex items-center justify-center cursor-pointer uppercase"
-          >
-            <span className="mr-2">📱</span> Contato por WhatsApp
-          </a>
+          {telegramUsername && (
+            <a 
+              href={getTelegramLink()}
+              target="_blank"
+              rel="noopener noreferrer" 
+              className="contact-btn w-full bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-lg font-medium flex items-center justify-center cursor-pointer uppercase"
+            >
+              <span className="mr-2">📩</span> Contato por Telegram
+            </a>
+          )}
+          
+          {whatsappNumber && (
+            <a 
+              href={getWhatsappLink()}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="contact-btn w-full bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded-lg font-medium flex items-center justify-center cursor-pointer uppercase"
+            >
+              <span className="mr-2">📱</span> Contato por WhatsApp
+            </a>
+          )}
         </div>
       </div>
     </div>
