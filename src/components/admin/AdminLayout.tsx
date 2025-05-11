@@ -20,9 +20,10 @@ import { useAuth } from '@/contexts/AuthContext';
 
 interface AdminLayoutProps {
   children: React.ReactNode;
+  title: string; // Add title prop to the interface
 }
 
-const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
+const AdminLayout: React.FC<AdminLayoutProps> = ({ children, title }) => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
   const navigate = useNavigate();
@@ -232,6 +233,12 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
         
         {/* Conteúdo principal */}
         <main className="flex-1 p-4 sm:p-6">
+          {/* Display title if provided */}
+          {title && (
+            <div className="mb-6">
+              <h1 className="text-2xl font-bold text-gray-800">{title}</h1>
+            </div>
+          )}
           {children}
         </main>
       </div>
