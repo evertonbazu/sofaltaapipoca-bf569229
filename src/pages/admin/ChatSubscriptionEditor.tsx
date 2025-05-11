@@ -9,6 +9,7 @@ import { Send, Copy } from 'lucide-react';
 import { addSubscription } from '@/services/subscription-service';
 import { Textarea } from "@/components/ui/textarea";
 import { SubscriptionData } from '@/types/subscriptionTypes';
+import { supabase } from '@/integrations/supabase/client';
 
 const ChatSubscriptionEditor = () => {
   const { toast } = useToast();

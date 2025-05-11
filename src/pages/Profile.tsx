@@ -16,14 +16,14 @@ import UserSubscriptions from '@/components/UserSubscriptions';
 import { Loader2 } from 'lucide-react';
 
 const Profile = () => {
-  const { user, signOut } = useAuth();
+  const { authState, signOut } = useAuth();
   const navigate = useNavigate();
   const [profile, setProfile] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
   
   useEffect(() => {
     // Redirecionar para a página de autenticação se não estiver logado
-    if (!user) {
+    if (!authState.user) {
       navigate('/auth');
       return;
     }
@@ -34,7 +34,7 @@ const Profile = () => {
         const { data, error } = await supabase
           .from('profiles')
           .select('*')
-          .eq('id', user.id)
+          .eq('id', authState.user?.id)
           .single();
           
         if (error) throw error;
@@ -47,7 +47,7 @@ const Profile = () => {
     };
     
     fetchProfile();
-  }, [user, navigate]);
+  }, [authState.user, navigate]);
   
   const handleSignOut = async () => {
     try {
@@ -58,7 +58,7 @@ const Profile = () => {
     }
   };
   
-  if (!user || isLoading) {
+  if (!authState.user || isLoading) {
     return (
       <div className="min-h-screen bg-gray-100">
         <NavBar />
@@ -85,7 +85,7 @@ const Profile = () => {
             <div className="space-y-2">
               <div>
                 <p className="text-sm font-medium text-gray-500">Email</p>
-                <p>{user.email}</p>
+                <p>{authState.user.email}</p>
               </div>
               <div>
                 <p className="text-sm font-medium text-gray-500">Nome de usuário</p>
@@ -111,7 +111,7 @@ const Profile = () => {
                 <CardTitle>Minhas Assinaturas</CardTitle>
               </CardHeader>
               <CardContent>
-                <UserSubscriptions userId={user.id} />
+                <UserSubscriptions userId={authState.user.id} />
               </CardContent>
             </Card>
           </TabsContent>

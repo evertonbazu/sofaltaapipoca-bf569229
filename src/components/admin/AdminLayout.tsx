@@ -8,7 +8,7 @@ import {
   Settings as SettingsIcon,
   LogOut,
   MessageSquare,
-  ButtonsSquare,
+  SquareMenu,
   FormInput
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
@@ -84,7 +84,7 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ title, children }) => {
                   variant={isActive('/admin/buttons') ? "default" : "ghost"}
                   className="w-full justify-start mb-1"
                 >
-                  <ButtonsSquare className="h-4 w-4 mr-2" />
+                  <SquareMenu className="h-4 w-4 mr-2" />
                   Botões
                 </Button>
               </Link>
