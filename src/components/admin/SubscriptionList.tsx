@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
@@ -416,7 +415,9 @@ const SubscriptionList = () => {
                       />
                     </div>
                   </TableCell>
-                  <TableCell className="font-medium">{subscription.title}</TableCell>
+                  <TableCell className="font-medium">
+                    {subscription.isMemberSubmission ? `* ${subscription.title}` : subscription.title}
+                  </TableCell>
                   <TableCell>{subscription.price}</TableCell>
                   <TableCell className="hidden md:table-cell">{subscription.status}</TableCell>
                   <TableCell className="hidden md:table-cell">{subscription.paymentMethod}</TableCell>

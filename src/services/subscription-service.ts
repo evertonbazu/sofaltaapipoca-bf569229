@@ -255,9 +255,18 @@ export async function getHeaderButtons(): Promise<any[]> {
 
 export async function addHeaderButton(buttonData: any): Promise<any> {
   try {
+    // Ensure buttonData has all required fields
+    const dataToInsert = {
+      title: buttonData.title,
+      icon: buttonData.icon,
+      url: buttonData.url,
+      visible: buttonData.visible,
+      position: buttonData.position
+    };
+    
     const { data, error } = await supabase
       .from('header_buttons')
-      .insert(buttonData)
+      .insert(dataToInsert)
       .select()
       .single();
     
@@ -271,9 +280,18 @@ export async function addHeaderButton(buttonData: any): Promise<any> {
 
 export async function updateHeaderButton(id: string, buttonData: any): Promise<any> {
   try {
+    // Only include defined fields to avoid null values overwriting existing data
+    const dataToUpdate: Record<string, any> = {};
+    
+    if (buttonData.title !== undefined) dataToUpdate.title = buttonData.title;
+    if (buttonData.icon !== undefined) dataToUpdate.icon = buttonData.icon;
+    if (buttonData.url !== undefined) dataToUpdate.url = buttonData.url;
+    if (buttonData.visible !== undefined) dataToUpdate.visible = buttonData.visible;
+    if (buttonData.position !== undefined) dataToUpdate.position = buttonData.position;
+    
     const { data, error } = await supabase
       .from('header_buttons')
-      .update(buttonData)
+      .update(dataToUpdate)
       .eq('id', id)
       .select()
       .single();

@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import AdminLayout from '@/components/admin/AdminLayout';
@@ -62,6 +63,7 @@ const HeaderButtons = () => {
     setIsLoading(true);
     try {
       const data = await getHeaderButtons();
+      console.log('Fetched buttons:', data);
       setButtons(data);
     } catch (error) {
       console.error('Erro ao buscar botões de cabeçalho:', error);
@@ -121,6 +123,7 @@ const HeaderButtons = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    console.log('Form submission:', currentButton ? 'Edit' : 'Add', formData);
     
     try {
       if (currentButton) {
