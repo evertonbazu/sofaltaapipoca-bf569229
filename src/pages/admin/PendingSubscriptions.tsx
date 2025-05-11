@@ -1,4 +1,3 @@
-
 import React from 'react';
 import AdminLayout from '@/components/admin/AdminLayout';
 import { Button } from "@/components/ui/button";
@@ -21,13 +20,13 @@ const PendingSubscriptions = () => {
   const [approvedSubscriptions, setApprovedSubscriptions] = React.useState<PendingSubscriptionData[]>([]);
   const [actionInProgress, setActionInProgress] = React.useState<string | null>(null);
 
-  // Buscar assinaturas pendentes
+  // Fetch pending subscriptions
   React.useEffect(() => {
     const fetchPendingSubscriptions = async () => {
       try {
         setIsLoading(true);
 
-        // Buscar assinaturas pendentes
+        // Fetch pending subscriptions
         const { data: pendingData, error: pendingError } = await supabase
           .from('pending_subscriptions')
           .select('*')
@@ -37,7 +36,7 @@ const PendingSubscriptions = () => {
         if (pendingError) throw pendingError;
         setPendingSubscriptions(pendingData as PendingSubscriptionData[]);
 
-        // Buscar assinaturas rejeitadas
+        // Fetch rejected subscriptions
         const { data: rejectedData, error: rejectedError } = await supabase
           .from('pending_subscriptions')
           .select('*')
@@ -47,7 +46,7 @@ const PendingSubscriptions = () => {
         if (rejectedError) throw rejectedError;
         setRejectedSubscriptions(rejectedData as PendingSubscriptionData[]);
 
-        // Buscar assinaturas aprovadas
+        // Fetch approved subscriptions
         const { data: approvedData, error: approvedError } = await supabase
           .from('pending_subscriptions')
           .select('*')
@@ -72,12 +71,12 @@ const PendingSubscriptions = () => {
     fetchPendingSubscriptions();
   }, [toast]);
 
-  // Função para aprovar uma assinatura
+  // Function to approve a subscription
   const handleApprove = async (subscription: PendingSubscriptionData) => {
     try {
       setActionInProgress(subscription.id || '');
 
-      // Atualizar o status da assinatura pendente
+      // Update the status of the pending subscription
       const { error: updateError } = await supabase
         .from('pending_subscriptions')
         .update({
@@ -88,7 +87,7 @@ const PendingSubscriptions = () => {
       
       if (updateError) throw updateError;
 
-      // Adicionar à tabela de assinaturas aprovadas
+      // Add to approved subscriptions table
       await addSubscription({
         title: subscription.title,
         price: subscription.price,
@@ -104,9 +103,9 @@ const PendingSubscriptions = () => {
         code: subscription.code
       });
 
-      // Atualizar listas
+      // Update lists
       setPendingSubscriptions(prev => prev.filter(item => item.id !== subscription.id));
-      setApprovedSubscriptions(prev => [{ ...subscription, status_approval: 'approved', reviewed_at: new Date().toISOString() }, ...prev]);
+      setApprovedSubscriptions(prev => [{ ...subscription, statusApproval: 'approved', reviewed_at: new Date().toISOString() }, ...prev]);
 
       toast({
         title: "Assinatura aprovada",
@@ -131,12 +130,12 @@ const PendingSubscriptions = () => {
     }
   };
 
-  // Função para rejeitar uma assinatura
+  // Function to reject a subscription
   const handleReject = async (subscription: PendingSubscriptionData, rejectionReason: string = "Não atende aos critérios") => {
     try {
       setActionInProgress(subscription.id || '');
 
-      // Atualizar o status da assinatura pendente
+      // Update the status of the pending subscription
       const { error: updateError } = await supabase
         .from('pending_subscriptions')
         .update({
@@ -148,13 +147,13 @@ const PendingSubscriptions = () => {
       
       if (updateError) throw updateError;
 
-      // Atualizar listas
+      // Update lists
       setPendingSubscriptions(prev => prev.filter(item => item.id !== subscription.id));
       setRejectedSubscriptions(prev => [
         { 
           ...subscription, 
-          status_approval: 'rejected', 
-          rejection_reason: rejectionReason, 
+          statusApproval: 'rejected', 
+          rejectionReason: rejectionReason, 
           reviewed_at: new Date().toISOString() 
         }, 
         ...prev
@@ -183,7 +182,7 @@ const PendingSubscriptions = () => {
     }
   };
 
-  // Função para excluir uma assinatura pendente
+  // Function to delete a pending subscription
   const handleDelete = async (subscription: PendingSubscriptionData) => {
     try {
       setActionInProgress(subscription.id || '');
@@ -224,7 +223,7 @@ const PendingSubscriptions = () => {
     }
   };
 
-  // Renderização de cada item de assinatura
+  // Render each subscription item
   const renderSubscriptionItem = (subscription: PendingSubscriptionData) => {
     const isProcessing = actionInProgress === subscription.id;
 
@@ -234,11 +233,11 @@ const PendingSubscriptions = () => {
           <CardTitle className="text-lg flex justify-between items-center">
             {subscription.title}
             <Badge variant={
-              subscription.status_approval === 'approved' ? 'outline' : 
-              subscription.status_approval === 'rejected' ? 'destructive' : 'default'
+              subscription.statusApproval === 'approved' ? 'outline' : 
+              subscription.statusApproval === 'rejected' ? 'destructive' : 'default'
             }>
-              {subscription.status_approval === 'approved' ? 'Aprovado' : 
-               subscription.status_approval === 'rejected' ? 'Rejeitado' : 'Pendente'}
+              {subscription.statusApproval === 'approved' ? 'Aprovado' : 
+               subscription.statusApproval === 'rejected' ? 'Rejeitado' : 'Pendente'}
             </Badge>
           </CardTitle>
           <CardDescription>
@@ -257,14 +256,14 @@ const PendingSubscriptions = () => {
                 <strong>Enviado em:</strong> {new Date(subscription.submitted_at).toLocaleString('pt-BR')}
               </p>
             )}
-            {subscription.status_approval === 'rejected' && subscription.rejection_reason && (
-              <p className="text-red-600"><strong>Motivo da rejeição:</strong> {subscription.rejection_reason}</p>
+            {subscription.statusApproval === 'rejected' && subscription.rejectionReason && (
+              <p className="text-red-600"><strong>Motivo da rejeição:</strong> {subscription.rejectionReason}</p>
             )}
           </div>
 
-          {/* Botões de ação */}
+          {/* Action buttons */}
           <div className="flex gap-2 mt-4">
-            {subscription.status_approval === 'pending' && (
+            {subscription.statusApproval === 'pending' && (
               <>
                 <Button 
                   onClick={() => handleApprove(subscription)} 
