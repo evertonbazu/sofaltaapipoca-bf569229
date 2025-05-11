@@ -1,400 +1,413 @@
 
 import React, { useState } from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import * as z from 'zod';
 import { useNavigate } from 'react-router-dom';
-import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm } from "react-hook-form";
-import * as z from "zod";
 import { Button } from "@/components/ui/button";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { useToast } from "@/components/ui/use-toast";
-import { Loader2 } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
-import { PendingSubscriptionData } from '@/types/subscriptionTypes';
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { toast } from '@/components/ui/use-toast';
+import { createSubscription } from '@/services/subscription-service';
 
-// Schema para validação do formulário
+// Schema de validação para o formulário
 const formSchema = z.object({
-  title: z.string().min(1, { message: "O título é obrigatório" }),
-  price: z.string().min(1, { message: "O preço é obrigatório" }),
-  paymentMethod: z.string().min(1, { message: "O método de pagamento é obrigatório" }),
-  customPaymentMethod: z.string().optional(),
-  status: z.string().min(1, { message: "O status é obrigatório" }),
-  access: z.string().min(1, { message: "O acesso é obrigatório" }),
-  customAccess: z.string().optional(),
-  whatsappNumber: z.string().min(1, { message: "O número do WhatsApp é obrigatório" }),
-  telegramUsername: z.string().min(1, { message: "O usuário do Telegram é obrigatório" }),
-  pixKey: z.string().optional(),
+  title: z.string().min(2, {
+    message: "O título deve ter pelo menos 2 caracteres.",
+  }),
+  price: z.string().min(2, {
+    message: "O preço deve ter pelo menos 2 caracteres.",
+  }),
+  paymentMethod: z.string().min(2, {
+    message: "O método de pagamento deve ter pelo menos 2 caracteres.",
+  }),
+  status: z.string().min(2, {
+    message: "O status deve ter pelo menos 2 caracteres.",
+  }),
+  access: z.string().min(2, {
+    message: "O método de acesso deve ter pelo menos 2 caracteres.",
+  }),
+  headerColor: z.string().min(4, {
+    message: "A cor do cabeçalho deve ser válida.",
+  }),
+  priceColor: z.string().min(4, {
+    message: "A cor do preço deve ser válida.",
+  }),
+  whatsappNumber: z.string().min(8, {
+    message: "O número de WhatsApp deve ter pelo menos 8 caracteres.",
+  }),
+  telegramUsername: z.string().min(2, {
+    message: "O usuário do Telegram deve ter pelo menos 2 caracteres.",
+  }),
+  icon: z.string().optional(),
 });
-
-type FormValues = z.infer<typeof formSchema>;
 
 const SubmitSubscriptionForm = () => {
   const navigate = useNavigate();
-  const { toast } = useToast();
-  const [isLoading, setIsLoading] = useState<boolean>(false);
-  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<string>("");
-  const [selectedAccess, setSelectedAccess] = useState<string>("");
-  const [userId, setUserId] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   
-  // Verificar se o usuário está logado
-  React.useEffect(() => {
-    const checkUser = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session?.user) {
-        setUserId(session.user.id);
-      }
-    };
-    
-    checkUser();
-  }, []);
-  
-  // Configurar formulário
-  const form = useForm<FormValues>({
+  // Inicializar o formulário com valores padrão
+  const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       title: "",
-      price: "R$ ",
-      paymentMethod: "PIX (Mensal)",
-      customPaymentMethod: "",
-      status: "Assinado",
-      access: "LOGIN E SENHA",
-      customAccess: "",
+      price: "",
+      paymentMethod: "PIX",
+      status: "Disponível",
+      access: "E-MAIL",
+      headerColor: "bg-blue-600",
+      priceColor: "text-blue-600",
       whatsappNumber: "",
       telegramUsername: "",
-      pixKey: "",
+      icon: "monitor",
     },
   });
-  
-  // Manipular mudança de método de pagamento
-  const handlePaymentMethodChange = (value: string) => {
-    setSelectedPaymentMethod(value);
-    form.setValue("paymentMethod", value);
-    
-    if (value !== "OUTRA FORMA") {
-      form.setValue("customPaymentMethod", "");
-    }
-  };
-  
-  // Manipular mudança de tipo de acesso
-  const handleAccessChange = (value: string) => {
-    setSelectedAccess(value);
-    form.setValue("access", value);
-    
-    if (value !== "OUTRO") {
-      form.setValue("customAccess", "");
-    }
-  };
-  
-  // Manipulador para envio do formulário
-  const onSubmit = async (data: FormValues) => {
-    setIsLoading(true);
+
+  // Função para lidar com o envio do formulário
+  const onSubmit = async (values: z.infer<typeof formSchema>) => {
+    setIsSubmitting(true);
     
     try {
-      // Processar método de pagamento personalizado
-      const finalPaymentMethod = data.paymentMethod === "OUTRA FORMA" ? data.customPaymentMethod : data.paymentMethod;
-      
-      // Processar tipo de acesso personalizado
-      const finalAccess = data.access === "OUTRO" ? data.customAccess : data.access;
-      
-      // Gerar código único
-      const { data: code, error: codeError } = await supabase.rpc('generate_subscription_code');
-      if (codeError) throw codeError;
-      
-      // Criar objeto da assinatura pendente
-      const pendingSubscription: PendingSubscriptionData = {
-        title: data.title.toUpperCase(),
-        price: data.price,
-        paymentMethod: finalPaymentMethod,
-        status: data.status,
-        access: finalAccess.toUpperCase(),
-        headerColor: 'bg-blue-600',
-        priceColor: 'text-blue-600',
-        whatsappNumber: data.whatsappNumber,
-        telegramUsername: data.telegramUsername,
-        addedDate: new Date().toLocaleDateString('pt-BR'),
-        code: code,
-        userId: userId,
-        statusApproval: 'pending',
-        pixKey: data.pixKey,
+      // Adicionar asterisco no início do título para marcar anúncios enviados pelos usuários
+      const submittedValues = {
+        ...values,
+        title: `* ${values.title}`,
+        // Publicar diretamente sem necessidade de aprovação
+        featured: false,
+        addedDate: new Date().toLocaleDateString('pt-BR')
       };
       
-      // Enviar para o banco de dados
-      const { error } = await supabase
-        .from('pending_subscriptions')
-        .insert({
-          title: pendingSubscription.title,
-          price: pendingSubscription.price,
-          payment_method: pendingSubscription.paymentMethod,
-          status: pendingSubscription.status,
-          access: pendingSubscription.access,
-          header_color: pendingSubscription.headerColor,
-          price_color: pendingSubscription.priceColor,
-          whatsapp_number: pendingSubscription.whatsappNumber,
-          telegram_username: pendingSubscription.telegramUsername,
-          added_date: pendingSubscription.addedDate,
-          code: pendingSubscription.code,
-          user_id: pendingSubscription.userId,
-          status_approval: pendingSubscription.statusApproval,
-          pix_key: pendingSubscription.pixKey,
-        });
-      
-      if (error) throw error;
+      // Criar a assinatura diretamente (sem passar pelo processo de aprovação)
+      await createSubscription(submittedValues);
       
       toast({
-        title: "Solicitação enviada",
-        description: "Sua solicitação de anúncio foi enviada com sucesso e será analisada pelos administradores.",
+        title: "Anúncio enviado com sucesso!",
+        description: "Seu anúncio já está publicado no site.",
       });
       
-      // Limpar formulário
-      form.reset();
-      
-      // Se o usuário estiver logado, redirecionar para o perfil
-      if (userId) {
-        navigate('/profile');
-      }
-      
+      // Redirecionar para a página inicial
+      navigate('/');
     } catch (error) {
-      console.error('Erro ao enviar solicitação de anúncio:', error);
+      console.error("Erro ao enviar o anúncio:", error);
       toast({
-        title: "Erro ao enviar",
-        description: "Não foi possível enviar sua solicitação. Por favor, tente novamente.",
+        title: "Erro ao enviar o anúncio",
+        description: "Ocorreu um erro ao processar seu anúncio. Por favor, tente novamente.",
         variant: "destructive",
       });
     } finally {
-      setIsLoading(false);
+      setIsSubmitting(false);
     }
   };
-  
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Envie seu anúncio</CardTitle>
-        <CardDescription>
-          Preencha o formulário abaixo para enviar seu anúncio para aprovação dos administradores.
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Título */}
-              <FormField
-                control={form.control}
-                name="title"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Título</FormLabel>
-                    <FormControl>
-                      <Input placeholder="NETFLIX PREMIUM" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
-              {/* Preço */}
-              <FormField
-                control={form.control}
-                name="price"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Preço</FormLabel>
-                    <FormControl>
-                      <Input placeholder="R$ 19,90" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
-              {/* Método de Pagamento */}
-              <FormField
-                control={form.control}
-                name="paymentMethod"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Método de Pagamento</FormLabel>
-                    <Select
-                      onValueChange={handlePaymentMethodChange}
-                      defaultValue={field.value}
-                    >
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Selecione um método" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="PIX (Mensal)">PIX (Mensal)</SelectItem>
-                        <SelectItem value="PIX (Anual)">PIX (Anual)</SelectItem>
-                        <SelectItem value="OUTRA FORMA">OUTRA FORMA</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
-              {/* Método de pagamento personalizado */}
-              {selectedPaymentMethod === "OUTRA FORMA" && (
-                <FormField
-                  control={form.control}
-                  name="customPaymentMethod"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Método de Pagamento Personalizado</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Insira um método de pagamento" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              )}
 
-              {/* Chave PIX */}
-              <FormField
-                control={form.control}
-                name="pixKey"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Chave PIX</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Sua chave PIX" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
-              {/* Status */}
-              <FormField
-                control={form.control}
-                name="status"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Status</FormLabel>
-                    <Select
-                      onValueChange={field.onChange}
-                      defaultValue={field.value}
-                    >
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Selecione um status" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="Assinado">Assinado</SelectItem>
-                        <SelectItem value="Aguardando Membros">Aguardando Membros</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
-              {/* Acesso */}
-              <FormField
-                control={form.control}
-                name="access"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Envio</FormLabel>
-                    <Select
-                      onValueChange={handleAccessChange}
-                      defaultValue={field.value}
-                    >
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Selecione o tipo de envio" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="LOGIN E SENHA">LOGIN E SENHA</SelectItem>
-                        <SelectItem value="ATIVAÇÃO">ATIVAÇÃO</SelectItem>
-                        <SelectItem value="CONVITE">CONVITE</SelectItem>
-                        <SelectItem value="OUTRO">OUTRO</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
-              {/* Acesso personalizado */}
-              {selectedAccess === "OUTRO" && (
-                <FormField
-                  control={form.control}
-                  name="customAccess"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Tipo de Envio Personalizado</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Especifique o tipo de envio" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+  // Opções de cores para o cabeçalho
+  const headerColorOptions = [
+    { value: "bg-blue-600", label: "Azul" },
+    { value: "bg-red-600", label: "Vermelho" },
+    { value: "bg-green-600", label: "Verde" },
+    { value: "bg-yellow-600", label: "Amarelo" },
+    { value: "bg-purple-600", label: "Roxo" },
+    { value: "bg-pink-600", label: "Rosa" },
+    { value: "bg-indigo-600", label: "Índigo" },
+    { value: "bg-gray-600", label: "Cinza" },
+  ];
+
+  // Opções de cores para o preço
+  const priceColorOptions = [
+    { value: "text-blue-600", label: "Azul" },
+    { value: "text-red-600", label: "Vermelho" },
+    { value: "text-green-600", label: "Verde" },
+    { value: "text-yellow-600", label: "Amarelo" },
+    { value: "text-purple-600", label: "Roxo" },
+    { value: "text-pink-600", label: "Rosa" },
+    { value: "text-indigo-600", label: "Índigo" },
+    { value: "text-gray-600", label: "Cinza" },
+  ];
+
+  // Opções de ícones
+  const iconOptions = [
+    { value: "monitor", label: "Monitor" },
+    { value: "tv", label: "TV" },
+    { value: "youtube", label: "YouTube" },
+    { value: "apple", label: "Apple" },
+  ];
+
+  // Opções de métodos de pagamento
+  const paymentMethodOptions = [
+    { value: "PIX", label: "PIX" },
+    { value: "Cartão de Crédito", label: "Cartão de Crédito" },
+    { value: "Boleto", label: "Boleto" },
+    { value: "Transferência Bancária", label: "Transferência Bancária" },
+    { value: "PayPal", label: "PayPal" },
+  ];
+
+  // Opções de status
+  const statusOptions = [
+    { value: "Disponível", label: "Disponível" },
+    { value: "Aguardando Membros", label: "Aguardando Membros" },
+    { value: "Assinado", label: "Assinado" },
+  ];
+
+  // Opções de método de acesso
+  const accessOptions = [
+    { value: "E-MAIL", label: "E-MAIL" },
+    { value: "CONVITE", label: "CONVITE" },
+    { value: "LINK", label: "LINK" },
+    { value: "CÓDIGO", label: "CÓDIGO" },
+  ];
+
+  return (
+    <div className="bg-white p-6 rounded-lg shadow-md max-w-3xl mx-auto">
+      <Form {...form}>
+        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Campo de Título */}
+            <FormField
+              control={form.control}
+              name="title"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Título da Assinatura *</FormLabel>
+                  <FormControl>
+                    <Input placeholder="Ex: NETFLIX, DISNEY+, etc" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
               )}
-              
-              {/* WhatsApp */}
-              <FormField
-                control={form.control}
-                name="whatsappNumber"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Número do WhatsApp</FormLabel>
+            />
+
+            {/* Campo de Preço */}
+            <FormField
+              control={form.control}
+              name="price"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Preço *</FormLabel>
+                  <FormControl>
+                    <Input placeholder="Ex: R$ 10,00 - PIX (Mensal)" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            {/* Campo de Método de Pagamento */}
+            <FormField
+              control={form.control}
+              name="paymentMethod"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Método de Pagamento *</FormLabel>
+                  <Select onValueChange={field.onChange} defaultValue={field.value}>
                     <FormControl>
-                      <Input placeholder="5511999999999" {...field} />
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione o método de pagamento" />
+                      </SelectTrigger>
                     </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
-              {/* Telegram */}
-              <FormField
-                control={form.control}
-                name="telegramUsername"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Usuário do Telegram</FormLabel>
+                    <SelectContent>
+                      {paymentMethodOptions.map((option) => (
+                        <SelectItem key={option.value} value={option.value}>
+                          {option.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            {/* Campo de Status */}
+            <FormField
+              control={form.control}
+              name="status"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Status *</FormLabel>
+                  <Select onValueChange={field.onChange} defaultValue={field.value}>
                     <FormControl>
-                      <Input placeholder="usuariotelegram" {...field} />
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione o status" />
+                      </SelectTrigger>
                     </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-            
-            {/* Botões */}
-            <div className="flex justify-end space-x-2">
-              <Button 
-                type="button" 
-                variant="outline" 
-                onClick={() => navigate('/')}
-                disabled={isLoading}
-              >
-                Cancelar
-              </Button>
-              <Button type="submit" disabled={isLoading}>
-                {isLoading ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Enviando...
-                  </>
-                ) : (
-                  'Enviar solicitação'
-                )}
-              </Button>
-            </div>
-          </form>
-        </Form>
-      </CardContent>
-    </Card>
+                    <SelectContent>
+                      {statusOptions.map((option) => (
+                        <SelectItem key={option.value} value={option.value}>
+                          {option.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            {/* Campo de Método de Acesso */}
+            <FormField
+              control={form.control}
+              name="access"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Método de Acesso *</FormLabel>
+                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione o método de acesso" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {accessOptions.map((option) => (
+                        <SelectItem key={option.value} value={option.value}>
+                          {option.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            {/* Campo de Cor do Cabeçalho */}
+            <FormField
+              control={form.control}
+              name="headerColor"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Cor do Cabeçalho *</FormLabel>
+                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione a cor do cabeçalho" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {headerColorOptions.map((option) => (
+                        <SelectItem key={option.value} value={option.value}>
+                          {option.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            {/* Campo de Cor do Preço */}
+            <FormField
+              control={form.control}
+              name="priceColor"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Cor do Preço *</FormLabel>
+                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione a cor do preço" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {priceColorOptions.map((option) => (
+                        <SelectItem key={option.value} value={option.value}>
+                          {option.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            {/* Campo de Número de WhatsApp */}
+            <FormField
+              control={form.control}
+              name="whatsappNumber"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Número de WhatsApp *</FormLabel>
+                  <FormControl>
+                    <Input placeholder="Ex: 5511912345678" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            {/* Campo de Usuário do Telegram */}
+            <FormField
+              control={form.control}
+              name="telegramUsername"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Usuário do Telegram *</FormLabel>
+                  <FormControl>
+                    <Input placeholder="Ex: seunome" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            {/* Campo de Ícone */}
+            <FormField
+              control={form.control}
+              name="icon"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Ícone</FormLabel>
+                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione o ícone" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {iconOptions.map((option) => (
+                        <SelectItem key={option.value} value={option.value}>
+                          {option.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
+
+          <div className="flex justify-end space-x-4">
+            <Button 
+              type="button"
+              variant="outline"
+              onClick={() => navigate('/')}
+              disabled={isSubmitting}
+            >
+              Cancelar
+            </Button>
+            <Button type="submit" disabled={isSubmitting}>
+              {isSubmitting ? "Enviando..." : "Enviar Anúncio"}
+            </Button>
+          </div>
+        </form>
+      </Form>
+    </div>
   );
 };
 

@@ -1,6 +1,8 @@
 
 import React from 'react';
-import { Tv, Youtube, Apple, Monitor, Banknote, HandHelping, Key, Pin } from 'lucide-react';
+import { Tv, Youtube, Apple, Monitor, Banknote, HandHelping, Key, Pin, Pencil } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface SubscriptionCardProps {
   id?: string;
@@ -37,13 +39,19 @@ const SubscriptionCard = ({
   addedDate,
   version = '2.0.0'
 }: SubscriptionCardProps) => {
+  const { authState } = useAuth();
+  const isAdmin = authState.isAdmin;
+  
   // Helper function to create WhatsApp link
   const getWhatsappLink = () => {
+    if (!whatsappNumber) return '#';
     return `https://wa.me/${whatsappNumber}`;
   };
   
   // Helper function to create Telegram link
   const getTelegramLink = () => {
+    if (!telegramUsername) return '#';
+    
     // Remove @ if present at the beginning of the username
     const cleanUsername = telegramUsername.startsWith('@') 
       ? telegramUsername.substring(1) 
@@ -75,10 +83,19 @@ const SubscriptionCard = ({
   
   return (
     <div className={`card h-full bg-white rounded-xl overflow-hidden shadow-lg ${isSearchResult ? 'search-highlight' : ''}`}>
-      <div className={`${bgColorClass} p-4 flex items-center justify-center h-20`}>
+      <div className={`${bgColorClass} p-4 flex items-center justify-between h-20`}>
         <h2 className="text-xl font-bold text-white flex items-center text-center uppercase">
           🖥 {title}
         </h2>
+        {isAdmin && id && (
+          <Link 
+            to={`/admin/subscriptions/edit/${id}`} 
+            className="p-1 bg-white bg-opacity-20 rounded-full hover:bg-opacity-30 transition-all"
+            title="Editar assinatura"
+          >
+            <Pencil size={18} className="text-white" />
+          </Link>
+        )}
       </div>
       <div className="p-5 space-y-3">
         <div className="space-y-2 text-center">
@@ -103,22 +120,27 @@ const SubscriptionCard = ({
         )}
         
         <div className="pt-3 space-y-2">
-          <a 
-            href={getTelegramLink()}
-            target="_blank"
-            rel="noopener noreferrer" 
-            className="contact-btn w-full bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-lg font-medium flex items-center justify-center cursor-pointer uppercase"
-          >
-            <span className="mr-2">📩</span> Contato por Telegram
-          </a>
-          <a 
-            href={getWhatsappLink()}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="contact-btn w-full bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded-lg font-medium flex items-center justify-center cursor-pointer uppercase"
-          >
-            <span className="mr-2">📱</span> Contato por WhatsApp
-          </a>
+          {telegramUsername && (
+            <a 
+              href={getTelegramLink()}
+              target="_blank"
+              rel="noopener noreferrer" 
+              className="contact-btn w-full bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-lg font-medium flex items-center justify-center cursor-pointer uppercase"
+            >
+              <span className="mr-2">📩</span> Contato por Telegram
+            </a>
+          )}
+          
+          {whatsappNumber && (
+            <a 
+              href={getWhatsappLink()}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="contact-btn w-full bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded-lg font-medium flex items-center justify-center cursor-pointer uppercase"
+            >
+              <span className="mr-2">📱</span> Contato por WhatsApp
+            </a>
+          )}
         </div>
       </div>
     </div>

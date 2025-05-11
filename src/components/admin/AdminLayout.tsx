@@ -5,9 +5,9 @@ import {
   LayoutDashboard, 
   Menu, 
   Plus, 
-  Clock, 
   ListFilter, 
-  Settings
+  Settings,
+  Bookmark
 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
@@ -54,9 +54,9 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children, title }) => {
       icon: <Plus className="h-5 w-5 mr-2" /> 
     },
     { 
-      name: 'Solicitações Pendentes', 
-      path: '/admin/subscriptions/pending', 
-      icon: <Clock className="h-5 w-5 mr-2" /> 
+      name: 'Gerenciar Botões', 
+      path: '/admin/buttons', 
+      icon: <Bookmark className="h-5 w-5 mr-2" /> 
     },
     { 
       name: 'Configurações', 
