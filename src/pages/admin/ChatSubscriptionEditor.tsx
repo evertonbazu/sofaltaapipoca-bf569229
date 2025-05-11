@@ -1,12 +1,12 @@
 
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { toast } from '@/hooks/use-toast';
+import { toast } from '@/components/ui/use-toast';
 import AdminLayout from '@/components/admin/AdminLayout';
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent } from "@/components/ui/card";
-import { createSubscription } from '@/services/subscription-service';
+import { addSubscription } from '@/services/subscription-service';
 
 const ChatSubscriptionEditor = () => {
   const navigate = useNavigate();
@@ -122,7 +122,7 @@ const ChatSubscriptionEditor = () => {
     try {
       const subscriptionData = parseSubscriptionFromChat(chatText);
       
-      await createSubscription(subscriptionData);
+      await addSubscription(subscriptionData);
       
       toast({
         title: "Sucesso",
