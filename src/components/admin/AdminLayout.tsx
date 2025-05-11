@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
@@ -49,11 +48,6 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children, title }) => {
       icon: <Plus className="h-5 w-5 mr-2" /> 
     },
     { 
-      name: 'Adicionar Assinatura (Chat)', 
-      path: '/admin/subscriptions/chat', 
-      icon: <Plus className="h-5 w-5 mr-2" /> 
-    },
-    { 
       name: 'Gerenciar Botões', 
       path: '/admin/buttons', 
       icon: <Bookmark className="h-5 w-5 mr-2" /> 
@@ -64,6 +58,9 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children, title }) => {
       icon: <Settings className="h-5 w-5 mr-2" /> 
     }
   ];
+
+  // Verificar se o usuário é admin e redirecionar se não for
+  
 
   if (authState.isLoading) {
     return (

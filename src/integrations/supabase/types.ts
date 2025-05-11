@@ -75,6 +75,39 @@ export type Database = {
         }
         Relationships: []
       }
+      header_buttons: {
+        Row: {
+          created_at: string
+          icon: string
+          id: string
+          position: number
+          title: string
+          updated_at: string
+          url: string
+          visible: boolean
+        }
+        Insert: {
+          created_at?: string
+          icon: string
+          id?: string
+          position: number
+          title: string
+          updated_at?: string
+          url: string
+          visible?: boolean
+        }
+        Update: {
+          created_at?: string
+          icon?: string
+          id?: string
+          position?: number
+          title?: string
+          updated_at?: string
+          url?: string
+          visible?: boolean
+        }
+        Relationships: []
+      }
       pending_subscriptions: {
         Row: {
           access: string

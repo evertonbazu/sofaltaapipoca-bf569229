@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -23,7 +22,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { toast } from '@/components/ui/use-toast';
-import { createSubscription } from '@/services/subscription-service';
+import { addSubscription } from '@/services/subscription-service';
 
 // Schema de validação para o formulário
 const formSchema = z.object({
@@ -93,7 +92,7 @@ const SubmitSubscriptionForm = () => {
       };
       
       // Criar a assinatura diretamente (sem passar pelo processo de aprovação)
-      await createSubscription(submittedValues);
+      await addSubscription(submittedValues);
       
       toast({
         title: "Anúncio enviado com sucesso!",
