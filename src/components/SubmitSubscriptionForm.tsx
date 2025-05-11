@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -13,7 +14,6 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
@@ -84,8 +84,16 @@ const SubmitSubscriptionForm = () => {
     try {
       // Adicionar asterisco no início do título para marcar anúncios enviados pelos usuários
       const submittedValues = {
-        ...values,
         title: `* ${values.title}`,
+        price: values.price,
+        paymentMethod: values.paymentMethod,
+        status: values.status,
+        access: values.access,
+        headerColor: values.headerColor,
+        priceColor: values.priceColor,
+        whatsappNumber: values.whatsappNumber,
+        telegramUsername: values.telegramUsername,
+        icon: values.icon,
         // Publicar diretamente sem necessidade de aprovação
         featured: false,
         addedDate: new Date().toLocaleDateString('pt-BR')
