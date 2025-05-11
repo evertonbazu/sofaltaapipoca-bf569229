@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent } from "@/components/ui/card";
 import { addSubscription } from '@/services/subscription-service';
+import { supabase } from '@/integrations/supabase/client';
 
 const ChatSubscriptionEditor = () => {
   const navigate = useNavigate();
@@ -24,6 +25,7 @@ const ChatSubscriptionEditor = () => {
     const fieldMap: { [key: string]: string } = {
       '🖥': 'title',
       '🏦': 'price',
+      '🫱🏼‍🫲🏼': 'paymentMethod',
       '📌': 'status',
       '🔐': 'access',
       '📩': 'telegram',
@@ -58,15 +60,11 @@ const ChatSubscriptionEditor = () => {
               subscriptionData['whatsappNumber'] = value.replace(/\D/g, '');
             }
           }
+          else if (field === 'paymentMethod') {
+            subscriptionData['paymentMethod'] = value;
+          }
           else if (field === 'price') {
             subscriptionData['price'] = value;
-            // Extrair método de pagamento entre parênteses se existir
-            const paymentMatch = value.match(/\(([^)]+)\)/);
-            if (paymentMatch) {
-              subscriptionData['paymentMethod'] = paymentMatch[1];
-            } else {
-              subscriptionData['paymentMethod'] = 'PIX';
-            }
           }
           else if (field === 'date') {
             // Extrair data após "Adicionado em:"
@@ -163,7 +161,7 @@ const ChatSubscriptionEditor = () => {
                   id="chatText"
                   value={chatText}
                   onChange={handleTextChange}
-                  placeholder={`🖥 ChatGPT Plus\n🏦 R$ 24 - PIX (Mensal)\n📌 Assinado\n🔐 Email e Senha\n📩 @alessadinozzo\n📱 https://wa.me/5587991988684\n\n📅 Adicionado em: 10/05/2025`}
+                  placeholder={`🖥 ChatGPT Plus\n🏦 R$ 24 - PIX (Mensal)\n🫱🏼‍🫲🏼 PIX (Mensal)\n📌 Assinado\n🔐 Email e Senha\n📩 @alessadinozzo\n📱 https://wa.me/5587991988684\n\n📅 Adicionado em: 10/05/2025`}
                   className="h-60"
                 />
               </div>

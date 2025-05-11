@@ -44,6 +44,11 @@ const SubscriptionCard = ({
   
   // Helper function to create Telegram link
   const getTelegramLink = () => {
+    // Add a null check for telegramUsername
+    if (!telegramUsername) {
+      return '#';
+    }
+    
     // Remove @ if present at the beginning of the username
     const cleanUsername = telegramUsername.startsWith('@') 
       ? telegramUsername.substring(1) 
@@ -103,22 +108,26 @@ const SubscriptionCard = ({
         )}
         
         <div className="pt-3 space-y-2">
-          <a 
-            href={getTelegramLink()}
-            target="_blank"
-            rel="noopener noreferrer" 
-            className="contact-btn w-full bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-lg font-medium flex items-center justify-center cursor-pointer uppercase"
-          >
-            <span className="mr-2">📩</span> Contato por Telegram
-          </a>
-          <a 
-            href={getWhatsappLink()}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="contact-btn w-full bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded-lg font-medium flex items-center justify-center cursor-pointer uppercase"
-          >
-            <span className="mr-2">📱</span> Contato por WhatsApp
-          </a>
+          {telegramUsername && (
+            <a 
+              href={getTelegramLink()}
+              target="_blank"
+              rel="noopener noreferrer" 
+              className="contact-btn w-full bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-lg font-medium flex items-center justify-center cursor-pointer uppercase"
+            >
+              <span className="mr-2">📩</span> Contato por Telegram
+            </a>
+          )}
+          {whatsappNumber && (
+            <a 
+              href={getWhatsappLink()}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="contact-btn w-full bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded-lg font-medium flex items-center justify-center cursor-pointer uppercase"
+            >
+              <span className="mr-2">📱</span> Contato por WhatsApp
+            </a>
+          )}
         </div>
       </div>
     </div>
