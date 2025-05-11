@@ -69,7 +69,7 @@ const SubscriptionCard = ({
   
   return (
     <div className={`card h-full bg-white rounded-xl overflow-hidden shadow-lg ${isSearchResult ? 'search-highlight' : ''}`}>
-      <div className="bg-blue-600 p-4 flex items-center justify-center">
+      <div className="bg-blue-600 p-4 flex items-center justify-center h-20">
         <h2 className="text-xl font-bold text-white flex items-center text-center uppercase">
           🖥 {title}
         </h2>
