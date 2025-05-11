@@ -75,72 +75,6 @@ export type Database = {
         }
         Relationships: []
       }
-      form_options: {
-        Row: {
-          active: boolean | null
-          created_at: string | null
-          id: string
-          label: string
-          position: number
-          type: string
-          updated_at: string | null
-          value: string
-        }
-        Insert: {
-          active?: boolean | null
-          created_at?: string | null
-          id?: string
-          label: string
-          position: number
-          type: string
-          updated_at?: string | null
-          value: string
-        }
-        Update: {
-          active?: boolean | null
-          created_at?: string | null
-          id?: string
-          label?: string
-          position?: number
-          type?: string
-          updated_at?: string | null
-          value?: string
-        }
-        Relationships: []
-      }
-      header_buttons: {
-        Row: {
-          created_at: string
-          icon: string
-          id: string
-          position: number
-          title: string
-          updated_at: string
-          url: string
-          visible: boolean
-        }
-        Insert: {
-          created_at?: string
-          icon: string
-          id?: string
-          position: number
-          title: string
-          updated_at?: string
-          url: string
-          visible?: boolean
-        }
-        Update: {
-          created_at?: string
-          icon?: string
-          id?: string
-          position?: number
-          title?: string
-          updated_at?: string
-          url?: string
-          visible?: boolean
-        }
-        Relationships: []
-      }
       pending_subscriptions: {
         Row: {
           access: string
@@ -237,33 +171,6 @@ export type Database = {
           role?: string | null
           updated_at?: string | null
           username?: string | null
-        }
-        Relationships: []
-      }
-      site_configurations: {
-        Row: {
-          created_at: string | null
-          description: string | null
-          id: string
-          key: string
-          updated_at: string | null
-          value: string | null
-        }
-        Insert: {
-          created_at?: string | null
-          description?: string | null
-          id?: string
-          key: string
-          updated_at?: string | null
-          value?: string | null
-        }
-        Update: {
-          created_at?: string | null
-          description?: string | null
-          id?: string
-          key?: string
-          updated_at?: string | null
-          value?: string | null
         }
         Relationships: []
       }

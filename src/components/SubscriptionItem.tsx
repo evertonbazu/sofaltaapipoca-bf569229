@@ -40,21 +40,18 @@ const SubscriptionItem: React.FC<SubscriptionItemProps> = ({
     return (
       <div ref={el => subscriptionRefs.current[title] = el}>
         <SubscriptionCard
-          subscription={{
-            id,
-            title,
-            price,
-            paymentMethod,
-            status,
-            access,
-            headerColor,
-            priceColor,
-            whatsappNumber,
-            telegramUsername,
-            icon,
-            addedDate,
-            featured: false
-          }}
+          id={id}
+          title={title}
+          price={price}
+          paymentMethod={paymentMethod}
+          status={status}
+          access={access}
+          headerColor={headerColor}
+          priceColor={priceColor}
+          whatsappNumber={whatsappNumber}
+          telegramUsername={telegramUsername}
+          icon={icon}
+          addedDate={addedDate}
           isSearchResult={isSearchResult}
         />
       </div>
@@ -64,21 +61,18 @@ const SubscriptionItem: React.FC<SubscriptionItemProps> = ({
   // Otherwise, render without a ref
   return (
     <SubscriptionCard
-      subscription={{
-        id,
-        title,
-        price,
-        paymentMethod,
-        status,
-        access,
-        headerColor,
-        priceColor,
-        whatsappNumber,
-        telegramUsername,
-        icon,
-        addedDate,
-        featured: false
-      }}
+      id={id}
+      title={title}
+      price={price}
+      paymentMethod={paymentMethod}
+      status={status}
+      access={access}
+      headerColor={headerColor}
+      priceColor={priceColor}
+      whatsappNumber={whatsappNumber}
+      telegramUsername={telegramUsername}
+      icon={icon}
+      addedDate={addedDate}
       isSearchResult={isSearchResult}
     />
   );

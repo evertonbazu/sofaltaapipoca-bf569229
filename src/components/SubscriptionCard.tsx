@@ -1,137 +1,124 @@
 
 import React from 'react';
-import { SubscriptionData } from '@/types/subscriptionTypes';
-import { Button } from '@/components/ui/button';
-import { 
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from '@/components/ui/tooltip';
-import { 
-  Monitor,
-  Youtube,
-  Apple,
-  Tv,
-  AlertCircle
-} from 'lucide-react';
+import { Tv, Youtube, Apple, Monitor, Banknote, HandHelping, Key, Pin } from 'lucide-react';
 
 interface SubscriptionCardProps {
-  subscription: SubscriptionData;
+  id?: string;
+  title: string;
+  price: string;
+  paymentMethod: string;
+  status: string;
+  access: string;
+  headerColor: string;
+  priceColor: string;
+  whatsappNumber: string;
+  telegramUsername: string;
+  centerTitle?: boolean;
+  icon?: string;
+  isSearchResult?: boolean;
+  addedDate?: string;
+  version?: string;
 }
 
-const SubscriptionCard: React.FC<SubscriptionCardProps> = ({ subscription }) => {
-  const {
-    title,
-    price,
-    paymentMethod,
-    status,
-    access,
-    headerColor,
-    priceColor,
-    whatsappNumber,
-    telegramUsername,
-    icon,
-    addedDate
-  } = subscription;
+const SubscriptionCard = ({
+  id,
+  title,
+  price,
+  paymentMethod,
+  status,
+  access,
+  headerColor,
+  priceColor,
+  whatsappNumber,
+  telegramUsername,
+  centerTitle = true,
+  icon = 'monitor',
+  isSearchResult = false,
+  addedDate,
+  version = '2.0.0'
+}: SubscriptionCardProps) => {
+  // Helper function to create WhatsApp link
+  const getWhatsappLink = () => {
+    return `https://wa.me/${whatsappNumber}`;
+  };
   
-  // Classe de cores do cabeçalho
-  const headerColorClass = headerColor || 'bg-blue-600';
+  // Helper function to create Telegram link
+  const getTelegramLink = () => {
+    // Remove @ if present at the beginning of the username
+    const cleanUsername = telegramUsername.startsWith('@') 
+      ? telegramUsername.substring(1) 
+      : telegramUsername;
+    
+    return `https://telegram.me/${cleanUsername}`;
+  };
   
-  // Classe de cores do preço
-  const priceColorClass = priceColor || 'text-blue-600';
-  
-  // Formatar link do WhatsApp
-  const whatsappLink = `https://wa.me/${whatsappNumber.replace(/[^0-9]/g, '')}`;
-  
-  // Formatar link do Telegram
-  const telegramLink = `https://t.me/${telegramUsername.replace(/[@]/g, '')}`;
-  
-  // Selecionar ícone com base na propriedade icon
+  // Função para renderizar o ícone apropriado com base no tipo de assinatura
   const renderIcon = () => {
-    switch(icon) {
+    switch (icon) {
       case 'tv':
-        return <Tv className="w-6 h-6 text-white" />;
+        return <Tv size={20} className="mr-2" />;
       case 'youtube':
-        return <Youtube className="w-6 h-6 text-white" />;
+        return <Youtube size={20} className="mr-2" />;
       case 'apple':
-        return <Apple className="w-6 h-6 text-white" />;
+        return <Apple size={20} className="mr-2" />;
       case 'monitor':
-        return <Monitor className="w-6 h-6 text-white" />;
       default:
-        return null;
+        return <Monitor size={20} className="mr-2" />;
     }
   };
-
+  
+  // Determine the background color class based on the headerColor prop
+  const bgColorClass = headerColor || 'bg-blue-600';
+  
+  // Determine the price color class based on the priceColor prop
+  const priceColorClass = priceColor || 'text-blue-600';
+  
   return (
-    <div className="border rounded-lg overflow-hidden shadow-sm transition-shadow hover:shadow-md bg-white">
-      {/* Cabeçalho */}
-      <div className={`${headerColorClass} p-4 flex items-center justify-between`}>
-        <div className="flex items-center justify-center w-full">
-          {renderIcon()}
-          <h3 className="text-white font-bold text-lg ml-2 text-center">{title}</h3>
-        </div>
+    <div className={`card h-full bg-white rounded-xl overflow-hidden shadow-lg ${isSearchResult ? 'search-highlight' : ''}`}>
+      <div className={`${bgColorClass} p-4 flex items-center justify-center h-20`}>
+        <h2 className="text-xl font-bold text-white flex items-center text-center uppercase">
+          🖥 {title}
+        </h2>
       </div>
-      
-      {/* Corpo do cartão */}
-      <div className="p-4">
-        {/* Preço */}
-        <div className="text-center mb-4">
-          <span className={`text-2xl font-bold ${priceColorClass}`}>{price}</span>
-          <span className="block text-gray-500 text-sm">{paymentMethod}</span>
+      <div className="p-5 space-y-3">
+        <div className="space-y-2 text-center">
+          <p className={`${priceColorClass} font-medium uppercase flex items-center justify-center`}>
+            <span className="mr-1">🏦</span> Valor: {price}
+          </p>
+          <p className="text-gray-900 font-medium uppercase flex items-center justify-center">
+            <span className="mr-1">🫱🏼‍🫲🏼</span> Forma de Pagamento: {paymentMethod}
+          </p>
+          <p className="text-gray-900 font-medium uppercase flex items-center justify-center">
+            <span className="mr-1">📌</span> Status: {status}
+          </p>
+          <p className="text-gray-900 font-medium uppercase flex items-center justify-center">
+            <span className="mr-1">🔐</span> Envio: {access}
+          </p>
         </div>
         
-        {/* Detalhes */}
-        <div className="space-y-2 mb-6">
-          <div className="flex items-center justify-between">
-            <span className="text-gray-500">Status:</span>
-            <span className="font-medium">{status}</span>
+        {addedDate && (
+          <div className="py-2 border-t border-gray-200 mt-2 text-center">
+            <p className="text-gray-700 text-sm uppercase">📅 Adicionado em: {addedDate}</p>
           </div>
-          <div className="flex items-center justify-between">
-            <span className="text-gray-500">Acesso:</span>
-            <span className="font-medium">{access}</span>
-          </div>
-          <div className="flex items-center justify-between">
-            <span className="text-gray-500">Adicionado em:</span>
-            <span className="text-sm">{addedDate}</span>
-          </div>
-        </div>
+        )}
         
-        {/* Botões */}
-        <div className="grid grid-cols-2 gap-2">
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="outline"
-                  className="w-full"
-                  onClick={() => window.open(whatsappLink, '_blank')}
-                >
-                  WhatsApp
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>Entre em contato via WhatsApp</p>
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
-          
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="outline"
-                  className="w-full"
-                  onClick={() => window.open(telegramLink, '_blank')}
-                >
-                  Telegram
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>Entre em contato via Telegram</p>
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
+        <div className="pt-3 space-y-2">
+          <a 
+            href={getTelegramLink()}
+            target="_blank"
+            rel="noopener noreferrer" 
+            className="contact-btn w-full bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-lg font-medium flex items-center justify-center cursor-pointer uppercase"
+          >
+            <span className="mr-2">📩</span> Contato por Telegram
+          </a>
+          <a 
+            href={getWhatsappLink()}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="contact-btn w-full bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded-lg font-medium flex items-center justify-center cursor-pointer uppercase"
+          >
+            <span className="mr-2">📱</span> Contato por WhatsApp
+          </a>
         </div>
       </div>
     </div>
