@@ -20,7 +20,9 @@ function mapToSubscriptionData(data: any): SubscriptionData {
     addedDate: data.added_date,
     featured: data.featured,
     code: data.code,
-    pixKey: data.pix_key
+    pixKey: data.pix_key,
+    category: data.category,
+    isMemberSubmission: data.user_id ? true : false
   };
 }
 
@@ -45,7 +47,8 @@ function mapToDbFormat(subscription: SubscriptionData | PendingSubscriptionData)
     pix_qr_code: 'pixQrCode' in subscription ? 
       (subscription as PendingSubscriptionData).pixQrCode : undefined,
     pix_key: 'pixKey' in subscription ? subscription.pixKey : undefined,
-    user_id: 'userId' in subscription ? subscription.userId : undefined
+    user_id: 'userId' in subscription ? subscription.userId : undefined,
+    category: subscription.category
   };
 }
 
@@ -94,6 +97,64 @@ export async function getRegularSubscriptions(): Promise<SubscriptionData[]> {
   } catch (error: any) {
     console.error('Erro ao obter assinaturas regulares:', error);
     throw error;
+  }
+}
+
+// Obter assinaturas pendentes
+export async function getPendingSubscriptions(): Promise<PendingSubscriptionData[]> {
+  try {
+    const { data, error } = await supabase
+      .from('pending_subscriptions')
+      .select('*');
+    
+    if (error) throw error;
+    
+    // Map the database data to our frontend format
+    return data.map((item) => ({
+      id: item.id,
+      title: item.title,
+      price: item.price,
+      paymentMethod: item.payment_method,
+      status: item.status,
+      access: item.access,
+      headerColor: item.header_color,
+      priceColor: item.price_color,
+      whatsappNumber: item.whatsapp_number,
+      telegramUsername: item.telegram_username,
+      icon: item.icon,
+      addedDate: item.added_date,
+      paymentProofImage: item.payment_proof_image,
+      pixQrCode: item.pix_qr_code,
+      statusApproval: item.status_approval,
+      rejectionReason: item.rejection_reason,
+      submitted_at: item.submitted_at,
+      reviewed_at: item.reviewed_at,
+      code: item.code,
+      userId: item.user_id,
+      pixKey: item.pix_key,
+      category: item.category,
+      isMemberSubmission: true
+    }));
+  } catch (error: any) {
+    console.error('Erro ao obter assinaturas pendentes:', error);
+    throw error;
+  }
+}
+
+// Obter todas as categorias disponíveis
+export async function getAllCategories(): Promise<string[]> {
+  try {
+    const { data, error } = await supabase
+      .from('form_options')
+      .select('value')
+      .eq('type', 'category')
+      .order('position', { ascending: true });
+    
+    if (error) throw error;
+    return data.map(item => item.value);
+  } catch (error: any) {
+    console.error('Erro ao obter categorias:', error);
+    return ['Streaming', 'Música', 'Educação', 'YouTube', 'Produtividade']; // Categorias padrão
   }
 }
 
@@ -172,6 +233,54 @@ export async function toggleFeaturedStatus(id: string, featured: boolean): Promi
     return mapToSubscriptionData(data);
   } catch (error: any) {
     console.error('Erro ao alternar status de destaque:', error);
+    throw error;
+  }
+}
+
+// Funções para os botões do cabeçalho
+export async function addHeaderButton(buttonData: any): Promise<any> {
+  try {
+    const { data, error } = await supabase
+      .from('header_buttons')
+      .insert(buttonData)
+      .select()
+      .single();
+    
+    if (error) throw error;
+    return data;
+  } catch (error: any) {
+    console.error('Erro ao adicionar botão de cabeçalho:', error);
+    throw error;
+  }
+}
+
+export async function updateHeaderButton(id: string, buttonData: any): Promise<any> {
+  try {
+    const { data, error } = await supabase
+      .from('header_buttons')
+      .update(buttonData)
+      .eq('id', id)
+      .select()
+      .single();
+    
+    if (error) throw error;
+    return data;
+  } catch (error: any) {
+    console.error('Erro ao atualizar botão de cabeçalho:', error);
+    throw error;
+  }
+}
+
+export async function deleteHeaderButton(id: string): Promise<void> {
+  try {
+    const { error } = await supabase
+      .from('header_buttons')
+      .delete()
+      .eq('id', id);
+    
+    if (error) throw error;
+  } catch (error: any) {
+    console.error('Erro ao excluir botão de cabeçalho:', error);
     throw error;
   }
 }

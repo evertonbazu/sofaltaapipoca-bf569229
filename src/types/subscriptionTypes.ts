@@ -16,6 +16,8 @@ export interface SubscriptionData {
   code?: string;
   userId?: string;
   pixKey?: string;
+  category?: string;
+  isMemberSubmission?: boolean;
 }
 
 export interface PendingSubscriptionData extends SubscriptionData {

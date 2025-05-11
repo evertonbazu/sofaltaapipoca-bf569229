@@ -3,7 +3,7 @@ import React, { useEffect, useState } from "react";
 import FeaturedSubscriptions from "./FeaturedSubscriptions";
 import RegularSubscriptions from "./RegularSubscriptions";
 import { SubscriptionData } from "@/types/subscriptionTypes";
-import { getAllSubscriptions, getFeaturedSubscriptions } from "@/services/subscription-service";
+import { getAllSubscriptions, getFeaturedSubscriptions, getPendingSubscriptions } from "@/services/subscription-service";
 
 interface SubscriptionListProps {
   subscriptionRefs: React.MutableRefObject<{[key: string]: HTMLDivElement | null}>;
@@ -18,6 +18,7 @@ const SubscriptionList: React.FC<SubscriptionListProps> = ({
 }) => {
   const [featuredList, setFeaturedList] = useState<SubscriptionData[]>([]);
   const [regularList, setRegularList] = useState<SubscriptionData[]>([]);
+  const [memberSubmissionsList, setMemberSubmissionsList] = useState<SubscriptionData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   
   // Buscar assinaturas do banco de dados
@@ -28,11 +29,21 @@ const SubscriptionList: React.FC<SubscriptionListProps> = ({
         const featured = await getFeaturedSubscriptions();
         const all = await getAllSubscriptions();
         
+        // Get pending submissions that can be displayed
+        const pendingSubmissions = await getPendingSubscriptions();
+        const approvedPendingSubmissions = pendingSubmissions
+          .filter(sub => sub.statusApproval === 'approved' || !sub.statusApproval)
+          .map(sub => ({
+            ...sub,
+            isMemberSubmission: true
+          }));
+        
         // Filtrar assinaturas regulares (todas exceto as destacadas)
         const regular = all.filter(sub => !sub.featured);
         
         setFeaturedList(featured);
         setRegularList(regular);
+        setMemberSubmissionsList(approvedPendingSubmissions);
       } catch (error) {
         console.error("Erro ao buscar assinaturas:", error);
       } finally {
@@ -44,7 +55,7 @@ const SubscriptionList: React.FC<SubscriptionListProps> = ({
   }, []);
   
   useEffect(() => {
-    // Verificar resultados da busca para ambas as listas
+    // Verificar resultados da busca para todas as listas
     const lowercaseSearchTerm = searchTerm.toLowerCase();
     
     const hasFeaturedResults = featuredList.some(sub => {
@@ -56,15 +67,20 @@ const SubscriptionList: React.FC<SubscriptionListProps> = ({
       const content = `${sub.title} ${sub.price} ${sub.paymentMethod} ${sub.status} ${sub.access}`.toLowerCase();
       return content.includes(lowercaseSearchTerm);
     });
+
+    const hasMemberSubmissionResults = memberSubmissionsList.some(sub => {
+      const content = `${sub.title} ${sub.price} ${sub.paymentMethod} ${sub.status} ${sub.access}`.toLowerCase();
+      return content.includes(lowercaseSearchTerm);
+    });
     
     // Se o termo de busca estiver vazio, sempre mostra resultados
     if (searchTerm === "") {
       setHasResults(true);
     } else {
       // Caso contrário, verifica se há algum resultado em qualquer uma das listas
-      setHasResults(hasFeaturedResults || hasRegularResults);
+      setHasResults(hasFeaturedResults || hasRegularResults || hasMemberSubmissionResults);
     }
-  }, [searchTerm, featuredList, regularList, setHasResults]);
+  }, [searchTerm, featuredList, regularList, memberSubmissionsList, setHasResults]);
   
   if (isLoading) {
     return (
@@ -85,6 +101,18 @@ const SubscriptionList: React.FC<SubscriptionListProps> = ({
         setHasResults={setHasResults}
         subscriptionList={featuredList}
       />
+      
+      {memberSubmissionsList.length > 0 && (
+        <div className="mb-8">
+          <h2 className="text-xl font-semibold mb-4">Anúncios de Membros</h2>
+          <RegularSubscriptions 
+            searchTerm={searchTerm}
+            setHasResults={setHasResults}
+            subscriptionList={memberSubmissionsList}
+          />
+        </div>
+      )}
+      
       <RegularSubscriptions 
         searchTerm={searchTerm}
         setHasResults={setHasResults}

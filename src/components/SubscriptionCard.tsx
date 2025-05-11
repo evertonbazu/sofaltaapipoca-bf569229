@@ -18,6 +18,7 @@ interface SubscriptionCardProps {
   isSearchResult?: boolean;
   addedDate?: string;
   version?: string;
+  isMemberSubmission?: boolean;
 }
 
 const SubscriptionCard = ({
@@ -35,7 +36,8 @@ const SubscriptionCard = ({
   icon = 'monitor',
   isSearchResult = false,
   addedDate,
-  version = '2.0.0'
+  version = '2.0.0',
+  isMemberSubmission = false
 }: SubscriptionCardProps) => {
   // Helper function to create WhatsApp link
   const getWhatsappLink = () => {
@@ -77,12 +79,15 @@ const SubscriptionCard = ({
   
   // Determine the price color class based on the priceColor prop
   const priceColorClass = priceColor || 'text-blue-600';
+
+  // Display title with asterisk if it's a member submission
+  const displayTitle = isMemberSubmission ? `* ${title}` : title;
   
   return (
     <div className={`card h-full bg-white rounded-xl overflow-hidden shadow-lg ${isSearchResult ? 'search-highlight' : ''}`}>
       <div className={`${bgColorClass} p-4 flex items-center justify-center h-20`}>
         <h2 className="text-xl font-bold text-white flex items-center text-center uppercase">
-          🖥 {title}
+          🖥 {displayTitle}
         </h2>
       </div>
       <div className="p-5 space-y-3">

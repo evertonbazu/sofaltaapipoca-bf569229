@@ -66,7 +66,7 @@ const Index: React.FC = () => {
             >
               <MessageSquare className="h-5 w-5 mb-1" />
               <span className="text-xs sm:text-sm">Fale Conosco</span>
-            </a>
+            </Link>
             
             {isLoggedIn && (
               <Link 
@@ -91,7 +91,7 @@ const Index: React.FC = () => {
             setHasResults={setHasResults}
           />
         ) : (
-          <NoResults />
+          <NoResults searchTerm={searchTerm} />
         )}
       </main>
 

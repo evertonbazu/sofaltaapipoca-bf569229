@@ -69,6 +69,7 @@ const FeaturedSubscriptions: React.FC<FeaturedSubscriptionsProps> = ({
           icon={subscription.icon}
           addedDate={subscription.addedDate}
           subscriptionRefs={subscriptionRefs}
+          isMemberSubmission={subscription.isMemberSubmission}
         />
       ))}
     </div>

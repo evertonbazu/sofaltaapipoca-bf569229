@@ -57,7 +57,7 @@ const RegularSubscriptions: React.FC<RegularSubscriptionsProps> = ({
           title={subscription.title}
           price={subscription.price}
           paymentMethod={subscription.paymentMethod}
-          status="Assinado" // Status fixo como "Assinado"
+          status={subscription.status || "Assinado"} // Status padrão como "Assinado" se não for fornecido
           access={subscription.access}
           headerColor={subscription.headerColor}
           priceColor={subscription.priceColor}
@@ -66,6 +66,7 @@ const RegularSubscriptions: React.FC<RegularSubscriptionsProps> = ({
           icon={subscription.icon}
           addedDate={subscription.addedDate}
           isSearchResult={false}
+          isMemberSubmission={subscription.isMemberSubmission}
         />
       ))}
     </div>
