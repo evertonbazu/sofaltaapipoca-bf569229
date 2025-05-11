@@ -145,7 +145,7 @@ const SubscriptionList = () => {
     });
     
     setFilteredSubscriptions(sorted);
-  }, [sortField, sortDirection, filteredSubscriptions]);
+  }, [sortField, sortDirection]);
 
   // Função para alterar a ordenação ao clicar em um cabeçalho da tabela
   const handleSort = (field: SortField) => {
