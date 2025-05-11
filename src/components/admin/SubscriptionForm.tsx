@@ -56,7 +56,7 @@ const SubscriptionForm: React.FC = () => {
       priceColor: "text-indigo-600",
       whatsappNumber: "",
       telegramUsername: "",
-      icon: "",
+      icon: "none", // Changed from "" to "none"
       addedDate: new Date().toLocaleDateString('pt-BR'),
       featured: false,
       code: "",
@@ -87,7 +87,7 @@ const SubscriptionForm: React.FC = () => {
               priceColor: data.price_color,
               whatsappNumber: data.whatsapp_number,
               telegramUsername: data.telegram_username,
-              icon: data.icon || '',
+              icon: data.icon || 'none', // Changed from '' to 'none'
               addedDate: data.added_date || new Date().toLocaleDateString('pt-BR'),
               featured: data.featured || false,
               code: data.code,
@@ -131,7 +131,7 @@ const SubscriptionForm: React.FC = () => {
         priceColor: data.priceColor,
         whatsappNumber: data.whatsappNumber,
         telegramUsername: data.telegramUsername,
-        icon: data.icon,
+        icon: data.icon === 'none' ? '' : data.icon, // Convert 'none' back to '' when saving
         addedDate: data.addedDate,
         featured: data.featured,
         code: data.code
@@ -279,7 +279,7 @@ const SubscriptionForm: React.FC = () => {
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="">Nenhum</SelectItem>
+                        <SelectItem value="none">Nenhum</SelectItem>
                         <SelectItem value="tv">TV</SelectItem>
                         <SelectItem value="youtube">YouTube</SelectItem>
                         <SelectItem value="apple">Apple</SelectItem>
