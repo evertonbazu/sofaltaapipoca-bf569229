@@ -37,21 +37,21 @@ const SubscriptionCard = ({
   addedDate,
   version = '2.0.0'
 }: SubscriptionCardProps) => {
-  const handleWhatsappClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
-    const whatsappUrl = `https://api.whatsapp.com/send?phone=${whatsappNumber}`;
-    window.open(whatsappUrl, '_blank');
+  // Helper function to create WhatsApp link
+  const getWhatsappLink = () => {
+    return `https://wa.me/${whatsappNumber}`;
   };
   
-  const handleTelegramClick = () => {
+  // Helper function to create Telegram link
+  const getTelegramLink = () => {
     // Remove @ if present at the beginning of the username
     const cleanUsername = telegramUsername.startsWith('@') 
       ? telegramUsername.substring(1) 
       : telegramUsername;
     
-    const telegramUrl = `https://telegram.me/${cleanUsername}`;
-    window.open(telegramUrl, '_blank');
+    return `https://telegram.me/${cleanUsername}`;
   };
-
+  
   // Função para renderizar o ícone apropriado com base no tipo de assinatura
   const renderIcon = () => {
     switch (icon) {
@@ -67,49 +67,40 @@ const SubscriptionCard = ({
     }
   };
   
-  // Sempre usar fundo azul para o título, ignorando headerColor
-  const titleBackgroundColor = "bg-blue-600";
-  
   return (
     <div className={`card h-full bg-white rounded-xl overflow-hidden shadow-lg ${isSearchResult ? 'search-highlight' : ''}`}>
-      <div className={`${titleBackgroundColor} p-4 h-[80px] flex items-center`}>
-        <h2 className={`text-xl font-bold text-white flex items-center ${centerTitle ? 'justify-center w-full' : ''}`}>
-          {renderIcon()} {title}
+      <div className="bg-blue-600 p-4 flex items-center justify-center">
+        <h2 className="text-xl font-bold text-white flex items-center">
+          🖥 {title}
         </h2>
       </div>
-      <div className="p-3 sm:p-5 space-y-3 sm:space-y-4">
-        <div className="flex flex-wrap justify-between items-center">
-          <span className="font-semibold text-gray-700 text-sm sm:text-base">🏦 Valor:</span>
-          <span className={`text-lg sm:text-xl font-bold ${priceColor}`}>{price}</span>
+      <div className="p-5 space-y-3">
+        <div className="space-y-2">
+          <p className="text-gray-900 font-medium">🏦 {price} - {paymentMethod}</p>
+          <p className="text-gray-900 font-medium">📌 {status}</p>
+          <p className="text-gray-900 font-medium">🔐 {access}</p>
         </div>
-        <div className="flex flex-wrap justify-between items-center">
-          <span className="font-semibold text-gray-700 text-sm sm:text-base">💰 Forma de pagamento:</span>
-          <span className="font-medium text-gray-900 text-sm sm:text-base">{paymentMethod}</span>
-        </div>
-        <div className="flex flex-wrap justify-between items-center">
-          <span className="font-semibold text-gray-700 text-sm sm:text-base">📌 Status:</span>
-          <span className="font-medium text-gray-900 text-sm sm:text-base">{status}</span>
-        </div>
-        <div className="flex flex-wrap justify-between items-center">
-          <span className="font-semibold text-gray-700 text-sm sm:text-base">🔐 Acesso:</span>
-          <span className="font-medium text-gray-900 text-sm sm:text-base">{access}</span>
-        </div>
+        
         {addedDate && (
-          <div className="flex flex-wrap justify-between items-center">
-            <span className="font-semibold text-gray-700 text-sm sm:text-base">📅 Adicionado em:</span>
-            <span className="font-medium text-gray-900 text-sm sm:text-base">{addedDate}</span>
+          <div className="py-2 border-t border-gray-200 mt-2">
+            <p className="text-gray-700 text-sm">📅 Adicionado em: {addedDate}</p>
           </div>
         )}
-        <div className="pt-4 space-y-2 sm:space-y-3">
+        
+        <div className="pt-3 space-y-2">
           <a 
-            onClick={handleTelegramClick} 
-            className="contact-btn w-full bg-blue-600 hover:bg-blue-700 text-white py-2 sm:py-3 px-4 rounded-lg font-medium flex items-center justify-center cursor-pointer text-sm sm:text-base"
+            href={getTelegramLink()}
+            target="_blank"
+            rel="noopener noreferrer" 
+            className="contact-btn w-full bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-lg font-medium flex items-center justify-center cursor-pointer"
           >
-            <span className="mr-2">📩</span> Contato por Telegram
+            <span className="mr-2">📩</span> @{telegramUsername.replace('@', '')}
           </a>
           <a 
-            onClick={handleWhatsappClick} 
-            className="contact-btn w-full bg-green-600 hover:bg-green-700 text-white py-2 sm:py-3 px-4 rounded-lg font-medium flex items-center justify-center cursor-pointer text-sm sm:text-base"
+            href={getWhatsappLink()}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="contact-btn w-full bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded-lg font-medium flex items-center justify-center cursor-pointer"
           >
             <span className="mr-2">📱</span> Contato por WhatsApp
           </a>

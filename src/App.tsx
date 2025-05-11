@@ -12,6 +12,7 @@ import Dashboard from "./pages/admin/Dashboard";
 import Subscriptions from "./pages/admin/Subscriptions";
 import SubscriptionEditor from "./pages/admin/SubscriptionEditor";
 import ChatSubscriptionEditor from "./pages/admin/ChatSubscriptionEditor";
+import Settings from "./pages/admin/Settings";
 
 const queryClient = new QueryClient();
 
@@ -32,6 +33,7 @@ const App = () => (
             <Route path="/admin/subscriptions/new" element={<SubscriptionEditor />} />
             <Route path="/admin/subscriptions/edit/:id" element={<SubscriptionEditor />} />
             <Route path="/admin/subscriptions/chat" element={<ChatSubscriptionEditor />} />
+            <Route path="/admin/settings" element={<Settings />} />
             
             {/* Rota de fallback */}
             <Route path="*" element={<NotFound />} />

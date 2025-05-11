@@ -24,23 +24,22 @@ const RegularSubscriptions: React.FC<RegularSubscriptionsProps> = ({
   useEffect(() => {
     if (searchTerm.trim() === "") {
       setVisibleSubscriptions(subscriptionList);
+      if (setHasResults) {
+        setHasResults(subscriptionList.length > 0);
+      }
       return;
     }
     
     const filtered = subscriptionList.filter(sub => {
-      // Filtrar principalmente pelo título (case insensitive)
+      // Filtrar pelo título (case insensitive)
       return sub.title.toLowerCase().includes(searchTerm.toLowerCase());
     });
     
     setVisibleSubscriptions(filtered);
     
-    // Atualizar hasResults se a prop estiver disponível e não tiver sido definida por FeaturedSubscriptions
+    // Atualizar hasResults se a prop estiver disponível
     if (setHasResults) {
-      if (filtered.length > 0) {
-        setHasResults(true);
-      } 
-      // Não definimos hasResults como false aqui, pois isso é feito no SubscriptionList
-      // baseado na combinação de resultados de ambos os componentes
+      setHasResults(filtered.length > 0);
     }
   }, [searchTerm, subscriptionList, setHasResults]);
 
