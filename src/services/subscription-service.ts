@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { SubscriptionData, PendingSubscriptionData } from '@/types/subscriptionTypes';
 import { toast } from '@/components/ui/use-toast';
@@ -105,7 +104,8 @@ export async function getPendingSubscriptions(): Promise<PendingSubscriptionData
   try {
     const { data, error } = await supabase
       .from('pending_subscriptions')
-      .select('*');
+      .select('*')
+      .eq('visible', true);
     
     if (error) throw error;
     
@@ -237,7 +237,22 @@ export async function toggleFeaturedStatus(id: string, featured: boolean): Promi
   }
 }
 
-// Funções para os botões do cabeçalho
+// Funções para o gerenciamento de botões do cabeçalho
+export async function getHeaderButtons(): Promise<any[]> {
+  try {
+    const { data, error } = await supabase
+      .from('header_buttons')
+      .select('*')
+      .order('position', { ascending: true });
+    
+    if (error) throw error;
+    return data;
+  } catch (error: any) {
+    console.error('Erro ao obter botões de cabeçalho:', error);
+    throw error;
+  }
+}
+
 export async function addHeaderButton(buttonData: any): Promise<any> {
   try {
     const { data, error } = await supabase

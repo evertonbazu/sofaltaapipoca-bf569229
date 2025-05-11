@@ -14,6 +14,7 @@ import SubscriptionEditor from "./pages/admin/SubscriptionEditor";
 import ChatSubscriptionEditor from "./pages/admin/ChatSubscriptionEditor";
 import PendingSubscriptions from "./pages/admin/PendingSubscriptions";
 import Settings from "./pages/admin/Settings";
+import HeaderButtons from "./pages/admin/HeaderButtons";
 import Profile from "./pages/Profile";
 import SubmitSubscription from "./pages/SubmitSubscription";
 
@@ -39,6 +40,7 @@ const App = () => (
             <Route path="/admin/subscriptions/edit/:id" element={<SubscriptionEditor />} />
             <Route path="/admin/subscriptions/chat" element={<ChatSubscriptionEditor />} />
             <Route path="/admin/subscriptions/pending" element={<PendingSubscriptions />} />
+            <Route path="/admin/header-buttons" element={<HeaderButtons />} />
             <Route path="/admin/settings" element={<Settings />} />
             
             {/* Rota de fallback */}

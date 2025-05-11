@@ -163,6 +163,7 @@ export type Database = {
           telegram_username: string
           title: string
           user_id: string | null
+          visible: boolean
           whatsapp_number: string
         }
         Insert: {
@@ -186,6 +187,7 @@ export type Database = {
           telegram_username: string
           title: string
           user_id?: string | null
+          visible?: boolean
           whatsapp_number: string
         }
         Update: {
@@ -209,6 +211,7 @@ export type Database = {
           telegram_username?: string
           title?: string
           user_id?: string | null
+          visible?: boolean
           whatsapp_number?: string
         }
         Relationships: []

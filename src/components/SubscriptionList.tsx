@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from "react";
 import FeaturedSubscriptions from "./FeaturedSubscriptions";
 import RegularSubscriptions from "./RegularSubscriptions";
@@ -29,21 +28,19 @@ const SubscriptionList: React.FC<SubscriptionListProps> = ({
         const featured = await getFeaturedSubscriptions();
         const all = await getAllSubscriptions();
         
-        // Get pending submissions that can be displayed
+        // Get all visible pending submissions
         const pendingSubmissions = await getPendingSubscriptions();
-        const approvedPendingSubmissions = pendingSubmissions
-          .filter(sub => sub.statusApproval === 'approved' || !sub.statusApproval)
-          .map(sub => ({
-            ...sub,
-            isMemberSubmission: true
-          }));
+        const memberSubmissions = pendingSubmissions.map(sub => ({
+          ...sub,
+          isMemberSubmission: true
+        }));
         
         // Filtrar assinaturas regulares (todas exceto as destacadas)
         const regular = all.filter(sub => !sub.featured);
         
         setFeaturedList(featured);
         setRegularList(regular);
-        setMemberSubmissionsList(approvedPendingSubmissions);
+        setMemberSubmissionsList(memberSubmissions);
       } catch (error) {
         console.error("Erro ao buscar assinaturas:", error);
       } finally {
