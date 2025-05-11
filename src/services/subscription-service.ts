@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { SubscriptionData, PendingSubscriptionData } from '@/types/subscriptionTypes';
 import { toast } from '@/components/ui/use-toast';
@@ -137,6 +138,75 @@ export async function getPendingSubscriptions(): Promise<PendingSubscriptionData
     }));
   } catch (error: any) {
     console.error('Erro ao obter assinaturas pendentes:', error);
+    throw error;
+  }
+}
+
+// Approve a pending subscription and move it to regular subscriptions
+export async function approvePendingSubscription(pendingSubscription: PendingSubscriptionData): Promise<SubscriptionData> {
+  try {
+    // Convert pending subscription to regular subscription format
+    const subscriptionData = {
+      title: pendingSubscription.title,
+      price: pendingSubscription.price,
+      paymentMethod: pendingSubscription.paymentMethod,
+      status: pendingSubscription.status,
+      access: pendingSubscription.access,
+      headerColor: pendingSubscription.headerColor,
+      priceColor: pendingSubscription.priceColor,
+      whatsappNumber: pendingSubscription.whatsappNumber,
+      telegramUsername: pendingSubscription.telegramUsername,
+      icon: pendingSubscription.icon,
+      addedDate: pendingSubscription.addedDate || new Date().toLocaleDateString('pt-BR'),
+      featured: false,
+      code: pendingSubscription.code,
+      pixKey: pendingSubscription.pixKey,
+      userId: pendingSubscription.userId,
+      category: pendingSubscription.category
+    };
+
+    // Insert to regular subscriptions table
+    const { data, error } = await supabase
+      .from('subscriptions')
+      .insert(mapToDbFormat(subscriptionData))
+      .select()
+      .single();
+    
+    if (error) throw error;
+
+    // Update pending subscription status
+    const { error: updateError } = await supabase
+      .from('pending_subscriptions')
+      .update({
+        status_approval: 'approved',
+        reviewed_at: new Date().toISOString()
+      })
+      .eq('id', pendingSubscription.id);
+    
+    if (updateError) throw updateError;
+
+    return mapToSubscriptionData(data);
+  } catch (error: any) {
+    console.error('Erro ao aprovar assinatura:', error);
+    throw error;
+  }
+}
+
+// Reject a pending subscription
+export async function rejectPendingSubscription(id: string, reason: string): Promise<void> {
+  try {
+    const { error } = await supabase
+      .from('pending_subscriptions')
+      .update({
+        status_approval: 'rejected',
+        rejection_reason: reason,
+        reviewed_at: new Date().toISOString()
+      })
+      .eq('id', id);
+    
+    if (error) throw error;
+  } catch (error: any) {
+    console.error('Erro ao rejeitar assinatura:', error);
     throw error;
   }
 }
