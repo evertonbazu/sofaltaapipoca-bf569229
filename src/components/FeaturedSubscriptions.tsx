@@ -8,13 +8,15 @@ interface FeaturedSubscriptionsProps {
   searchTerm?: string;
   setHasResults?: React.Dispatch<React.SetStateAction<boolean>>;
   subscriptionList: SubscriptionData[];
+  isAdmin?: boolean;
 }
 
 const FeaturedSubscriptions: React.FC<FeaturedSubscriptionsProps> = ({ 
   subscriptionRefs, 
   searchTerm = "", 
   setHasResults,
-  subscriptionList = []
+  subscriptionList = [],
+  isAdmin = false
 }) => {
   const [visibleSubscriptions, setVisibleSubscriptions] = useState<SubscriptionData[]>(subscriptionList);
 
@@ -69,6 +71,8 @@ const FeaturedSubscriptions: React.FC<FeaturedSubscriptionsProps> = ({
           icon={subscription.icon}
           addedDate={subscription.addedDate}
           subscriptionRefs={subscriptionRefs}
+          isAdmin={isAdmin}
+          isUserSubmission={subscription.isUserSubmission}
         />
       ))}
     </div>

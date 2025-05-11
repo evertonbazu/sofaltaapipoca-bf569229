@@ -1,6 +1,7 @@
 
 import React from "react";
 import SubscriptionCard from "@/components/SubscriptionCard";
+import { useNavigate } from "react-router-dom";
 
 interface SubscriptionItemProps {
   id?: string;
@@ -17,6 +18,8 @@ interface SubscriptionItemProps {
   addedDate?: string;
   subscriptionRefs?: React.MutableRefObject<{[key: string]: HTMLDivElement | null}>;
   isSearchResult?: boolean;
+  isAdmin?: boolean;
+  isUserSubmission?: boolean;
 }
 
 const SubscriptionItem: React.FC<SubscriptionItemProps> = ({
@@ -33,8 +36,25 @@ const SubscriptionItem: React.FC<SubscriptionItemProps> = ({
   icon,
   addedDate,
   subscriptionRefs,
-  isSearchResult = false
+  isSearchResult = false,
+  isAdmin = false,
+  isUserSubmission = false
 }) => {
+  const navigate = useNavigate();
+  
+  // Função para navegar para página de edição
+  const handleEditClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    e.preventDefault();
+    if (id) {
+      if (isUserSubmission) {
+        navigate(`/admin/subscriptions/edit/${id}?source=pending`);
+      } else {
+        navigate(`/admin/subscriptions/edit/${id}`);
+      }
+    }
+  };
+  
   // If the subscription needs to be referenced (for featured items), use a ref
   if (subscriptionRefs) {
     return (
@@ -53,6 +73,9 @@ const SubscriptionItem: React.FC<SubscriptionItemProps> = ({
           icon={icon}
           addedDate={addedDate}
           isSearchResult={isSearchResult}
+          isAdmin={isAdmin}
+          isUserSubmission={isUserSubmission}
+          onEditClick={handleEditClick}
         />
       </div>
     );
@@ -74,6 +97,9 @@ const SubscriptionItem: React.FC<SubscriptionItemProps> = ({
       icon={icon}
       addedDate={addedDate}
       isSearchResult={isSearchResult}
+      isAdmin={isAdmin}
+      isUserSubmission={isUserSubmission}
+      onEditClick={handleEditClick}
     />
   );
 };

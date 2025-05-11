@@ -7,12 +7,14 @@ interface RegularSubscriptionsProps {
   searchTerm?: string;
   setHasResults?: React.Dispatch<React.SetStateAction<boolean>>;
   subscriptionList: SubscriptionData[];
+  isAdmin?: boolean;
 }
 
 const RegularSubscriptions: React.FC<RegularSubscriptionsProps> = ({ 
   searchTerm = "", 
   setHasResults,
-  subscriptionList = []
+  subscriptionList = [],
+  isAdmin = false
 }) => {
   const [visibleSubscriptions, setVisibleSubscriptions] = useState<SubscriptionData[]>(subscriptionList);
 
@@ -66,6 +68,8 @@ const RegularSubscriptions: React.FC<RegularSubscriptionsProps> = ({
           icon={subscription.icon}
           addedDate={subscription.addedDate}
           isSearchResult={false}
+          isAdmin={isAdmin}
+          isUserSubmission={subscription.isUserSubmission}
         />
       ))}
     </div>

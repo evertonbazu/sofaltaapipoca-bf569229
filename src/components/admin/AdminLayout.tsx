@@ -7,7 +7,8 @@ import {
   Plus, 
   Clock, 
   ListFilter, 
-  Settings
+  Settings,
+  ButtonsSquare
 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
@@ -57,6 +58,11 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children, title }) => {
       name: 'Solicitações Pendentes', 
       path: '/admin/subscriptions/pending', 
       icon: <Clock className="h-5 w-5 mr-2" /> 
+    },
+    { 
+      name: 'Botões do Cabeçalho', 
+      path: '/admin/header-buttons', 
+      icon: <Menu className="h-5 w-5 mr-2" /> 
     },
     { 
       name: 'Configurações', 
