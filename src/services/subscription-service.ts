@@ -1,277 +1,87 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { SubscriptionData, PendingSubscriptionData } from "@/types/subscriptionTypes";
+import { subscriptions } from "@/data/subscriptions"; // Import dummy data
 
-// Função para buscar todas as categorias distintas
-export const getAllCategories = async (): Promise<string[]> => {
+// Get all subscriptions
+export async function getAllSubscriptions(): Promise<SubscriptionData[]> {
   try {
-    // Primeiro, obtenha todos os registros
+    // First try to get data from Supabase
+    const { data, error } = await supabase.from('subscriptions').select('*');
+    
+    if (error) {
+      console.error('Error fetching subscriptions from Supabase:', error);
+      // Fall back to static data if there's an error
+      return subscriptions;
+    }
+    
+    if (data && data.length > 0) {
+      // Map DB column names to our frontend property names
+      return data.map((item) => ({
+        id: item.id,
+        title: item.title,
+        price: item.price,
+        paymentMethod: item.payment_method,
+        status: item.status,
+        access: item.access,
+        headerColor: item.header_color,
+        priceColor: item.price_color,
+        whatsappNumber: item.whatsapp_number,
+        telegramUsername: item.telegram_username,
+        icon: item.icon,
+        addedDate: item.added_date,
+        featured: item.featured,
+        code: item.code,
+        userId: item.user_id,
+        pixKey: item.pix_key,
+        category: item.category || "Outras",
+        description: item.description
+      }));
+    }
+    
+    // Fall back to static data if no data from Supabase
+    return subscriptions;
+  } catch (error) {
+    console.error('Error in getAllSubscriptions:', error);
+    // Fall back to static data
+    return subscriptions;
+  }
+}
+
+// Get all categories
+export async function getAllCategories(): Promise<string[]> {
+  try {
+    // Try to get data from Supabase
     const { data, error } = await supabase
       .from('subscriptions')
-      .select('category');
+      .select('category')
+      .not('category', 'is', null);
     
-    if (error) throw error;
+    if (error) {
+      console.error('Error fetching categories from Supabase:', error);
+      // Fall back to extracting categories from static data
+      const categories = [...new Set(subscriptions.map(sub => sub.category || "Outras"))];
+      return categories;
+    }
     
-    // Extrair as categorias e remover duplicatas
-    const categories = Array.from(new Set(data.map(item => item.category).filter(Boolean)));
+    if (data && data.length > 0) {
+      // Extract unique categories
+      return [...new Set(data.map(item => item.category))].filter(Boolean);
+    }
     
-    // Ordenar alfabeticamente
-    return categories.sort();
+    // Fall back to static data if no data from Supabase
+    const categories = [...new Set(subscriptions.map(sub => sub.category || "Outras"))];
+    return categories;
   } catch (error) {
-    console.error("Erro ao buscar categorias:", error);
-    return [];
+    console.error('Error in getAllCategories:', error);
+    // Fall back to extracting categories from static data
+    const categories = [...new Set(subscriptions.map(sub => sub.category || "Outras"))];
+    return categories;
   }
-};
+}
 
-// Função para buscar todas as assinaturas
-export const getAllSubscriptions = async (): Promise<SubscriptionData[]> => {
-  try {
-    const { data, error } = await supabase
-      .from('subscriptions')
-      .select('*')
-      .order('created_at', { ascending: false });
-    
-    if (error) throw error;
-    
-    // Mapear os dados do banco para o formato esperado pela aplicação
-    return (data || []).map(item => ({
-      id: item.id,
-      title: item.title,
-      price: item.price,
-      paymentMethod: item.payment_method,
-      status: item.status || "Assinado",
-      access: item.access,
-      headerColor: item.header_color,
-      priceColor: item.price_color,
-      whatsappNumber: item.whatsapp_number,
-      telegramUsername: item.telegram_username,
-      icon: item.icon || "tv",
-      addedDate: item.added_date,
-      featured: item.featured,
-      code: item.code,
-      userId: item.user_id,
-      pixKey: item.pix_key,
-      category: item.category,
-      description: item.description
-    }));
-  } catch (error) {
-    console.error("Erro ao buscar assinaturas:", error);
-    return [];
-  }
-};
-
-// Função para buscar assinaturas em destaque
-export const getFeaturedSubscriptions = async (): Promise<SubscriptionData[]> => {
-  try {
-    const { data, error } = await supabase
-      .from('subscriptions')
-      .select('*')
-      .eq('featured', true)
-      .order('created_at', { ascending: false });
-    
-    if (error) throw error;
-    
-    // Mapear os dados do banco para o formato esperado pela aplicação
-    return (data || []).map(item => ({
-      id: item.id,
-      title: item.title,
-      price: item.price,
-      paymentMethod: item.payment_method,
-      status: item.status || "Assinado",
-      access: item.access,
-      headerColor: item.header_color,
-      priceColor: item.price_color,
-      whatsappNumber: item.whatsapp_number,
-      telegramUsername: item.telegram_username,
-      icon: item.icon || "tv",
-      addedDate: item.added_date,
-      featured: item.featured,
-      code: item.code,
-      userId: item.user_id,
-      pixKey: item.pix_key,
-      category: item.category,
-      description: item.description
-    }));
-  } catch (error) {
-    console.error("Erro ao buscar assinaturas em destaque:", error);
-    return [];
-  }
-};
-
-// Função para buscar assinaturas pendentes
-export const getPendingSubscriptions = async (): Promise<PendingSubscriptionData[]> => {
-  try {
-    const { data, error } = await supabase
-      .from('pending_subscriptions')
-      .select('*')
-      .order('submitted_at', { ascending: false });
-    
-    if (error) throw error;
-    
-    // Mapear os dados do banco para o formato esperado pela aplicação
-    return (data || []).map(item => ({
-      id: item.id,
-      title: item.title,
-      price: item.price,
-      paymentMethod: item.payment_method,
-      status: item.status || "Assinado",
-      access: item.access,
-      headerColor: item.header_color,
-      priceColor: item.price_color,
-      whatsappNumber: item.whatsapp_number,
-      telegramUsername: item.telegram_username,
-      icon: item.icon || "tv",
-      addedDate: item.added_date,
-      code: item.code,
-      userId: item.user_id,
-      statusApproval: item.status_approval,
-      paymentProofImage: item.payment_proof_image,
-      pixQrCode: item.pix_qr_code,
-      pixKey: item.pix_key,
-      rejectionReason: item.rejection_reason,
-      submitted_at: item.submitted_at,
-      category: item.category,
-      description: item.description
-    }));
-  } catch (error) {
-    console.error("Erro ao buscar assinaturas pendentes:", error);
-    return [];
-  }
-};
-
-// Função para adicionar uma nova assinatura
-export const addSubscription = async (subscriptionData: SubscriptionData): Promise<{success: boolean, id?: string, error?: any}> => {
-  try {
-    // Converter os dados para o formato esperado pelo banco
-    const dbData = {
-      title: subscriptionData.title,
-      price: subscriptionData.price,
-      payment_method: subscriptionData.paymentMethod,
-      status: subscriptionData.status,
-      access: subscriptionData.access,
-      header_color: subscriptionData.headerColor,
-      price_color: subscriptionData.priceColor,
-      whatsapp_number: subscriptionData.whatsappNumber,
-      telegram_username: subscriptionData.telegramUsername,
-      icon: subscriptionData.icon,
-      added_date: subscriptionData.addedDate,
-      featured: subscriptionData.featured || false,
-      code: subscriptionData.code,
-      user_id: subscriptionData.userId,
-      pix_key: subscriptionData.pixKey,
-      category: subscriptionData.category,
-      description: subscriptionData.description
-    };
-    
-    const { data, error } = await supabase
-      .from('subscriptions')
-      .insert(dbData)
-      .select('id')
-      .single();
-    
-    if (error) throw error;
-    
-    return { success: true, id: data?.id };
-  } catch (error) {
-    console.error("Erro ao adicionar assinatura:", error);
-    return { success: false, error };
-  }
-};
-
-// Função para atualizar uma assinatura existente
-export const updateSubscription = async (id: string, subscriptionData: SubscriptionData): Promise<{success: boolean, error?: any}> => {
-  try {
-    // Converter os dados para o formato esperado pelo banco
-    const dbData = {
-      title: subscriptionData.title,
-      price: subscriptionData.price,
-      payment_method: subscriptionData.paymentMethod,
-      status: subscriptionData.status,
-      access: subscriptionData.access,
-      header_color: subscriptionData.headerColor,
-      price_color: subscriptionData.priceColor,
-      whatsapp_number: subscriptionData.whatsappNumber,
-      telegram_username: subscriptionData.telegramUsername,
-      icon: subscriptionData.icon,
-      added_date: subscriptionData.addedDate,
-      featured: subscriptionData.featured,
-      code: subscriptionData.code,
-      user_id: subscriptionData.userId,
-      pix_key: subscriptionData.pixKey,
-      updated_at: new Date(),
-      category: subscriptionData.category,
-      description: subscriptionData.description
-    };
-    
-    const { error } = await supabase
-      .from('subscriptions')
-      .update(dbData)
-      .eq('id', id);
-    
-    if (error) throw error;
-    
-    return { success: true };
-  } catch (error) {
-    console.error("Erro ao atualizar assinatura:", error);
-    return { success: false, error };
-  }
-};
-
-// Função para excluir uma assinatura
-export const deleteSubscription = async (id: string): Promise<{success: boolean, error?: any}> => {
-  try {
-    const { error } = await supabase
-      .from('subscriptions')
-      .delete()
-      .eq('id', id);
-    
-    if (error) throw error;
-    
-    return { success: true };
-  } catch (error) {
-    console.error("Erro ao excluir assinatura:", error);
-    return { success: false, error };
-  }
-};
-
-// Função para alternar o status de destaque de uma assinatura
-export const toggleFeaturedStatus = async (id: string, featured: boolean): Promise<{success: boolean, error?: any}> => {
-  try {
-    const { error } = await supabase
-      .from('subscriptions')
-      .update({ featured, updated_at: new Date() })
-      .eq('id', id);
-    
-    if (error) throw error;
-    
-    return { success: true };
-  } catch (error) {
-    console.error("Erro ao alternar status de destaque:", error);
-    return { success: false, error };
-  }
-};
-
-// Função para registrar erros no banco de dados
-export const logError = async (errorMessage: string, errorContext?: string, errorCode?: string, stackTrace?: string): Promise<{success: boolean, id?: string, error?: any}> => {
-  try {
-    const { data, error } = await supabase
-      .rpc('log_error', { 
-        error_msg: errorMessage,
-        error_ctx: errorContext,
-        error_cd: errorCode,
-        stack_tr: stackTrace
-      });
-    
-    if (error) throw error;
-    
-    return { success: true, id: data };
-  } catch (error) {
-    console.error("Erro ao registrar erro no log:", error);
-    return { success: false, error };
-  }
-};
-
-// Função para buscar botões de cabeçalho
-export const getAllHeaderButtons = async () => {
+// Get all header buttons
+export async function getAllHeaderButtons() {
   try {
     const { data, error } = await supabase
       .from('header_buttons')
@@ -279,76 +89,41 @@ export const getAllHeaderButtons = async () => {
       .order('position', { ascending: true });
     
     if (error) throw error;
-    
-    return data;
+    return data || [];
   } catch (error) {
-    console.error("Erro ao buscar botões de cabeçalho:", error);
+    console.error('Error fetching header buttons:', error);
     return [];
   }
-};
+}
 
-// Função para adicionar um novo botão de cabeçalho
-export const addHeaderButton = async (buttonData: {
-  title: string;
-  icon: string;
-  url: string;
-  visible: boolean;
-  position: number;
-}) => {
-  try {
-    const { data, error } = await supabase
-      .from('header_buttons')
-      .insert(buttonData)
-      .select()
-      .single();
-    
-    if (error) throw error;
-    
-    return { success: true, button: data };
-  } catch (error) {
-    console.error("Erro ao adicionar botão de cabeçalho:", error);
-    return { success: false, error };
-  }
-};
-
-// Função para atualizar um botão de cabeçalho existente
-export const updateHeaderButton = async (id: string, buttonData: {
-  title?: string;
-  icon?: string;
-  url?: string;
-  visible?: boolean;
-  position?: number;
-}) => {
-  try {
-    const { data, error } = await supabase
-      .from('header_buttons')
-      .update({ ...buttonData, updated_at: new Date() })
-      .eq('id', id)
-      .select()
-      .single();
-    
-    if (error) throw error;
-    
-    return { success: true, button: data };
-  } catch (error) {
-    console.error("Erro ao atualizar botão de cabeçalho:", error);
-    return { success: false, error };
-  }
-};
-
-// Função para excluir um botão de cabeçalho
-export const deleteHeaderButton = async (id: string) => {
+// Delete a subscription
+export async function deleteSubscription(id: string): Promise<void> {
   try {
     const { error } = await supabase
-      .from('header_buttons')
+      .from('subscriptions')
       .delete()
       .eq('id', id);
     
     if (error) throw error;
-    
-    return { success: true };
   } catch (error) {
-    console.error("Erro ao excluir botão de cabeçalho:", error);
-    return { success: false, error };
+    console.error('Error deleting subscription:', error);
+    throw error;
   }
-};
+}
+
+// Toggle featured status
+export async function toggleFeaturedStatus(id: string, featured: boolean): Promise<void> {
+  try {
+    const { error } = await supabase
+      .from('subscriptions')
+      .update({ featured })
+      .eq('id', id);
+    
+    if (error) throw error;
+  } catch (error) {
+    console.error('Error toggling featured status:', error);
+    throw error;
+  }
+}
+
+// Add more service functions as needed

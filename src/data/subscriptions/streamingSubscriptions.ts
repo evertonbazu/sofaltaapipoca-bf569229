@@ -12,7 +12,8 @@ export const streamingSubscriptions: SubscriptionData[] = [
     whatsappNumber: "5513992077804",
     telegramUsername: "evertonbazu",
     icon: "monitor",
-    addedDate: "04/05/2025"
+    addedDate: "04/05/2025",
+    category: "IA"
   },
   {
     title: "NETFLIX (DISPOSITIVOS MÓVEIS)",
@@ -25,7 +26,8 @@ export const streamingSubscriptions: SubscriptionData[] = [
     whatsappNumber: "5585992166014",
     telegramUsername: "OLIVEIRABOB",
     icon: "tv",
-    addedDate: "04/05/2025"
+    addedDate: "04/05/2025",
+    category: "Streaming"
   },
   {
     title: "NETFLIX (DISPOSITIVOS MÓVEIS/TV)",
@@ -38,7 +40,8 @@ export const streamingSubscriptions: SubscriptionData[] = [
     whatsappNumber: "5531975374153",
     telegramUsername: "EvandersonAraujo",
     icon: "tv",
-    addedDate: "04/05/2025"
+    addedDate: "04/05/2025",
+    category: "Streaming"
   },
   {
     title: "PARAMOUNT PREMIUM",
@@ -51,7 +54,8 @@ export const streamingSubscriptions: SubscriptionData[] = [
     whatsappNumber: "5562982292725",
     telegramUsername: "DonaMariaRosa",
     icon: "tv",
-    addedDate: "01/04/2025"
+    addedDate: "01/04/2025",
+    category: "Streaming"
   },
   {
     title: "LOOKE",
@@ -64,7 +68,8 @@ export const streamingSubscriptions: SubscriptionData[] = [
     whatsappNumber: "5562982292725",
     telegramUsername: "DonaMariaRosa",
     icon: "tv",
-    addedDate: "01/04/2025"
+    addedDate: "01/04/2025",
+    category: "Streaming"
   },
   {
     title: "NETFLIX (Dispositivos móveis)",
@@ -77,7 +82,8 @@ export const streamingSubscriptions: SubscriptionData[] = [
     whatsappNumber: "5513992077804",
     telegramUsername: "evertonbazu",
     icon: "tv",
-    addedDate: "01/04/2025"
+    addedDate: "01/04/2025",
+    category: "Streaming"
   },
   {
     title: "VIKI E KOCOWA +",
@@ -90,7 +96,8 @@ export const streamingSubscriptions: SubscriptionData[] = [
     whatsappNumber: "86995736762",
     telegramUsername: "Thamy78",
     icon: "tv",
-    addedDate: "01/04/2025"
+    addedDate: "01/04/2025",
+    category: "Streaming"
   },
   {
     title: "PARAMOUNT PADRÃO (MELI+)",
@@ -103,7 +110,8 @@ export const streamingSubscriptions: SubscriptionData[] = [
     whatsappNumber: "5575999997951",
     telegramUsername: "Eduardok10cds",
     icon: "tv",
-    addedDate: "01/04/2025"
+    addedDate: "01/04/2025",
+    category: "Streaming"
   },
   {
     title: "AMAZON PRIME VÍDEO",
@@ -116,7 +124,8 @@ export const streamingSubscriptions: SubscriptionData[] = [
     whatsappNumber: "5513992077804",
     telegramUsername: "evertonbazu",
     icon: "tv",
-    addedDate: "01/04/2025"
+    addedDate: "01/04/2025",
+    category: "Streaming"
   },
   {
     title: "NETFLIX (DISPOSITIVOS MÓVEIS/TV)",
@@ -129,7 +138,8 @@ export const streamingSubscriptions: SubscriptionData[] = [
     whatsappNumber: "5531975374153",
     telegramUsername: "EvandersonAraujo",
     icon: "tv",
-    addedDate: "01/04/2025"
+    addedDate: "01/04/2025",
+    category: "Streaming"
   },
   {
     title: "APPLE TV+",
@@ -142,7 +152,8 @@ export const streamingSubscriptions: SubscriptionData[] = [
     whatsappNumber: "5574981207317",
     telegramUsername: "ojuniormauricio",
     icon: "apple",
-    addedDate: "01/04/2025"
+    addedDate: "01/04/2025",
+    category: "Streaming"
   },
   {
     title: "Netflix (Cel/PC)",
@@ -155,7 +166,8 @@ export const streamingSubscriptions: SubscriptionData[] = [
     whatsappNumber: "5587991988684",
     telegramUsername: "alessadinozzo",
     icon: "tv",
-    addedDate: "01/04/2025"
+    addedDate: "01/04/2025",
+    category: "Streaming"
   },
   {
     title: "Apple TV",
@@ -168,7 +180,8 @@ export const streamingSubscriptions: SubscriptionData[] = [
     whatsappNumber: "5587991988684",
     telegramUsername: "alessadinozzo",
     icon: "apple",
-    addedDate: "01/04/2025"
+    addedDate: "01/04/2025",
+    category: "Streaming"
   },
   {
     title: "PLAYPLUS",
@@ -181,7 +194,8 @@ export const streamingSubscriptions: SubscriptionData[] = [
     whatsappNumber: "5598984045368",
     telegramUsername: "brenokennedyof",
     icon: "tv",
-    addedDate: "01/04/2025"
+    addedDate: "01/04/2025",
+    category: "Streaming"
   },
   {
     title: "MUBI",
@@ -194,7 +208,8 @@ export const streamingSubscriptions: SubscriptionData[] = [
     whatsappNumber: "5598984045368",
     telegramUsername: "brenokennedyof",
     icon: "tv",
-    addedDate: "01/04/2025"
+    addedDate: "01/04/2025",
+    category: "Streaming"
   },
   {
     title: "MAX PLATINUM - ANUAL",
@@ -207,7 +222,8 @@ export const streamingSubscriptions: SubscriptionData[] = [
     whatsappNumber: "5561998013373",
     telegramUsername: "andrefpc",
     icon: "tv",
-    addedDate: "01/04/2025"
+    addedDate: "01/04/2025",
+    category: "Streaming"
   },
   {
     title: "MAX STANDARD",
@@ -220,7 +236,8 @@ export const streamingSubscriptions: SubscriptionData[] = [
     whatsappNumber: "5575992630618",
     telegramUsername: "arnaldojhony",
     icon: "tv",
-    addedDate: "01/04/2025"
+    addedDate: "01/04/2025",
+    category: "Streaming"
   },
   {
     title: "PARAMOUNT PREMIUM",
@@ -233,7 +250,8 @@ export const streamingSubscriptions: SubscriptionData[] = [
     whatsappNumber: "5585992166014",
     telegramUsername: "OLIVEIRABOB",
     icon: "tv",
-    addedDate: "01/04/2025"
+    addedDate: "01/04/2025",
+    category: "Streaming"
   },
   {
     title: "GLOBO PLAY PREMIUM + 27 CANAIS + APPLE TV+",
@@ -246,7 +264,8 @@ export const streamingSubscriptions: SubscriptionData[] = [
     whatsappNumber: "5585992166014",
     telegramUsername: "OLIVEIRABOB",
     icon: "tv",
-    addedDate: "01/04/2025"
+    addedDate: "01/04/2025",
+    category: "Streaming"
   },
   {
     title: "CRUNCHYROLL",
@@ -259,7 +278,8 @@ export const streamingSubscriptions: SubscriptionData[] = [
     whatsappNumber: "5586995736762",
     telegramUsername: "Thamy78",
     icon: "tv",
-    addedDate: "01/04/2025"
+    addedDate: "01/04/2025",
+    category: "Streaming"
   },
   {
     title: "CRUNCHYROLL",
@@ -272,7 +292,8 @@ export const streamingSubscriptions: SubscriptionData[] = [
     whatsappNumber: "5511912659702",
     telegramUsername: "BrunnoSSantos",
     icon: "tv",
-    addedDate: "01/04/2025"
+    addedDate: "01/04/2025",
+    category: "Streaming"
   },
   {
     title: "GLOBOPLAY PADRÃO (SEM ANÚNCIOS)",
@@ -285,7 +306,8 @@ export const streamingSubscriptions: SubscriptionData[] = [
     whatsappNumber: "5565984450752",
     telegramUsername: "euothiagoandrade",
     icon: "tv",
-    addedDate: "01/04/2025"
+    addedDate: "01/04/2025",
+    category: "Streaming"
   },
   {
     title: "NETFLIX 4K + APPLE TV + GLOBO PLAY PREMIUM SEM ANUNCIO + 27 CANAIS",
@@ -298,7 +320,8 @@ export const streamingSubscriptions: SubscriptionData[] = [
     whatsappNumber: "5585992166014",
     telegramUsername: "OliveiraBoB",
     icon: "tv",
-    addedDate: "01/04/2025"
+    addedDate: "01/04/2025",
+    category: "Streaming"
   },
   {
     title: "NETFLIX (DISPOSITIVOS MÓVEIS/TV)",
@@ -311,7 +334,8 @@ export const streamingSubscriptions: SubscriptionData[] = [
     whatsappNumber: "5585992166014",
     telegramUsername: "OLIVEIRABOB",
     icon: "tv",
-    addedDate: "01/04/2025"
+    addedDate: "01/04/2025",
+    category: "Streaming"
   },
   {
     title: "AMAZON PRIME VIDEO",
@@ -324,7 +348,8 @@ export const streamingSubscriptions: SubscriptionData[] = [
     whatsappNumber: "5511912659702",
     telegramUsername: "BrunnoSSantos",
     icon: "tv",
-    addedDate: "01/04/2025"
+    addedDate: "01/04/2025",
+    category: "Streaming"
   },
   {
     title: "DISNEY+ PADRÃO (COM ANÚNCIOS)",
@@ -337,6 +362,7 @@ export const streamingSubscriptions: SubscriptionData[] = [
     whatsappNumber: "5583986510421",
     telegramUsername: "kiwi_docinho",
     icon: "tv",
-    addedDate: "01/04/2025"
+    addedDate: "01/04/2025",
+    category: "Streaming"
   }
 ];

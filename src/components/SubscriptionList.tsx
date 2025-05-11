@@ -2,7 +2,7 @@
 import React, { useEffect, useState } from "react";
 import FeaturedSubscriptions from "./FeaturedSubscriptions";
 import RegularSubscriptions from "./RegularSubscriptions";
-import { getAllSubscriptions } from "@/services/subscription-service";
+import { supabase } from "@/integrations/supabase/client";
 import { SubscriptionData } from "@/types/subscriptionTypes";
 
 interface SubscriptionListProps {
@@ -24,17 +24,45 @@ const SubscriptionList: React.FC<SubscriptionListProps> = ({
     regular: {}
   });
 
-  // Função para buscar todas as assinaturas e organizá-las
+  // Function to fetch all subscriptions and organize them
   useEffect(() => {
     const fetchSubscriptions = async () => {
       try {
-        const allSubscriptions = await getAllSubscriptions();
+        // Fetch subscriptions from Supabase
+        const { data: allSubscriptions, error } = await supabase
+          .from('subscriptions')
+          .select('*')
+          .order('created_at', { ascending: false });
+          
+        if (error) throw error;
+
+        // Map database fields to our SubscriptionData interface
+        const mappedSubscriptions = allSubscriptions.map((sub): SubscriptionData => ({
+          id: sub.id,
+          title: sub.title,
+          price: sub.price,
+          paymentMethod: sub.payment_method,
+          status: sub.status,
+          access: sub.access,
+          headerColor: sub.header_color,
+          priceColor: sub.price_color,
+          whatsappNumber: sub.whatsapp_number,
+          telegramUsername: sub.telegram_username,
+          icon: sub.icon,
+          addedDate: sub.added_date,
+          featured: sub.featured,
+          code: sub.code,
+          userId: sub.user_id,
+          pixKey: sub.pix_key,
+          category: sub.category || "Outras", // Default category
+          description: sub.description
+        }));
         
         // Organize subscriptions by category and type (featured or regular)
         const featured: SubscriptionData[] = [];
         const regular: { [category: string]: SubscriptionData[] } = {};
         
-        allSubscriptions.forEach((sub: SubscriptionData) => {
+        mappedSubscriptions.forEach((sub: SubscriptionData) => {
           // Filter by search term if there is one
           const matchesSearch = searchTerm === '' || 
             sub.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -59,7 +87,7 @@ const SubscriptionList: React.FC<SubscriptionListProps> = ({
         setSubscriptions({ featured, regular });
         
         // Check if there are results
-        const hasResults = featured.length > 0 || Object.keys(regular).length > 0;
+        const hasResults = featured.length > 0 || Object.values(regular).flat().length > 0;
         setHasResults(hasResults);
         
       } catch (error) {
@@ -76,7 +104,9 @@ const SubscriptionList: React.FC<SubscriptionListProps> = ({
       {/* Featured Subscriptions */}
       {subscriptions.featured.length > 0 && (
         <FeaturedSubscriptions 
-          subscriptionItems={subscriptions.featured} 
+          subscriptionItems={subscriptions.featured}
+          subscriptionRefs={subscriptionRefs}
+          searchTerm={searchTerm}
         />
       )}
       
@@ -85,6 +115,7 @@ const SubscriptionList: React.FC<SubscriptionListProps> = ({
         <RegularSubscriptions 
           groupedSubscriptions={subscriptions.regular}
           subscriptionRefs={subscriptionRefs}
+          searchTerm={searchTerm}
         />
       )}
     </div>

@@ -4,50 +4,58 @@ import SubscriptionItem from "./SubscriptionItem";
 import { SubscriptionData } from "@/types/subscriptionTypes";
 
 interface FeaturedSubscriptionsProps {
-  subscriptionRefs: React.MutableRefObject<{[key: string]: HTMLDivElement | null}>;
+  subscriptionRefs?: React.MutableRefObject<{[key: string]: HTMLDivElement | null}>;
   searchTerm?: string;
   setHasResults?: React.Dispatch<React.SetStateAction<boolean>>;
-  subscriptionList: SubscriptionData[];
+  subscriptionList?: SubscriptionData[];
+  subscriptionItems?: SubscriptionData[];  // Adding this for backward compatibility
   isAdmin?: boolean;
 }
 
 const FeaturedSubscriptions: React.FC<FeaturedSubscriptionsProps> = ({ 
-  subscriptionRefs, 
+  subscriptionRefs = {current: {}}, 
   searchTerm = "", 
   setHasResults,
   subscriptionList = [],
+  subscriptionItems = [], // For backward compatibility
   isAdmin = false
 }) => {
-  const [visibleSubscriptions, setVisibleSubscriptions] = useState<SubscriptionData[]>(subscriptionList);
+  // Use either subscriptionItems or subscriptionList, prioritizing subscriptionItems for backward compatibility
+  const items = subscriptionItems.length > 0 ? subscriptionItems : subscriptionList;
+  const [visibleSubscriptions, setVisibleSubscriptions] = useState<SubscriptionData[]>(items);
 
-  // Atualizar lista quando subscriptionList mudar
+  // Update list when source items change
   useEffect(() => {
-    setVisibleSubscriptions(subscriptionList);
-  }, [subscriptionList]);
+    setVisibleSubscriptions(items);
+  }, [items]);
 
   useEffect(() => {
     if (searchTerm.trim() === "") {
-      setVisibleSubscriptions(subscriptionList);
+      setVisibleSubscriptions(items);
       return;
     }
     
-    const filtered = subscriptionList.filter(sub => {
-      // Filtrar principalmente pelo título (case insensitive)
-      return sub.title.toLowerCase().includes(searchTerm.toLowerCase());
+    const filtered = items.filter(sub => {
+      // Filter by title, category, or description (case insensitive)
+      const titleMatch = sub.title.toLowerCase().includes(searchTerm.toLowerCase());
+      const categoryMatch = sub.category?.toLowerCase().includes(searchTerm.toLowerCase()) || false;
+      const descriptionMatch = sub.description?.toLowerCase().includes(searchTerm.toLowerCase()) || false;
+      
+      return titleMatch || categoryMatch || descriptionMatch;
     });
     
     setVisibleSubscriptions(filtered);
     
-    // Atualizar hasResults se a prop estiver disponível
+    // Update hasResults if the prop is available
     if (setHasResults) {
       if (filtered.length > 0) {
         setHasResults(true);
       } else if (searchTerm !== "") {
-        // Só definimos como false se houver um termo de busca e nenhum resultado
+        // Only set to false if there's a search term and no results
         setHasResults(false);
       }
     }
-  }, [searchTerm, subscriptionList, setHasResults]);
+  }, [searchTerm, items, setHasResults]);
 
   if (visibleSubscriptions.length === 0) {
     return null;

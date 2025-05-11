@@ -13,7 +13,8 @@ export const youtubeSubscriptions: SubscriptionData[] = [
     whatsappNumber: "5527988292875",
     telegramUsername: "Rastelinho",
     icon: "youtube",
-    addedDate: "01/04/2025"
+    addedDate: "01/04/2025",
+    category: "Vídeo"
   },
   {
     title: "YOUTUBE PREMIUM",
@@ -26,6 +27,7 @@ export const youtubeSubscriptions: SubscriptionData[] = [
     whatsappNumber: "5586998315604",
     telegramUsername: "itallo92",
     icon: "youtube",
-    addedDate: "01/04/2025"
+    addedDate: "01/04/2025",
+    category: "Vídeo"
   }
 ];

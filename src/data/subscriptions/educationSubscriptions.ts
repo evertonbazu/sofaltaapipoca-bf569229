@@ -13,7 +13,8 @@ export const educationSubscriptions: SubscriptionData[] = [
     whatsappNumber: "5513992077804",
     telegramUsername: "evertonbazu",
     icon: "monitor",
-    addedDate: "01/04/2025"
+    addedDate: "01/04/2025",
+    category: "Educação"
   },
   {
     title: "ALURA PLUS",
@@ -26,7 +27,8 @@ export const educationSubscriptions: SubscriptionData[] = [
     whatsappNumber: "5513992077804",
     telegramUsername: "evertonbazu",
     icon: "monitor",
-    addedDate: "01/04/2025"
+    addedDate: "01/04/2025",
+    category: "Educação"
   },
   {
     title: "GRAN CURSOS ILIMITADO AMIGOS",
@@ -39,7 +41,8 @@ export const educationSubscriptions: SubscriptionData[] = [
     whatsappNumber: "5562982292725",
     telegramUsername: "DonaMariaRosa",
     icon: "monitor",
-    addedDate: "01/04/2025"
+    addedDate: "01/04/2025",
+    category: "Educação"
   },
   {
     title: "SUPER DUOLINGO PLUS - ANUAL",
@@ -52,7 +55,8 @@ export const educationSubscriptions: SubscriptionData[] = [
     whatsappNumber: "5565984450752",
     telegramUsername: "euothiagoandrade",
     icon: "monitor",
-    addedDate: "01/04/2025"
+    addedDate: "01/04/2025",
+    category: "Educação"
   },
   {
     title: "CANVA",
@@ -65,6 +69,7 @@ export const educationSubscriptions: SubscriptionData[] = [
     whatsappNumber: "5513992077804",
     telegramUsername: "evertonbazu",
     icon: "monitor",
-    addedDate: "01/04/2025"
+    addedDate: "01/04/2025",
+    category: "Design"
   }
 ];

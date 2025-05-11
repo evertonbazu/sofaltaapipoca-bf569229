@@ -6,7 +6,9 @@ import { SubscriptionData } from "@/types/subscriptionTypes";
 interface RegularSubscriptionsProps {
   searchTerm?: string;
   setHasResults?: React.Dispatch<React.SetStateAction<boolean>>;
-  subscriptionList: SubscriptionData[];
+  subscriptionList?: SubscriptionData[];
+  groupedSubscriptions?: { [category: string]: SubscriptionData[] }; // Adding this for backward compatibility
+  subscriptionRefs?: React.MutableRefObject<{[key: string]: HTMLDivElement | null}>;
   isAdmin?: boolean;
 }
 
@@ -14,37 +16,43 @@ const RegularSubscriptions: React.FC<RegularSubscriptionsProps> = ({
   searchTerm = "", 
   setHasResults,
   subscriptionList = [],
+  groupedSubscriptions = {},
+  subscriptionRefs,
   isAdmin = false
 }) => {
-  const [visibleSubscriptions, setVisibleSubscriptions] = useState<SubscriptionData[]>(subscriptionList);
+  // If we have groupedSubscriptions, flatten them into a single array
+  const items = subscriptionList.length > 0 ? subscriptionList : 
+    Object.values(groupedSubscriptions).flat();
+  
+  const [visibleSubscriptions, setVisibleSubscriptions] = useState<SubscriptionData[]>(items);
 
-  // Atualizar lista quando subscriptionList mudar
+  // Update list when source items change
   useEffect(() => {
-    setVisibleSubscriptions(subscriptionList);
-  }, [subscriptionList]);
+    setVisibleSubscriptions(items);
+  }, [items]);
   
   useEffect(() => {
     if (searchTerm.trim() === "") {
-      setVisibleSubscriptions(subscriptionList);
+      setVisibleSubscriptions(items);
       if (setHasResults) {
-        setHasResults(subscriptionList.length > 0);
+        setHasResults(items.length > 0);
       }
       return;
     }
     
-    const filtered = subscriptionList.filter(sub => {
-      // Filtrar pelo título, preço ou método de pagamento (case insensitive)
-      const content = `${sub.title} ${sub.price} ${sub.paymentMethod}`.toLowerCase();
+    const filtered = items.filter(sub => {
+      // Filter by title, price, paymentMethod, category, or description
+      const content = `${sub.title} ${sub.price} ${sub.paymentMethod} ${sub.category || ''} ${sub.description || ''}`.toLowerCase();
       return content.includes(searchTerm.toLowerCase());
     });
     
     setVisibleSubscriptions(filtered);
     
-    // Atualizar hasResults se a prop estiver disponível
+    // Update hasResults if the prop is available
     if (setHasResults) {
       setHasResults(filtered.length > 0);
     }
-  }, [searchTerm, subscriptionList, setHasResults]);
+  }, [searchTerm, items, setHasResults]);
 
   if (visibleSubscriptions.length === 0) {
     return null;
@@ -59,7 +67,7 @@ const RegularSubscriptions: React.FC<RegularSubscriptionsProps> = ({
           title={subscription.title}
           price={subscription.price}
           paymentMethod={subscription.paymentMethod}
-          status="Assinado" // Status fixo como "Assinado"
+          status={subscription.status || "Assinado"} // Default status if not provided
           access={subscription.access}
           headerColor={subscription.headerColor}
           priceColor={subscription.priceColor}
@@ -70,6 +78,7 @@ const RegularSubscriptions: React.FC<RegularSubscriptionsProps> = ({
           isSearchResult={false}
           isAdmin={isAdmin}
           isUserSubmission={subscription.isUserSubmission}
+          subscriptionRefs={subscriptionRefs}
         />
       ))}
     </div>

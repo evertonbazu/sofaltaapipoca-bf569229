@@ -13,7 +13,8 @@ export const productivitySubscriptions: SubscriptionData[] = [
     whatsappNumber: "5598984045368",
     telegramUsername: "brenokennedyof",
     icon: "monitor",
-    addedDate: "01/04/2025"
+    addedDate: "01/04/2025",
+    category: "Produtividade"
   },
   {
     title: "MCAFEE TOTAL PROTECTION",
@@ -26,7 +27,8 @@ export const productivitySubscriptions: SubscriptionData[] = [
     whatsappNumber: "5527997692531",
     telegramUsername: "otaviodw",
     icon: "monitor",
-    addedDate: "01/04/2025"
+    addedDate: "01/04/2025",
+    category: "Produtividade"
   },
   {
     title: "APPLE ONE (2TB)",
@@ -39,7 +41,8 @@ export const productivitySubscriptions: SubscriptionData[] = [
     whatsappNumber: "5598984045368",
     telegramUsername: "brenokennedyof",
     icon: "apple",
-    addedDate: "01/04/2025"
+    addedDate: "01/04/2025",
+    category: "Produtividade"
   },
   {
     title: "Microsoft 365 Família 1T",
@@ -52,6 +55,7 @@ export const productivitySubscriptions: SubscriptionData[] = [
     whatsappNumber: "5587991988684",
     telegramUsername: "alessadinozzo",
     icon: "monitor",
-    addedDate: "01/04/2025"
+    addedDate: "01/04/2025",
+    category: "Produtividade"
   }
 ];

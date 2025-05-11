@@ -1,3 +1,4 @@
+
 export interface SubscriptionData {
   id?: string;
   title: string;
@@ -16,8 +17,8 @@ export interface SubscriptionData {
   userId?: string;
   pixKey?: string;
   isUserSubmission?: boolean;
-  category: string; // Added this field
-  description?: string; // Added this field
+  category: string;
+  description?: string;
 }
 
 export interface PendingSubscriptionData extends SubscriptionData {

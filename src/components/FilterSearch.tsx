@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
-import { getAllCategories } from "@/services/subscription-service";
+import { supabase } from "@/integrations/supabase/client";
 
 interface FilterSearchProps {
   onCategoryClick: (category: string) => void;
@@ -19,10 +19,20 @@ const FilterSearch: React.FC<FilterSearchProps> = ({ onCategoryClick }) => {
   useEffect(() => {
     const fetchCategories = async () => {
       try {
-        const fetchedCategories = await getAllCategories();
-        setCategories(fetchedCategories);
+        // Get all subscriptions and extract unique categories
+        const { data, error } = await supabase
+          .from('subscriptions')
+          .select('category')
+          .not('category', 'is', null);
+        
+        if (error) throw error;
+        
+        // Extract unique categories
+        const uniqueCategories = [...new Set(data.map(item => item.category))].filter(Boolean);
+        setCategories(uniqueCategories);
       } catch (error) {
         console.error("Erro ao buscar categorias:", error);
+        setCategories([]);
       }
     };
     
