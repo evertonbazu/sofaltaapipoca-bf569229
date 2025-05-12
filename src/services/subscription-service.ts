@@ -71,8 +71,7 @@ export async function getFeaturedSubscriptions(): Promise<SubscriptionData[]> {
     const { data, error } = await supabase
       .from('subscriptions')
       .select('*')
-      .eq('featured', true)
-      .eq('visible', true);
+      .eq('featured', true);
     
     if (error) throw error;
     return data.map(mapToSubscriptionData);
@@ -88,8 +87,7 @@ export async function getRegularSubscriptions(): Promise<SubscriptionData[]> {
     const { data, error } = await supabase
       .from('subscriptions')
       .select('*')
-      .eq('featured', false)
-      .eq('visible', true);
+      .eq('featured', false);
     
     if (error) throw error;
     return data.map(mapToSubscriptionData);
@@ -105,8 +103,7 @@ export async function getMemberSubscriptions(): Promise<SubscriptionData[]> {
     const { data, error } = await supabase
       .from('subscriptions')
       .select('*')
-      .not('user_id', 'is', null)
-      .eq('visible', true);
+      .not('user_id', 'is', null);
     
     if (error) throw error;
     

@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import AdminLayout from '@/components/admin/AdminLayout';
@@ -52,7 +51,6 @@ const SubscriptionEditor = () => {
               pixKey: data.pix_key,
               userId: data.user_id,
               category: data.category,
-              visible: data.visible,
               isMemberSubmission: data.user_id ? true : false
             });
           }

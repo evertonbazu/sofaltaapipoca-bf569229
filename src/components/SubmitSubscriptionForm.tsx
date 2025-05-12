@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -143,7 +142,6 @@ const SubmitSubscriptionForm = () => {
         pixKey: data.pixKey,
         category: data.category,
         isMemberSubmission: true,
-        visible: true,
         featured: false
       };
       
@@ -165,7 +163,6 @@ const SubmitSubscriptionForm = () => {
           user_id: subscription.userId,
           pix_key: subscription.pixKey,
           category: subscription.category,
-          visible: true,
           featured: false
         });
       
