@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -125,9 +126,12 @@ const SubmitSubscriptionForm = () => {
       const { data: code, error: codeError } = await supabase.rpc('generate_subscription_code');
       if (codeError) throw codeError;
       
+      // Adicionar asterisco ao título para anúncios de membros
+      const titleWithAsterisk = `* ${data.title.toUpperCase()}`;
+      
       // Criar objeto da assinatura
       const subscription: SubscriptionData = {
-        title: data.title.toUpperCase(),
+        title: titleWithAsterisk,
         price: data.price,
         paymentMethod: finalPaymentMethod,
         status: data.status,
