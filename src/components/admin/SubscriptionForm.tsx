@@ -355,7 +355,7 @@ const SubscriptionForm: React.FC<SubscriptionFormProps> = ({ initialData, isMemb
                       <FormLabel>Método de Pagamento Personalizado</FormLabel>
                       <FormControl>
                         <Input placeholder="Insira um método de pagamento" {...field} />
-                      FormControl>
+                      </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
