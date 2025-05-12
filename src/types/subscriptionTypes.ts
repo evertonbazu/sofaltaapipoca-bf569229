@@ -19,4 +19,14 @@ export interface SubscriptionData {
   category?: string;
   isMemberSubmission?: boolean;
   visible?: boolean;
+  // Fields needed for handling previous pending subscriptions
+  statusApproval?: string;
+  rejectionReason?: string;
+  submitted_at?: string;
+  reviewed_at?: string;
+  paymentProofImage?: string;
+  pixQrCode?: string;
 }
+
+// Alias for backward compatibility
+export type PendingSubscriptionData = SubscriptionData;

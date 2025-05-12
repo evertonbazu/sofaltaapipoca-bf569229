@@ -37,12 +37,13 @@ const formSchema = z.object({
 type FormValues = z.infer<typeof formSchema>;
 
 // Add the interface for the component props
-interface SubscriptionFormProps {
+export interface SubscriptionFormProps {
   initialData: SubscriptionData | null;
+  isMemberSubmission?: boolean;
   isPendingEdit?: boolean;
 }
 
-const SubscriptionForm: React.FC<SubscriptionFormProps> = ({ initialData, isPendingEdit = false }) => {
+const SubscriptionForm: React.FC<SubscriptionFormProps> = ({ initialData, isMemberSubmission = false, isPendingEdit = false }) => {
   const { id } = useParams<{ id: string }>();
   const isEditing = !!id;
   const navigate = useNavigate();
@@ -354,7 +355,7 @@ const SubscriptionForm: React.FC<SubscriptionFormProps> = ({ initialData, isPend
                       <FormLabel>Método de Pagamento Personalizado</FormLabel>
                       <FormControl>
                         <Input placeholder="Insira um método de pagamento" {...field} />
-                      </FormControl>
+                      FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
