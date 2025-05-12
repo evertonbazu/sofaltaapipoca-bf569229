@@ -140,12 +140,11 @@ const SubmitSubscriptionForm = () => {
         code: code,
         userId: userId,
         pixKey: data.pixKey,
-        category: data.category,
         isMemberSubmission: true,
         featured: false
       };
       
-      // Enviar para o banco de dados
+      // Enviar para o banco de dados - Removendo o campo category para evitar o erro
       const { error } = await supabase
         .from('subscriptions')
         .insert({
@@ -162,7 +161,6 @@ const SubmitSubscriptionForm = () => {
           code: subscription.code,
           user_id: subscription.userId,
           pix_key: subscription.pixKey,
-          category: subscription.category,
           featured: false
         });
       
