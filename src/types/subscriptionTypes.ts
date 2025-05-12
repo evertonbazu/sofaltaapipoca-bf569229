@@ -18,7 +18,6 @@ export interface SubscriptionData {
   pixKey?: string;
   category?: string;
   isMemberSubmission?: boolean;
-  visible?: boolean;
   // Fields needed for handling previous pending subscriptions
   statusApproval?: string;
   rejectionReason?: string;
