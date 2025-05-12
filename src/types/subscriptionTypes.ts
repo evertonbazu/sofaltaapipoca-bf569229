@@ -18,13 +18,5 @@ export interface SubscriptionData {
   pixKey?: string;
   category?: string;
   isMemberSubmission?: boolean;
-}
-
-export interface PendingSubscriptionData extends SubscriptionData {
-  paymentProofImage?: string;
-  pixQrCode?: string;
-  statusApproval?: string;
-  rejectionReason?: string;
-  submitted_at?: string;
-  reviewed_at?: string;
+  visible?: boolean;
 }

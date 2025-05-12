@@ -1,6 +1,7 @@
 
 import React from 'react';
 import { Tv, Youtube, Apple, Monitor, Banknote, HandHelping, Key, Pin } from 'lucide-react';
+import { Badge } from "@/components/ui/badge";
 
 interface SubscriptionCardProps {
   id?: string;
@@ -80,16 +81,23 @@ const SubscriptionCard = ({
   // Determine the price color class based on the priceColor prop
   const priceColorClass = priceColor || 'text-blue-600';
 
-  // Display title with asterisk if it's a member submission
+  // Adicionar asterisco ao título se for submissão de membro
   const displayTitle = isMemberSubmission ? `* ${title}` : title;
   
   return (
     <div className={`card h-full bg-white rounded-xl overflow-hidden shadow-lg ${isSearchResult ? 'search-highlight' : ''}`}>
-      <div className={`${bgColorClass} p-4 flex items-center justify-center h-20`}>
+      <div className={`${bgColorClass} p-4 flex items-center justify-center h-20 relative`}>
         <h2 className="text-xl font-bold text-white flex items-center text-center uppercase">
           🖥 {displayTitle}
         </h2>
+        
+        {isMemberSubmission && (
+          <div className="absolute top-2 right-2">
+            <Badge variant="secondary" className="text-xs">Membro</Badge>
+          </div>
+        )}
       </div>
+      
       <div className="p-5 space-y-3">
         <div className="space-y-2 text-center">
           <p className={`${priceColorClass} font-medium uppercase flex items-center justify-center`}>

@@ -1,5 +1,6 @@
+
 import { supabase } from '@/integrations/supabase/client';
-import { SubscriptionData, PendingSubscriptionData } from '@/types/subscriptionTypes';
+import { SubscriptionData } from '@/types/subscriptionTypes';
 import { toast } from '@/components/ui/use-toast';
 
 // Função para mapear dados do banco de dados para o formato da aplicação
@@ -21,12 +22,13 @@ function mapToSubscriptionData(data: any): SubscriptionData {
     code: data.code,
     pixKey: data.pix_key,
     category: data.category,
-    isMemberSubmission: data.user_id ? true : false
+    isMemberSubmission: data.user_id ? true : false,
+    visible: data.visible
   };
 }
 
 // Função para mapear dados da aplicação para o formato do banco de dados
-function mapToDbFormat(subscription: SubscriptionData | PendingSubscriptionData) {
+function mapToDbFormat(subscription: SubscriptionData) {
   return {
     title: subscription.title,
     price: subscription.price,
@@ -41,13 +43,10 @@ function mapToDbFormat(subscription: SubscriptionData | PendingSubscriptionData)
     added_date: subscription.addedDate,
     featured: subscription.featured,
     code: subscription.code || undefined,
-    payment_proof_image: 'paymentProofImage' in subscription ? 
-      (subscription as PendingSubscriptionData).paymentProofImage : undefined,
-    pix_qr_code: 'pixQrCode' in subscription ? 
-      (subscription as PendingSubscriptionData).pixQrCode : undefined,
-    pix_key: 'pixKey' in subscription ? subscription.pixKey : undefined,
-    user_id: 'userId' in subscription ? subscription.userId : undefined,
-    category: subscription.category
+    pix_key: subscription.pixKey,
+    user_id: subscription.userId,
+    category: subscription.category,
+    visible: subscription.visible
   };
 }
 
@@ -73,7 +72,8 @@ export async function getFeaturedSubscriptions(): Promise<SubscriptionData[]> {
     const { data, error } = await supabase
       .from('subscriptions')
       .select('*')
-      .eq('featured', true);
+      .eq('featured', true)
+      .eq('visible', true);
     
     if (error) throw error;
     return data.map(mapToSubscriptionData);
@@ -89,7 +89,8 @@ export async function getRegularSubscriptions(): Promise<SubscriptionData[]> {
     const { data, error } = await supabase
       .from('subscriptions')
       .select('*')
-      .eq('featured', false);
+      .eq('featured', false)
+      .eq('visible', true);
     
     if (error) throw error;
     return data.map(mapToSubscriptionData);
@@ -99,44 +100,20 @@ export async function getRegularSubscriptions(): Promise<SubscriptionData[]> {
   }
 }
 
-// Obter assinaturas pendentes
-export async function getPendingSubscriptions(): Promise<PendingSubscriptionData[]> {
+// Obter assinaturas de membros (criadas por usuários)
+export async function getMemberSubscriptions(): Promise<SubscriptionData[]> {
   try {
     const { data, error } = await supabase
-      .from('pending_subscriptions')
+      .from('subscriptions')
       .select('*')
+      .not('user_id', 'is', null)
       .eq('visible', true);
     
     if (error) throw error;
     
-    // Map the database data to our frontend format
-    return data.map((item) => ({
-      id: item.id,
-      title: item.title,
-      price: item.price,
-      paymentMethod: item.payment_method,
-      status: item.status,
-      access: item.access,
-      headerColor: item.header_color,
-      priceColor: item.price_color,
-      whatsappNumber: item.whatsapp_number,
-      telegramUsername: item.telegram_username,
-      icon: item.icon,
-      addedDate: item.added_date,
-      paymentProofImage: item.payment_proof_image,
-      pixQrCode: item.pix_qr_code,
-      statusApproval: item.status_approval,
-      rejectionReason: item.rejection_reason,
-      submitted_at: item.submitted_at,
-      reviewed_at: item.reviewed_at,
-      code: item.code,
-      userId: item.user_id,
-      pixKey: item.pix_key,
-      category: item.category,
-      isMemberSubmission: true
-    }));
+    return data.map(mapToSubscriptionData);
   } catch (error: any) {
-    console.error('Erro ao obter assinaturas pendentes:', error);
+    console.error('Erro ao obter assinaturas de membros:', error);
     throw error;
   }
 }
@@ -234,6 +211,43 @@ export async function toggleFeaturedStatus(id: string, featured: boolean): Promi
   } catch (error: any) {
     console.error('Erro ao alternar status de destaque:', error);
     throw error;
+  }
+}
+
+// Obter configuração do site pelo chave
+export async function getSiteConfig(key: string): Promise<string | null> {
+  try {
+    const { data, error } = await supabase
+      .from('site_configurations')
+      .select('value')
+      .eq('key', key)
+      .single();
+    
+    if (error) {
+      console.error(`Erro ao obter configuração ${key}:`, error);
+      return null;
+    }
+    
+    return data?.value || null;
+  } catch (error: any) {
+    console.error(`Erro ao obter configuração ${key}:`, error);
+    return null;
+  }
+}
+
+// Atualizar configuração do site
+export async function updateSiteConfig(key: string, value: string): Promise<boolean> {
+  try {
+    const { error } = await supabase
+      .from('site_configurations')
+      .update({ value })
+      .eq('key', key);
+    
+    if (error) throw error;
+    return true;
+  } catch (error: any) {
+    console.error(`Erro ao atualizar configuração ${key}:`, error);
+    return false;
   }
 }
 

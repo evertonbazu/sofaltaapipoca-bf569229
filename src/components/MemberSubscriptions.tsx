@@ -3,15 +3,13 @@ import React, { useEffect, useState } from "react";
 import SubscriptionItem from "./SubscriptionItem";
 import { SubscriptionData } from "@/types/subscriptionTypes";
 
-interface FeaturedSubscriptionsProps {
-  subscriptionRefs: React.MutableRefObject<{[key: string]: HTMLDivElement | null}>;
+interface MemberSubscriptionsProps {
   searchTerm?: string;
   setHasResults?: React.Dispatch<React.SetStateAction<boolean>>;
   subscriptionList: SubscriptionData[];
 }
 
-const FeaturedSubscriptions: React.FC<FeaturedSubscriptionsProps> = ({ 
-  subscriptionRefs, 
+const MemberSubscriptions: React.FC<MemberSubscriptionsProps> = ({ 
   searchTerm = "", 
   setHasResults,
   subscriptionList = []
@@ -22,15 +20,18 @@ const FeaturedSubscriptions: React.FC<FeaturedSubscriptionsProps> = ({
   useEffect(() => {
     setVisibleSubscriptions(subscriptionList);
   }, [subscriptionList]);
-
+  
   useEffect(() => {
     if (searchTerm.trim() === "") {
       setVisibleSubscriptions(subscriptionList);
+      if (setHasResults) {
+        setHasResults(subscriptionList.length > 0);
+      }
       return;
     }
     
     const filtered = subscriptionList.filter(sub => {
-      // Filtrar principalmente pelo título (case insensitive)
+      // Filtrar pelo título, preço ou método de pagamento (case insensitive)
       const content = `${sub.title} ${sub.price} ${sub.paymentMethod}`.toLowerCase();
       return content.includes(searchTerm.toLowerCase());
     });
@@ -39,12 +40,7 @@ const FeaturedSubscriptions: React.FC<FeaturedSubscriptionsProps> = ({
     
     // Atualizar hasResults se a prop estiver disponível
     if (setHasResults) {
-      if (filtered.length > 0) {
-        setHasResults(true);
-      } else if (searchTerm !== "") {
-        // Só definimos como false se houver um termo de busca e nenhum resultado
-        setHasResults(false);
-      }
+      setHasResults(filtered.length > 0);
     }
   }, [searchTerm, subscriptionList, setHasResults]);
 
@@ -53,7 +49,7 @@ const FeaturedSubscriptions: React.FC<FeaturedSubscriptionsProps> = ({
   }
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
       {visibleSubscriptions.map((subscription) => (
         <SubscriptionItem
           key={`${subscription.id}-${subscription.title}`}
@@ -61,7 +57,7 @@ const FeaturedSubscriptions: React.FC<FeaturedSubscriptionsProps> = ({
           title={subscription.title}
           price={subscription.price}
           paymentMethod={subscription.paymentMethod}
-          status={subscription.status}
+          status={subscription.status || "Assinado"} // Status padrão como "Assinado" se não for fornecido
           access={subscription.access}
           headerColor={subscription.headerColor}
           priceColor={subscription.priceColor}
@@ -69,12 +65,12 @@ const FeaturedSubscriptions: React.FC<FeaturedSubscriptionsProps> = ({
           telegramUsername={subscription.telegramUsername}
           icon={subscription.icon}
           addedDate={subscription.addedDate}
-          subscriptionRefs={subscriptionRefs}
-          isMemberSubmission={subscription.isMemberSubmission}
+          isSearchResult={false}
+          isMemberSubmission={true}
         />
       ))}
     </div>
   );
 };
 
-export default FeaturedSubscriptions;
+export default MemberSubscriptions;

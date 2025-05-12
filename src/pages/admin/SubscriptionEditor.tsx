@@ -1,19 +1,17 @@
 
 import React, { useEffect, useState } from 'react';
-import { useParams, useSearchParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import AdminLayout from '@/components/admin/AdminLayout';
 import SubscriptionForm from '@/components/admin/SubscriptionForm';
 import { supabase } from '@/integrations/supabase/client';
-import { SubscriptionData, PendingSubscriptionData } from '@/types/subscriptionTypes';
+import { SubscriptionData } from '@/types/subscriptionTypes';
 import { Loader2 } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 
 const SubscriptionEditor = () => {
   const { id } = useParams<{ id?: string }>();
-  const [searchParams] = useSearchParams();
-  const source = searchParams.get('source');
   const isEditing = !!id;
-  const isPendingEdit = source === 'pending';
+  const navigate = useNavigate();
   const { toast } = useToast();
   
   const [isLoading, setIsLoading] = useState(true);
@@ -24,11 +22,8 @@ const SubscriptionEditor = () => {
       if (id) {
         setIsLoading(true);
         try {
-          // Select from the appropriate table based on source
-          const tableName = isPendingEdit ? 'pending_subscriptions' : 'subscriptions';
-          
           const { data, error } = await supabase
-            .from(tableName)
+            .from('subscriptions')
             .select('*')
             .eq('id', id)
             .single();
@@ -55,7 +50,10 @@ const SubscriptionEditor = () => {
               featured: data.featured,
               code: data.code,
               pixKey: data.pix_key,
-              userId: data.user_id
+              userId: data.user_id,
+              category: data.category,
+              visible: data.visible,
+              isMemberSubmission: data.user_id ? true : false
             });
           }
         } catch (error) {
@@ -65,6 +63,7 @@ const SubscriptionEditor = () => {
             description: "Não foi possível carregar os detalhes da assinatura.",
             variant: "destructive",
           });
+          navigate('/admin/subscriptions');
         } finally {
           setIsLoading(false);
         }
@@ -74,7 +73,7 @@ const SubscriptionEditor = () => {
     };
 
     fetchSubscription();
-  }, [id, isPendingEdit, toast]);
+  }, [id, navigate, toast]);
 
   return (
     <AdminLayout title={isEditing ? "Editar Assinatura" : "Nova Assinatura"}>
@@ -96,8 +95,8 @@ const SubscriptionEditor = () => {
         </div>
       ) : (
         <SubscriptionForm 
-          initialData={subscriptionData} 
-          isPendingEdit={isPendingEdit}
+          initialData={subscriptionData}
+          isMemberSubmission={subscriptionData?.isMemberSubmission}
         />
       )}
     </AdminLayout>

@@ -1,6 +1,5 @@
 
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
 import AdminLayout from '@/components/admin/AdminLayout';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -26,7 +25,7 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/components/ui/use-toast";
-import { Pencil, Trash2, Plus, Eye, EyeOff, ArrowUp, ArrowDown } from 'lucide-react';
+import { Pencil, Trash2, Plus, Eye, EyeOff, ArrowUp, ArrowDown, Loader2 } from 'lucide-react';
 import { getHeaderButtons, addHeaderButton, updateHeaderButton, deleteHeaderButton } from '@/services/subscription-service';
 
 interface HeaderButton {
@@ -41,6 +40,7 @@ interface HeaderButton {
 const HeaderButtons = () => {
   const [buttons, setButtons] = useState<HeaderButton[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [currentButton, setCurrentButton] = useState<HeaderButton | null>(null);
@@ -53,7 +53,6 @@ const HeaderButtons = () => {
   });
   const [buttonToDelete, setButtonToDelete] = useState<string | null>(null);
   const { toast } = useToast();
-  const navigate = useNavigate();
 
   useEffect(() => {
     fetchHeaderButtons();
@@ -124,6 +123,7 @@ const HeaderButtons = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     console.log('Form submission:', currentButton ? 'Edit' : 'Add', formData);
+    setIsSaving(true);
     
     try {
       if (currentButton) {
@@ -151,6 +151,8 @@ const HeaderButtons = () => {
         description: 'Não foi possível salvar o botão. Tente novamente.',
         variant: 'destructive',
       });
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -230,7 +232,6 @@ const HeaderButtons = () => {
     <AdminLayout title="Gerenciar Botões do Cabeçalho">
       <div className="space-y-4">
         <div className="flex justify-between items-center">
-          <h1 className="text-2xl font-bold">Gerenciar Botões do Cabeçalho</h1>
           <Button onClick={openAddDialog} className="flex items-center">
             <Plus className="h-4 w-4 mr-2" />
             Adicionar Botão
@@ -238,7 +239,10 @@ const HeaderButtons = () => {
         </div>
         
         {isLoading ? (
-          <div className="text-center py-8">Carregando botões...</div>
+          <div className="flex justify-center items-center h-64">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            <span className="ml-2">Carregando botões...</span>
+          </div>
         ) : buttons.length > 0 ? (
           <div className="bg-white rounded-md shadow overflow-x-auto">
             <Table>
@@ -362,7 +366,7 @@ const HeaderButtons = () => {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="url">URL (começando com / para links internos)</Label>
+                <Label htmlFor="url">URL</Label>
                 <Input
                   id="url"
                   name="url"
@@ -377,18 +381,28 @@ const HeaderButtons = () => {
                   checked={formData.visible}
                   onCheckedChange={handleSwitchChange}
                 />
-                <Label htmlFor="visible">Visível</Label>
+                <Label htmlFor="visible">Botão visível</Label>
               </div>
               <DialogFooter>
-                <Button type="submit">
-                  {currentButton ? 'Salvar Alterações' : 'Adicionar Botão'}
+                <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)} disabled={isSaving}>
+                  Cancelar
+                </Button>
+                <Button type="submit" disabled={isSaving}>
+                  {isSaving ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Salvando...
+                    </>
+                  ) : (
+                    currentButton ? 'Salvar Alterações' : 'Adicionar Botão'
+                  )}
                 </Button>
               </DialogFooter>
             </form>
           </DialogContent>
         </Dialog>
-        
-        {/* Dialog para confirmação de exclusão */}
+
+        {/* Diálogo de confirmação para exclusão */}
         <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
           <AlertDialogContent>
             <AlertDialogHeader>
@@ -399,7 +413,10 @@ const HeaderButtons = () => {
             </AlertDialogHeader>
             <AlertDialogFooter>
               <AlertDialogCancel>Cancelar</AlertDialogCancel>
-              <AlertDialogAction onClick={handleDelete} className="bg-red-500 hover:bg-red-600">
+              <AlertDialogAction 
+                onClick={handleDelete}
+                className="bg-red-500 hover:bg-red-600"
+              >
                 Excluir
               </AlertDialogAction>
             </AlertDialogFooter>

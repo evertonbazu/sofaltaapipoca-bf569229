@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
@@ -7,16 +8,16 @@ import {
   StarOff, 
   Search, 
   Info,
-  CheckSquare,
-  Square,
   ArrowUp,
-  ArrowDown
+  ArrowDown,
+  User
 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useToast } from "@/components/ui/use-toast";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Badge } from "@/components/ui/badge";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -176,6 +177,7 @@ const SubscriptionList = () => {
     setIsLoading(true);
     try {
       const data = await getAllSubscriptions();
+      console.log('Subscriptions loaded:', data);
       setSubscriptions(data);
       setFilteredSubscriptions(data);
     } catch (error) {
@@ -416,7 +418,15 @@ const SubscriptionList = () => {
                     </div>
                   </TableCell>
                   <TableCell className="font-medium">
-                    {subscription.isMemberSubmission ? `* ${subscription.title}` : subscription.title}
+                    <div className="flex items-center">
+                      {subscription.title}
+                      {subscription.isMemberSubmission && (
+                        <Badge variant="secondary" className="ml-2 text-xs">
+                          <User className="h-3 w-3 mr-1" />
+                          Membro
+                        </Badge>
+                      )}
+                    </div>
                   </TableCell>
                   <TableCell>{subscription.price}</TableCell>
                   <TableCell className="hidden md:table-cell">{subscription.status}</TableCell>

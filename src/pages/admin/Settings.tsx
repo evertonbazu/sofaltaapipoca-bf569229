@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import AdminLayout from '@/components/admin/AdminLayout';
 import { 
   Card, 
@@ -21,35 +21,139 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/components/ui/use-toast';
 import { Separator } from '@/components/ui/separator';
+import { getSiteConfig, updateSiteConfig } from '@/services/subscription-service';
+import { Loader2 } from 'lucide-react';
 
 const Settings = () => {
   const { toast } = useToast();
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
   const [siteTitle, setSiteTitle] = useState("🍿 Só Falta a Pipoca");
   const [siteSubtitle, setSiteSubtitle] = useState("Assinaturas premium com preços exclusivos");
   const [contactWhatsapp, setContactWhatsapp] = useState("5513992077804");
   const [appVersion, setAppVersion] = useState("2.1.0");
   const [showFeaturedSection, setShowFeaturedSection] = useState(true);
+  const [primaryColor, setPrimaryColor] = useState("#4F46E5");
+  const [secondaryColor, setSecondaryColor] = useState("#10B981");
   
-  const handleSaveGeneral = () => {
-    toast({
-      title: "Configurações salvas",
-      description: "As configurações gerais foram atualizadas com sucesso.",
-    });
+  // Carregar configurações do site ao montar o componente
+  useEffect(() => {
+    const loadSiteConfigurations = async () => {
+      setIsLoading(true);
+      try {
+        // Carregar configurações do site
+        const title = await getSiteConfig('site_title');
+        const subtitle = await getSiteConfig('site_subtitle');
+        const whatsapp = await getSiteConfig('contact_whatsapp');
+        const version = await getSiteConfig('app_version');
+        const featuredSection = await getSiteConfig('show_featured_section');
+        const primary = await getSiteConfig('primary_color');
+        const secondary = await getSiteConfig('secondary_color');
+        
+        // Atualizar estado com valores do banco de dados
+        if (title) setSiteTitle(title);
+        if (subtitle) setSiteSubtitle(subtitle);
+        if (whatsapp) setContactWhatsapp(whatsapp);
+        if (version) setAppVersion(version);
+        if (featuredSection) setShowFeaturedSection(featuredSection === 'true');
+        if (primary) setPrimaryColor(primary);
+        if (secondary) setSecondaryColor(secondary);
+        
+      } catch (error) {
+        console.error('Erro ao carregar configurações:', error);
+        toast({
+          title: "Erro",
+          description: "Não foi possível carregar as configurações do site.",
+          variant: "destructive",
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    loadSiteConfigurations();
+  }, [toast]);
+  
+  const handleSaveGeneral = async () => {
+    setIsSaving(true);
+    try {
+      // Salvar configurações gerais
+      await updateSiteConfig('site_title', siteTitle);
+      await updateSiteConfig('site_subtitle', siteSubtitle);
+      await updateSiteConfig('contact_whatsapp', contactWhatsapp);
+      
+      toast({
+        title: "Configurações salvas",
+        description: "As configurações gerais foram atualizadas com sucesso.",
+      });
+    } catch (error) {
+      console.error('Erro ao salvar configurações:', error);
+      toast({
+        title: "Erro",
+        description: "Não foi possível salvar as configurações.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSaving(false);
+    }
   };
 
-  const handleSaveAppearance = () => {
-    toast({
-      title: "Aparência atualizada",
-      description: "As configurações de aparência foram atualizadas com sucesso.",
-    });
+  const handleSaveAppearance = async () => {
+    setIsSaving(true);
+    try {
+      // Salvar configurações de aparência
+      await updateSiteConfig('show_featured_section', showFeaturedSection.toString());
+      await updateSiteConfig('primary_color', primaryColor);
+      await updateSiteConfig('secondary_color', secondaryColor);
+      
+      toast({
+        title: "Aparência atualizada",
+        description: "As configurações de aparência foram atualizadas com sucesso.",
+      });
+    } catch (error) {
+      console.error('Erro ao salvar aparência:', error);
+      toast({
+        title: "Erro",
+        description: "Não foi possível salvar as configurações de aparência.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSaving(false);
+    }
   };
   
-  const handleSaveVersion = () => {
-    toast({
-      title: "Versão atualizada",
-      description: `A versão do aplicativo foi atualizada para ${appVersion}.`,
-    });
+  const handleSaveVersion = async () => {
+    setIsSaving(true);
+    try {
+      // Salvar versão do aplicativo
+      await updateSiteConfig('app_version', appVersion);
+      
+      toast({
+        title: "Versão atualizada",
+        description: `A versão do aplicativo foi atualizada para ${appVersion}.`,
+      });
+    } catch (error) {
+      console.error('Erro ao salvar versão:', error);
+      toast({
+        title: "Erro",
+        description: "Não foi possível atualizar a versão do aplicativo.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSaving(false);
+    }
   };
+  
+  if (isLoading) {
+    return (
+      <AdminLayout title="Configurações">
+        <div className="flex justify-center items-center h-64">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <span className="ml-2">Carregando configurações...</span>
+        </div>
+      </AdminLayout>
+    );
+  }
   
   return (
     <AdminLayout title="Configurações">
@@ -109,7 +213,16 @@ const Settings = () => {
               </div>
             </CardContent>
             <CardFooter>
-              <Button onClick={handleSaveGeneral}>Salvar Alterações</Button>
+              <Button onClick={handleSaveGeneral} disabled={isSaving}>
+                {isSaving ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Salvando...
+                  </>
+                ) : (
+                  'Salvar Alterações'
+                )}
+              </Button>
             </CardFooter>
           </Card>
         </TabsContent>
@@ -149,7 +262,8 @@ const Settings = () => {
                       <Input 
                         id="primary-color" 
                         type="color" 
-                        value="#4F46E5" 
+                        value={primaryColor}
+                        onChange={(e) => setPrimaryColor(e.target.value)} 
                         className="w-full h-10"
                       />
                     </div>
@@ -160,7 +274,8 @@ const Settings = () => {
                       <Input 
                         id="secondary-color" 
                         type="color" 
-                        value="#10B981" 
+                        value={secondaryColor}
+                        onChange={(e) => setSecondaryColor(e.target.value)}
                         className="w-full h-10"
                       />
                     </div>
@@ -169,7 +284,16 @@ const Settings = () => {
               </div>
             </CardContent>
             <CardFooter>
-              <Button onClick={handleSaveAppearance}>Salvar Aparência</Button>
+              <Button onClick={handleSaveAppearance} disabled={isSaving}>
+                {isSaving ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Salvando...
+                  </>
+                ) : (
+                  'Salvar Aparência'
+                )}
+              </Button>
             </CardFooter>
           </Card>
         </TabsContent>
@@ -192,7 +316,16 @@ const Settings = () => {
                     value={appVersion} 
                     onChange={(e) => setAppVersion(e.target.value)}
                   />
-                  <Button onClick={handleSaveVersion} variant="outline">Atualizar</Button>
+                  <Button onClick={handleSaveVersion} variant="outline" disabled={isSaving}>
+                    {isSaving ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Salvando...
+                      </>
+                    ) : (
+                      'Atualizar'
+                    )}
+                  </Button>
                 </div>
               </div>
               

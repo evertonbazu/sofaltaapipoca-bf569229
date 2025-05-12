@@ -12,7 +12,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { useToast } from "@/components/ui/use-toast";
 import { Loader2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
-import { PendingSubscriptionData } from '@/types/subscriptionTypes';
+import { SubscriptionData } from '@/types/subscriptionTypes';
+import { getAllCategories } from '@/services/subscription-service';
 
 // Schema para validação do formulário
 const formSchema = z.object({
@@ -26,6 +27,7 @@ const formSchema = z.object({
   whatsappNumber: z.string().min(1, { message: "O número do WhatsApp é obrigatório" }),
   telegramUsername: z.string().min(1, { message: "O usuário do Telegram é obrigatório" }),
   pixKey: z.string().optional(),
+  category: z.string().optional(),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -37,6 +39,7 @@ const SubmitSubscriptionForm = () => {
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<string>("");
   const [selectedAccess, setSelectedAccess] = useState<string>("");
   const [userId, setUserId] = useState<string | null>(null);
+  const [categories, setCategories] = useState<string[]>([]);
   
   // Verificar se o usuário está logado
   React.useEffect(() => {
@@ -44,11 +47,31 @@ const SubmitSubscriptionForm = () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (session?.user) {
         setUserId(session.user.id);
+      } else {
+        // Se não estiver logado, redirecionar para página de login
+        toast({
+          title: "Acesso restrito",
+          description: "Você precisa estar logado para enviar um anúncio.",
+          variant: "destructive",
+        });
+        navigate('/auth');
       }
     };
     
     checkUser();
-  }, []);
+    
+    // Carregar categorias disponíveis
+    const loadCategories = async () => {
+      try {
+        const categoryList = await getAllCategories();
+        setCategories(categoryList);
+      } catch (error) {
+        console.error('Erro ao carregar categorias:', error);
+      }
+    };
+    
+    loadCategories();
+  }, [navigate, toast]);
   
   // Configurar formulário
   const form = useForm<FormValues>({
@@ -64,6 +87,7 @@ const SubmitSubscriptionForm = () => {
       whatsappNumber: "",
       telegramUsername: "",
       pixKey: "",
+      category: "",
     },
   });
   
@@ -102,8 +126,8 @@ const SubmitSubscriptionForm = () => {
       const { data: code, error: codeError } = await supabase.rpc('generate_subscription_code');
       if (codeError) throw codeError;
       
-      // Criar objeto da assinatura pendente
-      const pendingSubscription: PendingSubscriptionData = {
+      // Criar objeto da assinatura
+      const subscription: SubscriptionData = {
         title: data.title.toUpperCase(),
         price: data.price,
         paymentMethod: finalPaymentMethod,
@@ -116,50 +140,53 @@ const SubmitSubscriptionForm = () => {
         addedDate: new Date().toLocaleDateString('pt-BR'),
         code: code,
         userId: userId,
-        statusApproval: 'pending',
         pixKey: data.pixKey,
+        category: data.category,
+        isMemberSubmission: true,
+        visible: true,
+        featured: false
       };
       
       // Enviar para o banco de dados
       const { error } = await supabase
-        .from('pending_subscriptions')
+        .from('subscriptions')
         .insert({
-          title: pendingSubscription.title,
-          price: pendingSubscription.price,
-          payment_method: pendingSubscription.paymentMethod,
-          status: pendingSubscription.status,
-          access: pendingSubscription.access,
-          header_color: pendingSubscription.headerColor,
-          price_color: pendingSubscription.priceColor,
-          whatsapp_number: pendingSubscription.whatsappNumber,
-          telegram_username: pendingSubscription.telegramUsername,
-          added_date: pendingSubscription.addedDate,
-          code: pendingSubscription.code,
-          user_id: pendingSubscription.userId,
-          status_approval: pendingSubscription.statusApproval,
-          pix_key: pendingSubscription.pixKey,
+          title: subscription.title,
+          price: subscription.price,
+          payment_method: subscription.paymentMethod,
+          status: subscription.status,
+          access: subscription.access,
+          header_color: subscription.headerColor,
+          price_color: subscription.priceColor,
+          whatsapp_number: subscription.whatsappNumber,
+          telegram_username: subscription.telegramUsername,
+          added_date: subscription.addedDate,
+          code: subscription.code,
+          user_id: subscription.userId,
+          pix_key: subscription.pixKey,
+          category: subscription.category,
+          visible: true,
+          featured: false
         });
       
       if (error) throw error;
       
       toast({
-        title: "Solicitação enviada",
-        description: "Sua solicitação de anúncio foi enviada com sucesso e será analisada pelos administradores.",
+        title: "Anúncio enviado",
+        description: "Seu anúncio foi adicionado com sucesso e já está visível no site.",
       });
       
       // Limpar formulário
       form.reset();
       
-      // Se o usuário estiver logado, redirecionar para o perfil
-      if (userId) {
-        navigate('/profile');
-      }
+      // Redirecionar para o perfil ou página inicial
+      navigate('/');
       
     } catch (error) {
-      console.error('Erro ao enviar solicitação de anúncio:', error);
+      console.error('Erro ao enviar anúncio:', error);
       toast({
         title: "Erro ao enviar",
-        description: "Não foi possível enviar sua solicitação. Por favor, tente novamente.",
+        description: "Não foi possível enviar seu anúncio. Por favor, tente novamente.",
         variant: "destructive",
       });
     } finally {
@@ -172,7 +199,7 @@ const SubmitSubscriptionForm = () => {
       <CardHeader>
         <CardTitle>Envie seu anúncio</CardTitle>
         <CardDescription>
-          Preencha o formulário abaixo para enviar seu anúncio para aprovação dos administradores.
+          Preencha o formulário abaixo para adicionar seu anúncio ao site.
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -208,6 +235,35 @@ const SubmitSubscriptionForm = () => {
                   </FormItem>
                 )}
               />
+              
+              {/* Categoria */}
+              {categories.length > 0 && (
+                <FormField
+                  control={form.control}
+                  name="category"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Categoria</FormLabel>
+                      <Select
+                        onValueChange={field.onChange}
+                        defaultValue={field.value}
+                      >
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Selecione uma categoria" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {categories.map(category => (
+                            <SelectItem key={category} value={category}>{category}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              )}
               
               {/* Método de Pagamento */}
               <FormField
@@ -387,7 +443,7 @@ const SubmitSubscriptionForm = () => {
                     Enviando...
                   </>
                 ) : (
-                  'Enviar solicitação'
+                  'Enviar anúncio'
                 )}
               </Button>
             </div>

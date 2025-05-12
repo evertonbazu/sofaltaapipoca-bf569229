@@ -37,6 +37,8 @@ const SubscriptionItem: React.FC<SubscriptionItemProps> = ({
   isSearchResult = false,
   isMemberSubmission = false
 }) => {
+  console.log(`Rendering subscription: ${title}, isMemberSubmission: ${isMemberSubmission}`);
+
   // If the subscription needs to be referenced (for featured items), use a ref
   if (subscriptionRefs) {
     return (
