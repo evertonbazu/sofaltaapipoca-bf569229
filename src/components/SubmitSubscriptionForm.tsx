@@ -175,44 +175,25 @@ const SubmitSubscriptionForm = () => {
       // Adicionar asterisco ao título para anúncios de membros
       const titleWithAsterisk = `* ${finalTitle.toUpperCase()}`;
       
-      // Criar objeto da assinatura
-      const subscription: SubscriptionData = {
-        title: titleWithAsterisk,
-        price: data.price,
-        paymentMethod: finalPaymentMethod,
-        status: data.status,
-        access: finalAccess.toUpperCase(),
-        headerColor: 'bg-blue-600',
-        priceColor: 'text-blue-600',
-        whatsappNumber: data.whatsappNumber,
-        telegramUsername: data.telegramUsername,
-        addedDate: new Date().toLocaleDateString('pt-BR'),
-        code: code,
-        userId: userId,
-        pixKey: data.pixKey,
-        isMemberSubmission: true,
-        featured: false
-      };
-      
-      // Enviar para o banco de dados - Removendo o campo category para evitar o erro
+      // Enviar para o banco de dados - Removendo o campo visible que está causando erro
       const { error } = await supabase
         .from('subscriptions')
         .insert({
-          title: subscription.title,
-          price: subscription.price,
-          payment_method: subscription.paymentMethod,
-          status: subscription.status,
-          access: subscription.access,
-          header_color: subscription.headerColor,
-          price_color: subscription.priceColor,
-          whatsapp_number: subscription.whatsappNumber,
-          telegram_username: subscription.telegramUsername,
-          added_date: subscription.addedDate,
-          code: subscription.code,
-          user_id: subscription.userId,
-          pix_key: subscription.pixKey,
-          featured: false,
-          visible: true // Make sure the subscription is visible by default
+          title: titleWithAsterisk,
+          price: data.price,
+          payment_method: finalPaymentMethod,
+          status: data.status,
+          access: finalAccess.toUpperCase(),
+          header_color: 'bg-blue-600',
+          price_color: 'text-blue-600',
+          whatsapp_number: data.whatsappNumber,
+          telegram_username: data.telegramUsername,
+          added_date: new Date().toLocaleDateString('pt-BR'),
+          code: code,
+          user_id: userId,
+          pix_key: data.pixKey,
+          featured: false
+          // Removido o campo visible que estava causando o erro
         });
       
       if (error) throw error;
@@ -270,11 +251,8 @@ const SubmitSubscriptionForm = () => {
                       </FormControl>
                       <SelectContent className="max-h-[300px]">
                         {PREDEFINED_TITLES.map(title => (
-                          title !== "OUTRO" ? (
-                            <SelectItem key={title} value={title}>{title}</SelectItem>
-                          ) : null
+                          <SelectItem key={title} value={title}>{title}</SelectItem>
                         ))}
-                        <SelectItem value="OUTRO">OUTRO</SelectItem>
                       </SelectContent>
                     </Select>
                     <FormMessage />
