@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -15,6 +16,43 @@ import { supabase } from '@/integrations/supabase/client';
 import { SubscriptionData } from '@/types/subscriptionTypes';
 import { addSubscription, updateSubscription, logError, getAllSubscriptions } from '@/services/subscription-service';
 
+// Lista de títulos predefinidos
+const PREDEFINED_TITLES = [
+  "AMAZON PRIME VIDEO",
+  "APPLE ONE (200GB)",
+  "APPLE ONE (2TB)",
+  "APPLE TV+",
+  "CANVA PRO",
+  "CLARO TV+",
+  "CRUNCHYROLL",
+  "DEEZER",
+  "DISCOVERY+",
+  "DISNEY+ PADRÃO (COM ANÚNCIOS)",
+  "DISNEY+ PADRÃO (SEM ANÚNCIOS)",
+  "DISNEY+ PREMIUM",
+  "FUNIMATION",
+  "GLOBOPLAY PREMIUM",
+  "GLOBOPLAY PADRÃO (COM ANÚNCIOS)",
+  "GLOBOPLAY PADRÃO (SEM ANÚNCIOS)",
+  "MAX STANDARD",
+  "MAX PLATINUM",
+  "NETFLIX (DISPOSITIVOS MÓVEIS)",
+  "NETFLIX (DISPOSITIVOS MÓVEIS/TV)",
+  "MICROSOFT 365",
+  "PARAMOUNT PADRÃO (MELI+)",
+  "PARAMOUNT PREMIUM",
+  "SPOTIFY",
+  "YOUTUBE PREMIUM",
+];
+
+// Lista de tipos de acesso
+const ACCESS_TYPES = [
+  "LOGIN E SENHA",
+  "CONVITE",
+  "ATIVAÇÃO",
+  "OUTRO"
+];
+
 // Schema for form validation
 const formSchema = z.object({
   title: z.string().min(1, { message: "O título é obrigatório" }),
@@ -24,6 +62,7 @@ const formSchema = z.object({
   customPaymentMethod: z.string().optional(),
   status: z.string().min(1, { message: "O status é obrigatório" }),
   access: z.string().min(1, { message: "O acesso é obrigatório" }),
+  customAccess: z.string().optional(),
   headerColor: z.string().min(1, { message: "A cor do cabeçalho é obrigatória" }),
   priceColor: z.string().min(1, { message: "A cor do preço é obrigatória" }),
   whatsappNumber: z.string().min(1, { message: "O número do WhatsApp é obrigatório" }),
@@ -54,6 +93,7 @@ const SubscriptionForm: React.FC<SubscriptionFormProps> = ({ initialData, isMemb
   const [existingTitles, setExistingTitles] = useState<string[]>([]);
   const [selectedTitle, setSelectedTitle] = useState<string>("");
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<string>("");
+  const [selectedAccess, setSelectedAccess] = useState<string>("");
   
   // Check if user is admin
   useEffect(() => {
@@ -77,7 +117,10 @@ const SubscriptionForm: React.FC<SubscriptionFormProps> = ({ initialData, isMemb
       try {
         const subscriptions = await getAllSubscriptions();
         const titles = [...new Set(subscriptions.map(sub => sub.title.toUpperCase()))];
-        setExistingTitles(titles);
+        
+        // Combine predefined titles with existing titles from the database
+        const combinedTitles = [...new Set([...PREDEFINED_TITLES, ...titles])];
+        setExistingTitles(combinedTitles);
       } catch (error) {
         console.error('Erro ao buscar títulos existentes:', error);
       }
@@ -97,6 +140,7 @@ const SubscriptionForm: React.FC<SubscriptionFormProps> = ({ initialData, isMemb
       customPaymentMethod: "",
       status: "Assinado",
       access: "",
+      customAccess: "",
       headerColor: "bg-blue-600",
       priceColor: "text-blue-600",
       whatsappNumber: "",
@@ -111,21 +155,26 @@ const SubscriptionForm: React.FC<SubscriptionFormProps> = ({ initialData, isMemb
   // Initialize form with initialData if provided
   useEffect(() => {
     if (initialData) {
-      // Check if title is in the list of existing titles
-      const isTitleInList = existingTitles.includes(initialData.title.toUpperCase());
+      // Check if access is one of the predefined options
+      const isAccessInList = ACCESS_TYPES.includes(initialData.access);
+      
+      // Check if title is in the list of predefined titles or existing titles
+      const titleUppercase = initialData.title.toUpperCase();
+      const isTitleInList = [...PREDEFINED_TITLES, ...existingTitles].includes(titleUppercase);
       
       // Check if payment method is one of the predefined ones
       const paymentMethod = initialData.paymentMethod;
       const isPreDefinedPayment = ["PIX (Mensal)", "PIX (Anual)"].includes(paymentMethod);
       
       form.reset({
-        title: isTitleInList ? initialData.title.toUpperCase() : "PERSONALIZADO",
+        title: isTitleInList ? titleUppercase : "OUTRO",
         customTitle: isTitleInList ? "" : initialData.title,
         price: initialData.price,
         paymentMethod: isPreDefinedPayment ? initialData.paymentMethod : "OUTRA FORMA",
         customPaymentMethod: isPreDefinedPayment ? "" : initialData.paymentMethod,
         status: initialData.status || "Assinado",
-        access: initialData.access,
+        access: isAccessInList ? initialData.access : "OUTRO",
+        customAccess: isAccessInList ? "" : initialData.access,
         headerColor: initialData.headerColor || "bg-blue-600",
         priceColor: initialData.priceColor || "text-blue-600",
         whatsappNumber: initialData.whatsappNumber,
@@ -136,8 +185,9 @@ const SubscriptionForm: React.FC<SubscriptionFormProps> = ({ initialData, isMemb
         code: initialData.code,
       });
       
-      setSelectedTitle(isTitleInList ? initialData.title.toUpperCase() : "PERSONALIZADO");
+      setSelectedTitle(isTitleInList ? titleUppercase : "OUTRO");
       setSelectedPaymentMethod(isPreDefinedPayment ? initialData.paymentMethod : "OUTRA FORMA");
+      setSelectedAccess(isAccessInList ? initialData.access : "OUTRO");
     }
   }, [initialData, form, existingTitles]);
 
@@ -146,7 +196,7 @@ const SubscriptionForm: React.FC<SubscriptionFormProps> = ({ initialData, isMemb
     setSelectedTitle(value);
     form.setValue("title", value);
     
-    if (value !== "PERSONALIZADO") {
+    if (value !== "OUTRO") {
       form.setValue("customTitle", "");
     }
   };
@@ -160,6 +210,16 @@ const SubscriptionForm: React.FC<SubscriptionFormProps> = ({ initialData, isMemb
       form.setValue("customPaymentMethod", "");
     }
   };
+  
+  // Handle access type change
+  const handleAccessChange = (value: string) => {
+    setSelectedAccess(value);
+    form.setValue("access", value);
+    
+    if (value !== "OUTRO") {
+      form.setValue("customAccess", "");
+    }
+  };
 
   // Form submission handler
   const onSubmit = async (data: FormValues) => {
@@ -167,10 +227,13 @@ const SubscriptionForm: React.FC<SubscriptionFormProps> = ({ initialData, isMemb
     
     try {
       // Process custom title
-      const finalTitle = data.title === "PERSONALIZADO" ? data.customTitle : data.title;
+      const finalTitle = data.title === "OUTRO" ? data.customTitle : data.title;
       
       // Process custom payment method
       const finalPaymentMethod = data.paymentMethod === "OUTRA FORMA" ? data.customPaymentMethod : data.paymentMethod;
+      
+      // Process custom access
+      const finalAccess = data.access === "OUTRO" ? data.customAccess : data.access;
       
       // Ensure all required fields are filled
       const formattedData: SubscriptionData = {
@@ -178,7 +241,7 @@ const SubscriptionForm: React.FC<SubscriptionFormProps> = ({ initialData, isMemb
         price: data.price,
         paymentMethod: finalPaymentMethod,
         status: data.status,
-        access: data.access,
+        access: finalAccess,
         headerColor: data.headerColor,
         priceColor: data.priceColor,
         whatsappNumber: data.whatsappNumber,
@@ -273,11 +336,11 @@ const SubscriptionForm: React.FC<SubscriptionFormProps> = ({ initialData, isMemb
                           <SelectValue placeholder="Selecione um título" />
                         </SelectTrigger>
                       </FormControl>
-                      <SelectContent>
-                        {existingTitles.map((title) => (
+                      <SelectContent className="max-h-[300px]">
+                        {PREDEFINED_TITLES.map((title) => (
                           <SelectItem key={title} value={title}>{title}</SelectItem>
                         ))}
-                        <SelectItem value="PERSONALIZADO">PERSONALIZADO</SelectItem>
+                        <SelectItem value="OUTRO">OUTRO</SelectItem>
                       </SelectContent>
                     </Select>
                     <FormMessage />
@@ -286,7 +349,7 @@ const SubscriptionForm: React.FC<SubscriptionFormProps> = ({ initialData, isMemb
               />
               
               {/* Título personalizado */}
-              {selectedTitle === "PERSONALIZADO" && (
+              {selectedTitle === "OUTRO" && (
                 <FormField
                   control={form.control}
                   name="customTitle"
@@ -395,13 +458,43 @@ const SubscriptionForm: React.FC<SubscriptionFormProps> = ({ initialData, isMemb
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Envio</FormLabel>
-                    <FormControl>
-                      <Input placeholder="LOGIN E SENHA" {...field} />
-                    </FormControl>
+                    <Select
+                      onValueChange={handleAccessChange}
+                      defaultValue={field.value}
+                      value={field.value}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecione o tipo de envio" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {ACCESS_TYPES.map(accessType => (
+                          <SelectItem key={accessType} value={accessType}>{accessType}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                     <FormMessage />
                   </FormItem>
                 )}
               />
+              
+              {/* Acesso personalizado */}
+              {selectedAccess === "OUTRO" && (
+                <FormField
+                  control={form.control}
+                  name="customAccess"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Tipo de Envio Personalizado</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Especifique o tipo de envio" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              )}
               
               {/* Data de Adição */}
               <FormField

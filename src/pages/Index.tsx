@@ -14,7 +14,7 @@ const Index: React.FC = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [siteTitle, setSiteTitle] = useState("🍿 Só Falta a Pipoca");
   const [siteSubtitle, setSiteSubtitle] = useState("Assinaturas premium com preços exclusivos");
-  const [appVersion, setAppVersion] = useState("2.1.0");
+  const [appVersion, setAppVersion] = useState("2.1.1"); // Updated version number
   const [contactWhatsapp, setContactWhatsapp] = useState("5513992077804");
   const subscriptionRefs = useRef<{
     [key: string]: HTMLDivElement | null;

@@ -1,7 +1,9 @@
 
 import React from 'react';
-import { Tv, Youtube, Apple, Monitor, Banknote, HandHelping, Key, Pin } from 'lucide-react';
+import { Tv, Youtube, Apple, Monitor, Banknote, HandHelping, Key, Pin, Edit } from 'lucide-react';
 import { Badge } from "@/components/ui/badge";
+import { Link } from 'react-router-dom';
+import { supabase } from '@/integrations/supabase/client';
 
 interface SubscriptionCardProps {
   id?: string;
@@ -37,9 +39,28 @@ const SubscriptionCard = ({
   icon = 'monitor',
   isSearchResult = false,
   addedDate,
-  version = '2.0.0',
+  version = '2.1.1',
   isMemberSubmission = false
 }: SubscriptionCardProps) => {
+  // State to track if current user is admin
+  const [isAdmin, setIsAdmin] = React.useState(false);
+
+  // Check if user is admin
+  React.useEffect(() => {
+    const checkIfAdmin = async () => {
+      try {
+        const { data, error } = await supabase.rpc('is_admin');
+        if (error) throw error;
+        setIsAdmin(data);
+      } catch (error) {
+        console.error('Erro ao verificar se o usuário é administrador:', error);
+        setIsAdmin(false);
+      }
+    };
+    
+    checkIfAdmin();
+  }, []);
+
   // Helper function to create WhatsApp link
   const getWhatsappLink = () => {
     return `https://wa.me/${whatsappNumber}`;
@@ -80,20 +101,29 @@ const SubscriptionCard = ({
   
   // Determine the price color class based on the priceColor prop
   const priceColorClass = priceColor || 'text-blue-600';
-
-  // Adicionar asterisco ao título se for submissão de membro
-  const displayTitle = isMemberSubmission ? `* ${title}` : title;
   
   return (
     <div className={`card h-full bg-white rounded-xl overflow-hidden shadow-lg ${isSearchResult ? 'search-highlight' : ''}`}>
       <div className={`${bgColorClass} p-4 flex items-center justify-center h-20 relative`}>
         <h2 className="text-xl font-bold text-white flex items-center text-center uppercase">
-          🖥 {displayTitle}
+          🖥 {title}
         </h2>
         
         {isMemberSubmission && (
           <div className="absolute top-2 right-2">
             <Badge variant="secondary" className="text-xs">Membro</Badge>
+          </div>
+        )}
+
+        {isAdmin && id && (
+          <div className="absolute top-2 left-2">
+            <Link 
+              to={`/admin/subscriptions/edit/${id}`} 
+              className="bg-white text-blue-600 p-1 rounded-full hover:bg-gray-100"
+              title="Editar assinatura"
+            >
+              <Edit size={16} />
+            </Link>
           </div>
         )}
       </div>

@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
@@ -15,9 +15,40 @@ import { supabase } from '@/integrations/supabase/client';
 import { SubscriptionData } from '@/types/subscriptionTypes';
 import { getAllCategories } from '@/services/subscription-service';
 
+// Lista de títulos predefinidos
+const PREDEFINED_TITLES = [
+  "AMAZON PRIME VIDEO",
+  "APPLE ONE (200GB)",
+  "APPLE ONE (2TB)",
+  "APPLE TV+",
+  "CANVA PRO",
+  "CLARO TV+",
+  "CRUNCHYROLL",
+  "DEEZER",
+  "DISCOVERY+",
+  "DISNEY+ PADRÃO (COM ANÚNCIOS)",
+  "DISNEY+ PADRÃO (SEM ANÚNCIOS)",
+  "DISNEY+ PREMIUM",
+  "FUNIMATION",
+  "GLOBOPLAY PREMIUM",
+  "GLOBOPLAY PADRÃO (COM ANÚNCIOS)",
+  "GLOBOPLAY PADRÃO (SEM ANÚNCIOS)",
+  "MAX STANDARD",
+  "MAX PLATINUM",
+  "NETFLIX (DISPOSITIVOS MÓVEIS)",
+  "NETFLIX (DISPOSITIVOS MÓVEIS/TV)",
+  "MICROSOFT 365",
+  "PARAMOUNT PADRÃO (MELI+)",
+  "PARAMOUNT PREMIUM",
+  "SPOTIFY",
+  "YOUTUBE PREMIUM",
+  "OUTRO",
+];
+
 // Schema para validação do formulário
 const formSchema = z.object({
   title: z.string().min(1, { message: "O título é obrigatório" }),
+  customTitle: z.string().optional(),
   price: z.string().min(1, { message: "O preço é obrigatório" }),
   paymentMethod: z.string().min(1, { message: "O método de pagamento é obrigatório" }),
   customPaymentMethod: z.string().optional(),
@@ -38,6 +69,7 @@ const SubmitSubscriptionForm = () => {
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<string>("");
   const [selectedAccess, setSelectedAccess] = useState<string>("");
+  const [selectedTitle, setSelectedTitle] = useState<string>("");
   const [userId, setUserId] = useState<string | null>(null);
   const [categories, setCategories] = useState<string[]>([]);
   
@@ -78,6 +110,7 @@ const SubmitSubscriptionForm = () => {
     resolver: zodResolver(formSchema),
     defaultValues: {
       title: "",
+      customTitle: "",
       price: "R$ ",
       paymentMethod: "PIX (Mensal)",
       customPaymentMethod: "",
@@ -111,6 +144,16 @@ const SubmitSubscriptionForm = () => {
     }
   };
   
+  // Manipular mudança de título
+  const handleTitleChange = (value: string) => {
+    setSelectedTitle(value);
+    form.setValue("title", value);
+    
+    if (value !== "OUTRO") {
+      form.setValue("customTitle", "");
+    }
+  };
+  
   // Manipulador para envio do formulário
   const onSubmit = async (data: FormValues) => {
     setIsLoading(true);
@@ -122,12 +165,15 @@ const SubmitSubscriptionForm = () => {
       // Processar tipo de acesso personalizado
       const finalAccess = data.access === "OUTRO" ? data.customAccess : data.access;
       
+      // Processar título personalizado
+      const finalTitle = data.title === "OUTRO" ? data.customTitle : data.title;
+      
       // Gerar código único
       const { data: code, error: codeError } = await supabase.rpc('generate_subscription_code');
       if (codeError) throw codeError;
       
       // Adicionar asterisco ao título para anúncios de membros
-      const titleWithAsterisk = `* ${data.title.toUpperCase()}`;
+      const titleWithAsterisk = `* ${finalTitle.toUpperCase()}`;
       
       // Criar objeto da assinatura
       const subscription: SubscriptionData = {
@@ -165,7 +211,8 @@ const SubmitSubscriptionForm = () => {
           code: subscription.code,
           user_id: subscription.userId,
           pix_key: subscription.pixKey,
-          featured: false
+          featured: false,
+          visible: true // Make sure the subscription is visible by default
         });
       
       if (error) throw error;
@@ -212,13 +259,45 @@ const SubmitSubscriptionForm = () => {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Título</FormLabel>
-                    <FormControl>
-                      <Input placeholder="NETFLIX PREMIUM" {...field} />
-                    </FormControl>
+                    <Select
+                      onValueChange={handleTitleChange}
+                      defaultValue={field.value}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecione um título" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent className="max-h-[300px]">
+                        {PREDEFINED_TITLES.map(title => (
+                          title !== "OUTRO" ? (
+                            <SelectItem key={title} value={title}>{title}</SelectItem>
+                          ) : null
+                        ))}
+                        <SelectItem value="OUTRO">OUTRO</SelectItem>
+                      </SelectContent>
+                    </Select>
                     <FormMessage />
                   </FormItem>
                 )}
               />
+              
+              {/* Título personalizado */}
+              {selectedTitle === "OUTRO" && (
+                <FormField
+                  control={form.control}
+                  name="customTitle"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Título Personalizado</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Insira um título personalizado" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              )}
               
               {/* Preço */}
               <FormField

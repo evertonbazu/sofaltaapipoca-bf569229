@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useRef } from "react";
+
+import React, { useState, useRef } from "react";
 import { Input } from "@/components/ui/input";
 import { Search, X } from "lucide-react";
 interface FilterSearchProps {
@@ -23,7 +24,14 @@ const FilterSearch: React.FC<FilterSearchProps> = ({
   };
   return <div className="relative mb-6 w-full max-w-md mx-auto">
       <Search className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400" />
-      
+      <Input
+        ref={searchInputRef}
+        type="text"
+        placeholder="Pesquisar assinaturas..."
+        value={searchTerm}
+        onChange={handleSearchChange}
+        className="pl-10 pr-10"
+      />
       {searchTerm && <button onClick={clearSearch} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600" aria-label="Limpar busca">
           <X className="h-4 w-4" />
         </button>}
