@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
@@ -10,7 +9,8 @@ import {
   Info,
   ArrowUp,
   ArrowDown,
-  User
+  User,
+  FileText
 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -30,6 +30,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { SubscriptionData } from '@/types/subscriptionTypes';
 import { deleteSubscription, getAllSubscriptions, toggleFeaturedStatus } from '@/services/subscription-service';
+import { downloadSubscriptionAsTxt } from '@/utils/exportUtils';
 
 type SortField = 'title' | 'price' | 'status' | 'paymentMethod' | 'telegramUsername' | 'whatsappNumber' | 'featured' | 'addedDate';
 type SortDirection = 'asc' | 'desc';
@@ -458,6 +459,14 @@ const SubscriptionList = () => {
                         title="Editar"
                       >
                         <Pencil className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        onClick={() => downloadSubscriptionAsTxt(subscription)}
+                        title="Salvar como TXT"
+                      >
+                        <FileText className="h-4 w-4" />
                       </Button>
                       <Button
                         variant="outline"

@@ -6,14 +6,40 @@ import NoResults from '@/components/NoResults';
 import { MessageSquare, Megaphone, User } from 'lucide-react';
 import NavBar from '@/components/NavBar';
 import FilterSearch from '@/components/FilterSearch';
+import HeaderButtonsDisplay from '@/components/HeaderButtonsDisplay';
 import { supabase } from '@/integrations/supabase/client';
+import { getSiteConfig } from '@/services/subscription-service';
 
 const Index: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [hasResults, setHasResults] = useState(true);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [siteTitle, setSiteTitle] = useState("🍿 Só Falta a Pipoca");
+  const [siteSubtitle, setSiteSubtitle] = useState("Assinaturas premium com preços exclusivos");
+  const [appVersion, setAppVersion] = useState("2.1.0");
+  const [contactWhatsapp, setContactWhatsapp] = useState("5513992077804");
   const subscriptionRefs = useRef<{ [key: string]: HTMLDivElement | null }>({});
-  const appVersion = "2.1.0"; // Versão do aplicativo
+
+  // Carregar configurações do site
+  useEffect(() => {
+    const loadSiteConfig = async () => {
+      try {
+        const title = await getSiteConfig('site_title');
+        const subtitle = await getSiteConfig('site_subtitle');
+        const version = await getSiteConfig('app_version');
+        const whatsapp = await getSiteConfig('contact_whatsapp');
+        
+        if (title) setSiteTitle(title);
+        if (subtitle) setSiteSubtitle(subtitle);
+        if (version) setAppVersion(version);
+        if (whatsapp) setContactWhatsapp(whatsapp);
+      } catch (error) {
+        console.error('Erro ao carregar configurações do site:', error);
+      }
+    };
+    
+    loadSiteConfig();
+  }, []);
 
   // Verificar se o usuário está logado
   useEffect(() => {
@@ -46,10 +72,15 @@ const Index: React.FC = () => {
       
       <header className="bg-gradient-to-r from-indigo-600 to-indigo-800 text-white py-4 sm:py-6">
         <div className="container mx-auto px-3 sm:px-4">
-          <h1 className="text-center text-xl sm:text-2xl font-bold mb-1">🍿 Só Falta a Pipoca</h1>
-          <p className="text-center text-base sm:text-lg mt-2">Assinaturas premium com preços exclusivos</p>
+          <h1 className="text-center text-xl sm:text-2xl font-bold mb-1">{siteTitle}</h1>
+          <p className="text-center text-base sm:text-lg mt-2">{siteSubtitle}</p>
           
-          {/* Botões de Anunciar e Fale Conosco */}
+          {/* Botões do cabeçalho dinâmicos */}
+          <div className="mt-4">
+            <HeaderButtonsDisplay />
+          </div>
+          
+          {/* Botões fixos de Anunciar e Fale Conosco */}
           <div className="flex gap-2 sm:gap-3 mx-auto max-w-xs sm:max-w-sm mt-4">
             <Link 
               to="/submit-subscription"
@@ -60,7 +91,7 @@ const Index: React.FC = () => {
             </Link>
             
             <a 
-              href="https://wa.me/5513992077804" 
+              href={`https://wa.me/${contactWhatsapp}`} 
               target="_blank"
               rel="noreferrer"
               className="flex-1 flex flex-col items-center justify-center bg-green-500 hover:bg-green-600 text-white rounded-lg font-medium py-2 px-3 transition-all duration-200 hover:-translate-y-1"
