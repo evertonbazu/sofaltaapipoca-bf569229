@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import NavBar from '@/components/NavBar';
 import { useAuth } from '@/contexts/AuthContext';
 import UserMessages from '@/components/UserMessages';
+import MemberSubscriptions from '@/components/MemberSubscriptions';
 
 const Profile = () => {
   const { authState, signOut } = useAuth();
@@ -48,9 +49,10 @@ const Profile = () => {
             onValueChange={setActiveTab}
             className="space-y-4"
           >
-            <TabsList className="grid w-full grid-cols-2">
+            <TabsList className="grid w-full grid-cols-3">
               <TabsTrigger value="info">Informações</TabsTrigger>
               <TabsTrigger value="messages">Mensagens</TabsTrigger>
+              <TabsTrigger value="subscriptions">Assinaturas</TabsTrigger>
             </TabsList>
             
             <TabsContent value="info" className="space-y-4">
@@ -119,6 +121,28 @@ const Profile = () => {
                     onClick={() => navigate('/faleconosco')}
                   >
                     Enviar Nova Mensagem
+                  </Button>
+                </CardFooter>
+              </Card>
+            </TabsContent>
+            
+            <TabsContent value="subscriptions" className="space-y-4">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Minhas Assinaturas</CardTitle>
+                  <CardDescription>
+                    Visualize e gerencie suas assinaturas cadastradas.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <MemberSubscriptions />
+                </CardContent>
+                <CardFooter>
+                  <Button 
+                    className="w-full"
+                    onClick={() => navigate('/submit-subscription')}
+                  >
+                    Adicionar Nova Assinatura
                   </Button>
                 </CardFooter>
               </Card>
