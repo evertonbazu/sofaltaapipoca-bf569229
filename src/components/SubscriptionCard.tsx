@@ -129,24 +129,26 @@ const SubscriptionCard = ({
       </div>
       
       <div className="p-5 space-y-3">
-        <div className="space-y-2 text-center">
-          <p className={`${priceColorClass} font-medium uppercase flex items-center justify-center`}>
+        <div className="space-y-2 text-left">
+          <p className={`${priceColorClass} font-medium uppercase flex items-center`}>
             <span className="mr-1">🏦</span> Valor: {price}
           </p>
-          <p className="text-gray-900 font-medium uppercase flex items-center justify-center">
+          <p className="text-gray-900 font-medium uppercase flex items-center">
             <span className="mr-1">🫱🏼‍🫲🏼</span> Forma de Pagamento: {paymentMethod}
           </p>
-          <p className="text-gray-900 font-medium uppercase flex items-center justify-center">
+          <p className="text-gray-900 font-medium uppercase flex items-center">
             <span className="mr-1">📌</span> Status: {status}
           </p>
-          <p className="text-gray-900 font-medium uppercase flex items-center justify-center">
+          <p className="text-gray-900 font-medium uppercase flex items-center">
             <span className="mr-1">🔐</span> Envio: {access}
           </p>
         </div>
         
         {addedDate && (
-          <div className="py-2 border-t border-gray-200 mt-2 text-center">
-            <p className="text-gray-700 text-sm uppercase">📅 Adicionado em: {addedDate}</p>
+          <div className="py-2 border-t border-gray-200 mt-2 text-left">
+            <p className="text-gray-700 text-sm uppercase flex items-center">
+              <span className="mr-1">📅</span> Adicionado em: {addedDate}
+            </p>
           </div>
         )}
         
