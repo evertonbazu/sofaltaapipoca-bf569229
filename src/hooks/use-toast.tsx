@@ -1,5 +1,6 @@
 
 import { Toast, ToastActionElement, ToastProps } from '@/components/ui/toast';
+import * as React from "react";
 
 type ToasterToast = ToastProps & {
   id: string;
@@ -36,24 +37,24 @@ export const useToast = () => {
 
   return {
     ...context,
-    toast: (props: ToasterToast) => {
+    toast: (props: Omit<ToasterToast, "id"> & { id?: string }) => {
       context.addToast({
         ...props,
         id: props.id ?? Math.random().toString(),
-      });
+      } as ToasterToast);
     },
   };
 };
 
 // Simple toast function for direct usage
-export const toast = (props: ToasterToast) => {
+export const toast = (props: Omit<ToasterToast, "id"> & { id?: string }) => {
   const context = useContext(ToastContext);
   
   if (context) {
     context.addToast({
       ...props,
       id: props.id ?? Math.random().toString(),
-    });
+    } as ToasterToast);
   }
 };
 
