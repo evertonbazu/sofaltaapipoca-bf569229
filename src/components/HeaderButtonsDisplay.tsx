@@ -3,9 +3,6 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { User, Mail, Plus, MessageCircle } from 'lucide-react';
 import { getHeaderButtons } from '@/services/subscription-service';
-import { NotificationBadge } from '@/components/ui/notification-badge';
-import { useNotifications } from '@/contexts/NotificationContext';
-import { useAuth } from '@/contexts/AuthContext';
 
 interface HeaderButton {
   id: string;
@@ -19,9 +16,7 @@ interface HeaderButton {
 const HeaderButtonsDisplay = () => {
   const [buttons, setButtons] = useState<HeaderButton[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const { notifications } = useNotifications();
-  const { authState } = useAuth();
-  
+
   useEffect(() => {
     const fetchButtons = async () => {
       try {
@@ -58,25 +53,6 @@ const HeaderButtonsDisplay = () => {
     // Fallback to the emoji/text icon from the database
     return <span className="text-xl">{icon}</span>;
   };
-  
-  // Get notification count for a specific button
-  const getNotificationCount = (title: string): number => {
-    if (!authState.user) return 0;
-    
-    const lowerTitle = title.toLowerCase();
-    
-    // Admin notifications for "Fale Conosco" button
-    if (lowerTitle.includes('fale') || lowerTitle.includes('contato')) {
-      return authState.isAdmin ? notifications.unreadAdminMessages : 0;
-    }
-    
-    // User notifications for "Perfil" button
-    if (lowerTitle.includes('perfil')) {
-      return notifications.unreadUserReplies;
-    }
-    
-    return 0;
-  };
 
   if (isLoading || buttons.length === 0) {
     return null;
@@ -88,12 +64,9 @@ const HeaderButtonsDisplay = () => {
         <Link 
           key={button.id} 
           to={button.url} 
-          className="flex flex-col items-center justify-center bg-white hover:bg-gray-100 text-gray-800 rounded-lg font-medium py-2 px-4 transition-all duration-200 hover:-translate-y-1 text-center shadow-sm w-[120px] h-[70px] relative"
+          className="flex flex-col items-center justify-center bg-white hover:bg-gray-100 text-gray-800 rounded-lg font-medium py-2 px-4 transition-all duration-200 hover:-translate-y-1 text-center shadow-sm w-[120px] h-[70px]"
         >
-          <div className="relative">
-            {renderIcon(button.title, button.icon)}
-            <NotificationBadge count={getNotificationCount(button.title)} />
-          </div>
+          {renderIcon(button.title, button.icon)}
           <span className="text-xs mt-1">{button.title}</span>
         </Link>
       ))}

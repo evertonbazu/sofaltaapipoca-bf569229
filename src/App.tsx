@@ -8,16 +8,13 @@ import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import Auth from "./pages/Auth";
 import { AuthProvider } from "./contexts/AuthContext";
-import { NotificationProvider } from "./contexts/NotificationContext";
 import Dashboard from "./pages/admin/Dashboard";
 import Subscriptions from "./pages/admin/Subscriptions";
 import SubscriptionEditor from "./pages/admin/SubscriptionEditor";
 import ChatSubscriptionEditor from "./pages/admin/ChatSubscriptionEditor";
 import Settings from "./pages/admin/Settings";
 import HeaderButtons from "./pages/admin/HeaderButtons";
-import Messages from "./pages/admin/Messages";
 import Profile from "./pages/Profile";
-import FaleConosco from "./pages/FaleConosco";
 import SubmitSubscription from "./pages/SubmitSubscription";
 
 const queryClient = new QueryClient();
@@ -25,34 +22,30 @@ const queryClient = new QueryClient();
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <AuthProvider>
-      <NotificationProvider>
-        <TooltipProvider>
-          <Toaster />
-          <Sonner />
-          <BrowserRouter>
-            <Routes>
-              <Route path="/" element={<Index />} />
-              <Route path="/auth" element={<Auth />} />
-              <Route path="/profile" element={<Profile />} />
-              <Route path="/faleconosco" element={<FaleConosco />} />
-              <Route path="/submit-subscription" element={<SubmitSubscription />} />
-              
-              {/* Rotas Administrativas */}
-              <Route path="/admin" element={<Dashboard />} />
-              <Route path="/admin/messages" element={<Messages />} />
-              <Route path="/admin/subscriptions" element={<Subscriptions />} />
-              <Route path="/admin/subscriptions/new" element={<SubscriptionEditor />} />
-              <Route path="/admin/subscriptions/edit/:id" element={<SubscriptionEditor />} />
-              <Route path="/admin/subscriptions/chat" element={<ChatSubscriptionEditor />} />
-              <Route path="/admin/header-buttons" element={<HeaderButtons />} />
-              <Route path="/admin/settings" element={<Settings />} />
-              
-              {/* Rota de fallback */}
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </BrowserRouter>
-        </TooltipProvider>
-      </NotificationProvider>
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
+        <BrowserRouter>
+          <Routes>
+            <Route path="/" element={<Index />} />
+            <Route path="/auth" element={<Auth />} />
+            <Route path="/profile" element={<Profile />} />
+            <Route path="/submit-subscription" element={<SubmitSubscription />} />
+            
+            {/* Rotas Administrativas */}
+            <Route path="/admin" element={<Dashboard />} />
+            <Route path="/admin/subscriptions" element={<Subscriptions />} />
+            <Route path="/admin/subscriptions/new" element={<SubscriptionEditor />} />
+            <Route path="/admin/subscriptions/edit/:id" element={<SubscriptionEditor />} />
+            <Route path="/admin/subscriptions/chat" element={<ChatSubscriptionEditor />} />
+            <Route path="/admin/header-buttons" element={<HeaderButtons />} />
+            <Route path="/admin/settings" element={<Settings />} />
+            
+            {/* Rota de fallback */}
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </BrowserRouter>
+      </TooltipProvider>
     </AuthProvider>
   </QueryClientProvider>
 );
