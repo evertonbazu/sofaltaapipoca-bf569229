@@ -1,13 +1,14 @@
-
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
-import { Search, User, Menu, X, LogOut } from 'lucide-react';
+import { Search, User, Menu, X, LogOut, Mail } from 'lucide-react';
 import { useDebounced } from '@/hooks/useDebounced';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/components/ui/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
+import { NotificationBadge } from '@/components/ui/notification-badge';
+import { useNotifications } from '@/contexts/NotificationContext';
 
 const NavBar: React.FC = () => {
   const [isAdmin, setIsAdmin] = useState(false);
@@ -50,6 +51,11 @@ const NavBar: React.FC = () => {
     }
   };
 
+  const { notifications } = useNotifications();
+  const totalNotifications = authState.isAdmin 
+    ? notifications.unreadAdminMessages 
+    : notifications.unreadUserReplies;
+
   return (
     <nav className="bg-white shadow-sm">
       <div className="container mx-auto px-4 py-3 flex justify-between items-center">
@@ -69,6 +75,9 @@ const NavBar: React.FC = () => {
               className="p-2"
             >
               {menuOpen ? <X size={24} /> : <Menu size={24} />}
+              {totalNotifications > 0 && !menuOpen && (
+                <NotificationBadge count={totalNotifications} />
+              )}
             </Button>
           </div>
         ) : (
@@ -77,15 +86,30 @@ const NavBar: React.FC = () => {
               <Link to="/admin">
                 <Button variant="outline" size="sm">
                   Painel Admin
+                  {notifications.unreadAdminMessages > 0 && (
+                    <NotificationBadge count={notifications.unreadAdminMessages} />
+                  )}
                 </Button>
               </Link>
             )}
             {isLoggedIn ? (
               <>
                 <Link to="/profile">
-                  <Button variant="outline" size="sm" className="flex items-center">
+                  <Button variant="outline" size="sm" className="flex items-center relative">
                     <User className="mr-1 h-4 w-4" />
                     Meu Perfil
+                    {notifications.unreadUserReplies > 0 && (
+                      <NotificationBadge count={notifications.unreadUserReplies} />
+                    )}
+                  </Button>
+                </Link>
+                <Link to="/faleconosco">
+                  <Button variant="outline" size="sm" className="flex items-center relative">
+                    <Mail className="mr-1 h-4 w-4" />
+                    Fale Conosco
+                    {authState.isAdmin && notifications.unreadAdminMessages > 0 && (
+                      <NotificationBadge count={notifications.unreadAdminMessages} />
+                    )}
                   </Button>
                 </Link>
                 <Button variant="outline" size="sm" onClick={handleLogout} className="flex items-center">
@@ -94,11 +118,19 @@ const NavBar: React.FC = () => {
                 </Button>
               </>
             ) : (
-              <Link to="/auth">
-                <Button variant="outline" size="sm">
-                  Entrar
-                </Button>
-              </Link>
+              <>
+                <Link to="/auth">
+                  <Button variant="outline" size="sm">
+                    Entrar
+                  </Button>
+                </Link>
+                <Link to="/faleconosco">
+                  <Button variant="outline" size="sm" className="flex items-center">
+                    <Mail className="mr-1 h-4 w-4" />
+                    Fale Conosco
+                  </Button>
+                </Link>
+              </>
             )}
           </div>
         )}
@@ -110,17 +142,32 @@ const NavBar: React.FC = () => {
           <div className="container mx-auto px-4 flex flex-col space-y-2">
             {isAdmin && (
               <Link to="/admin" onClick={() => setMenuOpen(false)}>
-                <Button variant="outline" size="sm" className="w-full justify-start">
+                <Button variant="outline" size="sm" className="w-full justify-start relative">
                   Painel Admin
+                  {notifications.unreadAdminMessages > 0 && (
+                    <NotificationBadge count={notifications.unreadAdminMessages} className="right-2" />
+                  )}
                 </Button>
               </Link>
             )}
             {isLoggedIn ? (
               <>
                 <Link to="/profile" onClick={() => setMenuOpen(false)}>
-                  <Button variant="outline" size="sm" className="w-full justify-start flex items-center">
+                  <Button variant="outline" size="sm" className="w-full justify-start flex items-center relative">
                     <User className="mr-1 h-4 w-4" />
                     Meu Perfil
+                    {notifications.unreadUserReplies > 0 && (
+                      <NotificationBadge count={notifications.unreadUserReplies} className="right-2" />
+                    )}
+                  </Button>
+                </Link>
+                <Link to="/faleconosco" onClick={() => setMenuOpen(false)}>
+                  <Button variant="outline" size="sm" className="w-full justify-start flex items-center relative">
+                    <Mail className="mr-1 h-4 w-4" />
+                    Fale Conosco
+                    {authState.isAdmin && notifications.unreadAdminMessages > 0 && (
+                      <NotificationBadge count={notifications.unreadAdminMessages} className="right-2" />
+                    )}
                   </Button>
                 </Link>
                 <Button 
@@ -134,11 +181,19 @@ const NavBar: React.FC = () => {
                 </Button>
               </>
             ) : (
-              <Link to="/auth" onClick={() => setMenuOpen(false)}>
-                <Button variant="outline" size="sm" className="w-full justify-start">
-                  Entrar
-                </Button>
-              </Link>
+              <>
+                <Link to="/auth" onClick={() => setMenuOpen(false)}>
+                  <Button variant="outline" size="sm" className="w-full justify-start">
+                    Entrar
+                  </Button>
+                </Link>
+                <Link to="/faleconosco" onClick={() => setMenuOpen(false)}>
+                  <Button variant="outline" size="sm" className="w-full justify-start flex items-center">
+                    <Mail className="mr-1 h-4 w-4" />
+                    Fale Conosco
+                  </Button>
+                </Link>
+              </>
             )}
           </div>
         </div>

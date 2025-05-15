@@ -1,4 +1,3 @@
-
 // Certifica que o React é importado corretamente
 import React, { createContext, useState, useEffect, useContext } from 'react';
 import { User, Session } from '@supabase/supabase-js';
