@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
@@ -43,6 +44,7 @@ const Profile = () => {
   const [userSubscriptions, setUserSubscriptions] = useState<SubscriptionData[]>([]);
   const [actionInProgress, setActionInProgress] = useState<string | null>(null);
   const { signOut, authState } = useAuth();
+  const [redirected, setRedirected] = useState(false);
 
   // Formulário de perfil
   const profileForm = useForm<ProfileFormValues>({
@@ -70,7 +72,10 @@ const Profile = () => {
         
         // Usar o estado de autenticação do contexto
         if (!authState.session || !authState.user) {
-          navigate('/auth');
+          if (!redirected) {
+            setRedirected(true);
+            navigate('/auth');
+          }
           return;
         }
         
@@ -106,14 +111,19 @@ const Profile = () => {
         }
       } catch (error) {
         console.error('Erro ao verificar usuário:', error);
-        navigate('/auth');
+        if (!redirected) {
+          setRedirected(true);
+          navigate('/auth');
+        }
       } finally {
         setIsLoading(false);
       }
     };
     
-    checkUser();
-  }, [navigate, authState]);
+    if (!redirected) {
+      checkUser();
+    }
+  }, [navigate, authState, redirected]);
   
   // Função para atualizar o perfil
   const onUpdateProfile = async (data: ProfileFormValues) => {
@@ -229,6 +239,11 @@ const Profile = () => {
         </div>
       </div>
     );
+  }
+  
+  // Se o usuário não estiver logado após a verificação, não renderize o conteúdo
+  if (!user && !isLoading) {
+    return null;
   }
   
   return (

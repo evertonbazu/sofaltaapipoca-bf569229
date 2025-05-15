@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
@@ -65,7 +66,7 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children, title }) => {
     };
     
     checkAdminStatus();
-  }, [navigate, toast, authState]);
+  }, [navigate, toast, authState.session, authState.isAdmin]);
 
   const handleLogout = async () => {
     try {
@@ -90,7 +91,7 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children, title }) => {
   };
 
   // Se ainda está verificando permissões, mostrar tela de carregamento
-  if (!isAdmin) {
+  if (!isAdmin && authState.isLoading) {
     return (
       <div className="flex justify-center items-center min-h-screen bg-gray-100">
         <div className="animate-pulse text-center">

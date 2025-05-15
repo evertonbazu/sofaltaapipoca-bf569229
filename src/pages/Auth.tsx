@@ -35,6 +35,7 @@ const Auth: React.FC = () => {
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const { signIn, signUp, authState } = useAuth();
   const navigate = useNavigate();
+  const [redirected, setRedirected] = useState(false);
 
   const loginForm = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
@@ -55,16 +56,18 @@ const Auth: React.FC = () => {
 
   // Redirecionar se já estiver autenticado
   React.useEffect(() => {
-    if (authState.user && !authState.isLoading) {
+    if (authState.user && !authState.isLoading && !redirected) {
+      setRedirected(true);
       navigate('/');
     }
-  }, [authState, navigate]);
+  }, [authState, navigate, redirected]);
 
   // Manipulador para envio do formulário de login
   const onLoginSubmit = async (data: LoginFormValues) => {
     setIsLoading(true);
     try {
       await signIn(data.email, data.password);
+      setRedirected(true);
       navigate('/');
     } catch (error) {
       console.error('Erro no login:', error);

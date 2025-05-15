@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import SubscriptionList from '@/components/SubscriptionList';
@@ -8,10 +9,11 @@ import FilterSearch from '@/components/FilterSearch';
 import HeaderButtonsDisplay from '@/components/HeaderButtonsDisplay';
 import { supabase } from '@/integrations/supabase/client';
 import { getSiteConfig } from '@/services/subscription-service';
+import { useAuth } from '@/contexts/AuthContext';
+
 const Index: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [hasResults, setHasResults] = useState(true);
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [siteTitle, setSiteTitle] = useState("🍿 Só Falta a Pipoca");
   const [siteSubtitle, setSiteSubtitle] = useState("Assinaturas premium com preços exclusivos");
   const [appVersion, setAppVersion] = useState("2.1.1"); // Updated version number
@@ -19,6 +21,8 @@ const Index: React.FC = () => {
   const subscriptionRefs = useRef<{
     [key: string]: HTMLDivElement | null;
   }>({});
+  const { authState } = useAuth();
+  const isLoggedIn = !!authState.session;
 
   // Carregar configurações do site
   useEffect(() => {
@@ -39,28 +43,6 @@ const Index: React.FC = () => {
     loadSiteConfig();
   }, []);
 
-  // Verificar se o usuário está logado
-  useEffect(() => {
-    const checkAuth = async () => {
-      const {
-        data: {
-          session
-        }
-      } = await supabase.auth.getSession();
-      setIsLoggedIn(!!session);
-    };
-    checkAuth();
-
-    // Configurar listener para mudanças de autenticação
-    const {
-      data: {
-        subscription
-      }
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      setIsLoggedIn(!!session);
-    });
-    return () => subscription.unsubscribe();
-  }, []);
   const handleSearch = (term: string) => {
     setSearchTerm(term.toLowerCase());
     // Make sure we show all results when search is cleared
@@ -68,6 +50,7 @@ const Index: React.FC = () => {
       setHasResults(true);
     }
   };
+  
   return <div className="min-h-screen bg-gray-100">
       <NavBar />
       
