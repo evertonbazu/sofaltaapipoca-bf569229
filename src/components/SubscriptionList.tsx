@@ -81,7 +81,7 @@ const SubscriptionList: React.FC<SubscriptionListProps> = ({
       <FeaturedSubscriptions subscriptionRefs={subscriptionRefs} searchTerm={searchTerm} setHasResults={setHasResults} subscriptionList={featuredList} />
       
       {memberSubmissionsList.length > 0 && <div className="mb-6">
-          <h2 className="mb-3 text-2xl font-bold">Assinaturas enviadas por Membros do &quot;🍿Só Falta a Pipoca&quot;</h2>
+          <h2 className="mb-3 text-2xl font-bold text-center">Assinaturas enviadas por Membros do &quot;🍿Só Falta a Pipoca&quot;</h2>
           <MemberSubscriptions searchTerm={searchTerm} setHasResults={setHasResults} subscriptionList={memberSubmissionsList} />
         </div>}
       
