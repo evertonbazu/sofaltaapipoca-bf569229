@@ -38,17 +38,18 @@ export const getFeaturedSubscriptions = async () => {
 };
 
 // Get site configuration
-export const getSiteConfig = async (key?: string) => {
-  const query = supabase.from('site_configurations').select('*');
+export const getSiteConfig = async (key: string) => {
+  const { data, error } = await supabase
+    .from('site_configurations')
+    .select('*')
+    .eq('key', key)
+    .single();
   
-  if (key) {
-    query.eq('key', key);
+  if (error) {
+    console.error(`Error fetching site config for key ${key}:`, error);
+    return null;
   }
-  
-  const { data, error } = await query;
-  
-  if (error) throw error;
-  return data || [];
+  return data?.value || null;
 };
 
 // Update site config

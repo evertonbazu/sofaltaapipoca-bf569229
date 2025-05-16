@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useRef } from 'react';
+import React from 'react';
 import { Link } from 'react-router-dom';
 import SubscriptionList from '@/components/SubscriptionList';
 import NoResults from '@/components/NoResults';
@@ -8,34 +8,53 @@ import NavBar from '@/components/NavBar';
 import FilterSearch from '@/components/FilterSearch';
 import HeaderButtonsDisplay from '@/components/HeaderButtonsDisplay';
 import { supabase } from '@/integrations/supabase/client';
-import { getSiteConfig } from '@/services/subscription-service';
 import { useAuth } from '@/contexts/AuthContext';
 
 const Index: React.FC = () => {
-  const [searchTerm, setSearchTerm] = useState("");
-  const [hasResults, setHasResults] = useState(true);
-  const [siteTitle, setSiteTitle] = useState("🍿 Só Falta a Pipoca");
-  const [siteSubtitle, setSiteSubtitle] = useState("Assinaturas premium com preços exclusivos");
-  const [appVersion, setAppVersion] = useState("2.1.2"); // Updated version number
-  const [contactWhatsapp, setContactWhatsapp] = useState("5513992077804");
-  const subscriptionRefs = useRef<{
+  const [searchTerm, setSearchTerm] = React.useState("");
+  const [hasResults, setHasResults] = React.useState(true);
+  const [siteTitle, setSiteTitle] = React.useState("🍿 Só Falta a Pipoca");
+  const [siteSubtitle, setSiteSubtitle] = React.useState("Assinaturas premium com preços exclusivos");
+  const [appVersion, setAppVersion] = React.useState("2.1.2");
+  const [contactWhatsapp, setContactWhatsapp] = React.useState("5513992077804");
+  const subscriptionRefs = React.useRef<{
     [key: string]: HTMLDivElement | null;
   }>({});
   const { authState } = useAuth();
   const isLoggedIn = !!authState.session;
 
   // Carregar configurações do site
-  useEffect(() => {
+  React.useEffect(() => {
     const loadSiteConfig = async () => {
       try {
-        const title = await getSiteConfig('site_title');
-        const subtitle = await getSiteConfig('site_subtitle');
-        const version = await getSiteConfig('app_version');
-        const whatsapp = await getSiteConfig('contact_whatsapp');
-        if (title) setSiteTitle(title);
-        if (subtitle) setSiteSubtitle(subtitle);
-        if (version) setAppVersion(version);
-        if (whatsapp) setContactWhatsapp(whatsapp);
+        const { data: titleData } = await supabase
+          .from('site_configurations')
+          .select('*')
+          .eq('key', 'site_title')
+          .single();
+        
+        const { data: subtitleData } = await supabase
+          .from('site_configurations')
+          .select('*')
+          .eq('key', 'site_subtitle')
+          .single();
+        
+        const { data: versionData } = await supabase
+          .from('site_configurations')
+          .select('*')
+          .eq('key', 'app_version')
+          .single();
+        
+        const { data: whatsappData } = await supabase
+          .from('site_configurations')
+          .select('*')
+          .eq('key', 'contact_whatsapp')
+          .single();
+        
+        if (titleData?.value) setSiteTitle(titleData.value);
+        if (subtitleData?.value) setSiteSubtitle(subtitleData.value);
+        if (versionData?.value) setAppVersion(versionData.value);
+        if (whatsappData?.value) setContactWhatsapp(whatsappData.value);
       } catch (error) {
         console.error('Erro ao carregar configurações do site:', error);
       }
@@ -51,7 +70,8 @@ const Index: React.FC = () => {
     }
   };
   
-  return <div className="min-h-screen bg-gray-100">
+  return (
+    <div className="min-h-screen bg-gray-100">
       <NavBar />
       
       <header className="bg-gradient-to-r from-indigo-600 to-indigo-800 text-white py-4 sm:py-6">
@@ -112,6 +132,8 @@ const Index: React.FC = () => {
           <p className="text-xs text-gray-400 mt-1">v{appVersion}</p>
         </div>
       </footer>
-    </div>;
+    </div>
+  );
 };
+
 export default Index;
