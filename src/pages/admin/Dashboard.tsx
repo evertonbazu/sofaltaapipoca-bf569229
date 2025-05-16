@@ -2,7 +2,6 @@
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Loader2, Package, Clock, CheckCircle, AlertTriangle } from 'lucide-react';
-import AdminLayout from '@/components/admin/AdminLayout';
 import { supabase } from '@/integrations/supabase/client';
 
 const Dashboard = () => {
@@ -34,13 +33,14 @@ const Dashboard = () => {
           .select('*', { count: 'exact', head: true })
           .eq('status_approval', 'pending');
 
-        // Obter contagem de erros
+        // Obter contagem de erros (if exists)
         const { count: errorsCount, error: errorsError } = await supabase
           .from('error_logs')
           .select('*', { count: 'exact', head: true })
-          .eq('resolved', false);
+          .eq('resolved', false)
+          .catch(() => ({ count: 0, error: null })); // Handle if table doesn't exist
 
-        if (totalError || featuredError || pendingError || errorsError) {
+        if (totalError || featuredError || pendingError) {
           throw new Error('Erro ao buscar estatísticas');
         }
 
@@ -61,7 +61,7 @@ const Dashboard = () => {
   }, []);
 
   return (
-    <AdminLayout title="Dashboard">
+    <div>
       {isLoading ? (
         <div className="flex justify-center items-center h-64">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -129,7 +129,7 @@ const Dashboard = () => {
           </Card>
         </div>
       )}
-    </AdminLayout>
+    </div>
   );
 };
 

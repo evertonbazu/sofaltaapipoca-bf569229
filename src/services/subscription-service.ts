@@ -1,170 +1,170 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { SubscriptionData } from '@/types/subscriptionTypes';
 
-// Função para obter as configurações do site do Supabase
-export const getSiteConfig = async (key: string): Promise<string | null> => {
-  try {
-    const { data, error } = await supabase
-      .from('site_config')
-      .select('value')
-      .eq('key', key)
-      .single();
+// Get user subscriptions
+export const getUserSubscriptions = async (userId: string) => {
+  const { data, error } = await supabase
+    .from('subscriptions')
+    .select('*')
+    .eq('user_id', userId);
 
-    if (error) {
-      console.error(`Erro ao buscar configuração para ${key}:`, error);
-      return null;
-    }
-
-    return data ? data.value : null;
-  } catch (error) {
-    console.error(`Erro ao buscar configuração para ${key}:`, error);
-    return null;
-  }
+  if (error) throw error;
+  return data || [];
 };
 
-// Função para obter os botões do cabeçalho do Supabase
-export const getHeaderButtons = async (): Promise<any[]> => {
-  try {
-    const { data, error } = await supabase
-      .from('header_buttons')
-      .select('*')
-      .order('position', { ascending: true });
+// This is just an alias for getUserSubscriptions for backward compatibility
+export const getMemberSubscriptions = getUserSubscriptions;
 
-    if (error) {
-      console.error('Erro ao buscar botões do cabeçalho:', error);
-      return [];
-    }
+// Add subscription
+export const addSubscription = async (subscription: Partial<SubscriptionData>) => {
+  const { data, error } = await supabase
+    .from('subscriptions')
+    .insert({
+      title: subscription.title,
+      price: subscription.price,
+      payment_method: subscription.paymentMethod,
+      status: subscription.status,
+      access: subscription.access,
+      header_color: subscription.headerColor,
+      price_color: subscription.priceColor,
+      whatsapp_number: subscription.whatsappNumber,
+      telegram_username: subscription.telegramUsername,
+      icon: subscription.icon,
+      added_date: subscription.addedDate || new Date().toISOString(),
+      featured: subscription.featured || false,
+      code: subscription.code,
+      pix_key: subscription.pixKey,
+      user_id: subscription.userId,
+      category: subscription.category,
+      visible: subscription.visible !== undefined ? subscription.visible : true
+    })
+    .select();
 
-    return data || [];
-  } catch (error) {
-    console.error('Erro ao buscar botões do cabeçalho:', error);
-    return [];
-  }
+  if (error) throw error;
+  return data ? data[0] : null;
 };
 
-// Função para obter todas as assinaturas do Supabase
-export const getAllSubscriptions = async (): Promise<SubscriptionData[]> => {
-  try {
-    const { data, error } = await supabase
-      .from('subscriptions')
-      .select('*')
-      .order('added_date', { ascending: false });
+// Update subscription
+export const updateSubscription = async (id: string, subscription: Partial<SubscriptionData>) => {
+  const { data, error } = await supabase
+    .from('subscriptions')
+    .update({
+      title: subscription.title,
+      price: subscription.price,
+      payment_method: subscription.paymentMethod,
+      status: subscription.status,
+      access: subscription.access,
+      header_color: subscription.headerColor,
+      price_color: subscription.priceColor,
+      whatsapp_number: subscription.whatsappNumber,
+      telegram_username: subscription.telegramUsername,
+      icon: subscription.icon,
+      featured: subscription.featured,
+      code: subscription.code,
+      pix_key: subscription.pixKey,
+      category: subscription.category,
+      visible: subscription.visible
+    })
+    .eq('id', id)
+    .select();
 
-    if (error) {
-      console.error('Erro ao buscar assinaturas:', error);
-      return [];
-    }
-
-    return data.map(sub => ({
-      id: sub.id,
-      title: sub.title,
-      price: sub.price,
-      paymentMethod: sub.payment_method,
-      status: sub.status,
-      access: sub.access,
-      headerColor: sub.header_color || 'bg-blue-600',
-      priceColor: sub.price_color || 'text-blue-600',
-      whatsappNumber: sub.whatsapp_number,
-      telegramUsername: sub.telegram_username,
-      icon: sub.icon || 'monitor',
-      addedDate: sub.added_date || new Date(sub.created_at).toLocaleDateString('pt-BR'),
-      isMemberSubmission: false,
-      featured: sub.featured || false
-    }));
-  } catch (error) {
-    console.error('Erro ao buscar assinaturas:', error);
-    return [];
-  }
+  if (error) throw error;
+  return data ? data[0] : null;
 };
 
-// Função para obter assinaturas em destaque do Supabase
-export const getFeaturedSubscriptions = async (): Promise<SubscriptionData[]> => {
-  try {
-    const { data, error } = await supabase
-      .from('subscriptions')
-      .select('*')
-      .eq('featured', true)
-      .order('added_date', { ascending: false });
+// Delete subscription
+export const deleteSubscription = async (id: string) => {
+  const { error } = await supabase
+    .from('subscriptions')
+    .delete()
+    .eq('id', id);
 
-    if (error) {
-      console.error('Erro ao buscar assinaturas em destaque:', error);
-      return [];
-    }
-
-    return data.map(sub => ({
-      id: sub.id,
-      title: sub.title,
-      price: sub.price,
-      paymentMethod: sub.payment_method,
-      status: sub.status,
-      access: sub.access,
-      headerColor: sub.header_color || 'bg-blue-600',
-      priceColor: sub.price_color || 'text-blue-600',
-      whatsappNumber: sub.whatsapp_number,
-      telegramUsername: sub.telegram_username,
-      icon: sub.icon || 'monitor',
-      addedDate: sub.added_date || new Date(sub.created_at).toLocaleDateString('pt-BR'),
-      isMemberSubmission: false,
-      featured: sub.featured || false
-    }));
-  } catch (error) {
-    console.error('Erro ao buscar assinaturas em destaque:', error);
-    return [];
-  }
+  if (error) throw error;
+  return true;
 };
 
-// Update the function to get user subscriptions with proper date format
-export const getUserSubscriptions = async (userId: string): Promise<SubscriptionData[]> => {
-  try {
-    const { data, error } = await supabase
-      .from('subscriptions')
-      .select('*')
-      .eq('user_id', userId);
-      
-    if (error) {
-      console.error('Error fetching user subscriptions:', error);
-      return [];
-    }
-    
-    return data.map(sub => ({
-      id: sub.id,
-      title: sub.title,
-      price: sub.price,
-      paymentMethod: sub.payment_method,
-      status: sub.status,
-      access: sub.access,
-      headerColor: sub.header_color || 'bg-blue-600',
-      priceColor: sub.price_color || 'text-blue-600',
-      whatsappNumber: sub.whatsapp_number,
-      telegramUsername: sub.telegram_username,
-      icon: sub.icon || 'monitor',
-      addedDate: sub.added_date || new Date(sub.created_at).toLocaleDateString('pt-BR'),
-      isMemberSubmission: true,
-      featured: sub.featured || false
-    }));
-  } catch (error) {
-    console.error('Error in getUserSubscriptions:', error);
-    return [];
-  }
+// Toggle featured status
+export const toggleFeaturedStatus = async (id: string, featured: boolean) => {
+  const { error } = await supabase
+    .from('subscriptions')
+    .update({ featured })
+    .eq('id', id);
+
+  if (error) throw error;
+  return true;
 };
 
-// Função para obter todas as categorias do Supabase
-export const getAllCategories = async (): Promise<string[]> => {
+// Get header buttons
+export const getHeaderButtons = async () => {
+  const { data, error } = await supabase
+    .from('header_buttons')
+    .select('*')
+    .order('order', { ascending: true });
+
+  if (error) throw error;
+  return data || [];
+};
+
+// Add header button
+export const addHeaderButton = async (button: any) => {
+  const { data, error } = await supabase
+    .from('header_buttons')
+    .insert(button)
+    .select();
+
+  if (error) throw error;
+  return data ? data[0] : null;
+};
+
+// Update header button
+export const updateHeaderButton = async (id: string, button: any) => {
+  const { data, error } = await supabase
+    .from('header_buttons')
+    .update(button)
+    .eq('id', id)
+    .select();
+
+  if (error) throw error;
+  return data ? data[0] : null;
+};
+
+// Delete header button
+export const deleteHeaderButton = async (id: string) => {
+  const { error } = await supabase
+    .from('header_buttons')
+    .delete()
+    .eq('id', id);
+
+  if (error) throw error;
+  return true;
+};
+
+// Update site config
+export const updateSiteConfig = async (config: any) => {
+  const { data, error } = await supabase
+    .from('site_config')
+    .update(config)
+    .eq('id', 1)
+    .select();
+
+  if (error) throw error;
+  return data ? data[0] : null;
+};
+
+// Log error
+export const logError = async (error: any) => {
+  console.error('Error:', error);
+  
   try {
-    const { data, error } = await supabase
-      .from('categories')
-      .select('name');
-
-    if (error) {
-      console.error('Erro ao buscar categorias:', error);
-      return [];
-    }
-
-    // Extrai apenas os nomes das categorias
-    const categoryNames = data.map(category => category.name);
-    return categoryNames;
-  } catch (error) {
-    console.error('Erro ao buscar categorias:', error);
-    return [];
+    await supabase
+      .from('error_logs')
+      .insert({
+        error_message: error.message || JSON.stringify(error),
+        stack_trace: error.stack || '',
+        resolved: false
+      });
+  } catch (logError) {
+    console.error('Failed to log error:', logError);
   }
 };
