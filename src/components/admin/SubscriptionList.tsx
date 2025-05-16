@@ -11,7 +11,7 @@ import {
   ArrowDown,
   User,
   FileText,
-  Telegram,
+  Send, // Changed from Telegram to Send, which is available in lucide-react
   MessageSquare
 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
@@ -487,7 +487,7 @@ const SubscriptionList = () => {
                         onClick={() => window.open(getTelegramShareLink(subscription), '_blank')}
                         title="Compartilhar via Telegram"
                       >
-                        <Telegram className="h-4 w-4" />
+                        <Send className="h-4 w-4" />
                       </Button>
                       <Button
                         variant="outline"
