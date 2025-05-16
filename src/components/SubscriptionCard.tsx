@@ -22,6 +22,7 @@ interface SubscriptionCardProps {
   addedDate?: string;
   version?: string;
   isMemberSubmission?: boolean;
+  featured?: boolean;
 }
 
 const SubscriptionCard = ({
@@ -40,7 +41,8 @@ const SubscriptionCard = ({
   isSearchResult = false,
   addedDate,
   version = '2.1.1',
-  isMemberSubmission = false
+  isMemberSubmission = false,
+  featured = false
 }: SubscriptionCardProps) => {
   // State to track if current user is admin
   const [isAdmin, setIsAdmin] = React.useState(false);
@@ -106,7 +108,7 @@ const SubscriptionCard = ({
     <div className={`card h-full bg-white rounded-xl overflow-hidden shadow-lg ${isSearchResult ? 'search-highlight' : ''}`}>
       <div className={`${bgColorClass} p-4 flex items-center justify-center h-20 relative`}>
         <h2 className="text-xl font-bold text-white flex items-center text-center uppercase">
-          🖥 {title}
+          🖥 {featured && "⭐ "}{title}
         </h2>
         
         {isMemberSubmission && (

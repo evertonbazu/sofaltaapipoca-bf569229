@@ -71,6 +71,7 @@ const FeaturedSubscriptions: React.FC<FeaturedSubscriptionsProps> = ({
           addedDate={subscription.addedDate}
           subscriptionRefs={subscriptionRefs}
           isMemberSubmission={subscription.isMemberSubmission}
+          featured={true} // Explicitamente definir como true para todas as assinaturas neste componente
         />
       ))}
     </div>
