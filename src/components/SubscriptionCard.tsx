@@ -114,7 +114,7 @@ const SubscriptionCard = ({
         
         {/* Badge para submissões de membros */}
         {isMemberSubmission && <div className="absolute top-2 right-2">
-            <Badge variant="secondary" className="text-xs">Membro</Badge>
+            
           </div>}
         
         {/* Badge para submissões de administradores */}
