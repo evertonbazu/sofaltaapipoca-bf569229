@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
@@ -442,62 +443,69 @@ const SubscriptionList = () => {
                     {subscription.featured ? 'Sim' : 'Não'}
                   </TableCell>
                   <TableCell>
-                    <div className="flex space-x-1 flex-wrap gap-1">
-                      <Button
-                        variant="outline"
-                        size="icon"
-                        onClick={() => handleToggleFeatured(subscription.id!, subscription.featured || false)}
-                        title={subscription.featured ? "Remover destaque" : "Destacar"}
-                      >
-                        {subscription.featured ? (
-                          <StarOff className="h-4 w-4" />
-                        ) : (
-                          <Star className="h-4 w-4" />
-                        )}
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="icon"
-                        onClick={() => navigate(`/admin/subscriptions/edit/${subscription.id}`)}
-                        title="Editar"
-                      >
-                        <Pencil className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="icon"
-                        onClick={() => downloadSubscriptionAsTxt(subscription)}
-                        title="Salvar como TXT"
-                      >
-                        <FileText className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="icon"
-                        className="text-green-500 hover:text-green-700"
-                        onClick={() => window.open(getWhatsAppShareLink(subscription), '_blank')}
-                        title="Compartilhar via WhatsApp"
-                      >
-                        <MessageSquare className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="icon"
-                        className="text-blue-500 hover:text-blue-700"
-                        onClick={() => window.open(getTelegramShareLink(subscription), '_blank')}
-                        title="Compartilhar via Telegram"
-                      >
-                        <Send className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="icon"
-                        onClick={() => handleDeleteClick(subscription.id!)}
-                        className="text-red-500 hover:text-red-700"
-                        title="Excluir"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
+                    <div className="flex flex-col gap-2">
+                      {/* Primeira linha de botões */}
+                      <div className="flex space-x-1">
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          onClick={() => handleToggleFeatured(subscription.id!, subscription.featured || false)}
+                          title={subscription.featured ? "Remover destaque" : "Destacar"}
+                        >
+                          {subscription.featured ? (
+                            <StarOff className="h-4 w-4" />
+                          ) : (
+                            <Star className="h-4 w-4" />
+                          )}
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          onClick={() => navigate(`/admin/subscriptions/edit/${subscription.id}`)}
+                          title="Editar"
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          onClick={() => downloadSubscriptionAsTxt(subscription)}
+                          title="Salvar como TXT"
+                        >
+                          <FileText className="h-4 w-4" />
+                        </Button>
+                      </div>
+                      
+                      {/* Segunda linha de botões */}
+                      <div className="flex space-x-1">
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          className="text-green-500 hover:text-green-700"
+                          onClick={() => window.open(getWhatsAppShareLink(subscription), '_blank')}
+                          title="Compartilhar via WhatsApp"
+                        >
+                          <MessageSquare className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          className="text-blue-500 hover:text-blue-700"
+                          onClick={() => window.open(getTelegramShareLink(subscription), '_blank')}
+                          title="Compartilhar via Telegram"
+                        >
+                          <Send className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          onClick={() => handleDeleteClick(subscription.id!)}
+                          className="text-red-500 hover:text-red-700"
+                          title="Excluir"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
                     </div>
                   </TableCell>
                 </TableRow>
