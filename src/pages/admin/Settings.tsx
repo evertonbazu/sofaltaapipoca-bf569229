@@ -1,354 +1,235 @@
 
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { Loader2, Save } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
+import { 
+  Tabs, 
+  TabsContent, 
+  TabsList, 
+  TabsTrigger 
+} from "@/components/ui/tabs";
+import { Separator } from "@/components/ui/separator";
 import { getSiteConfig, updateSiteConfig } from '@/services/subscription-service';
+import { useAuth } from '@/contexts/AuthContext';
 
 const Settings = () => {
+  const [siteTitle, setSiteTitle] = useState("");
+  const [siteSubtitle, setSubtitle] = useState("");
+  const [contact, setContact] = useState("");
+  const [appVersion, setAppVersion] = useState("");
+  const [loading, setLoading] = useState(true);
   const { toast } = useToast();
-  const [isLoading, setIsLoading] = useState(true);
-  const [isSaving, setIsSaving] = useState(false);
-  
-  // Configurações gerais
-  const [siteName, setSiteName] = useState("");
-  const [siteDescription, setSiteDescription] = useState("");
-  const [contactEmail, setContactEmail] = useState("");
-  
-  // Configurações SEO
-  const [metaTitle, setMetaTitle] = useState("");
-  const [metaDescription, setMetaDescription] = useState("");
-  const [googleAnalyticsId, setGoogleAnalyticsId] = useState("");
-  
-  // Configurações de exibição
-  const [showFeatured, setShowFeatured] = useState(true);
-  const [showPricing, setShowPricing] = useState(true);
-  const [showCategories, setShowCategories] = useState(true);
+  const { authState } = useAuth();
 
-  // Carregar configurações do site
   useEffect(() => {
-    const loadSettings = async () => {
-      setIsLoading(true);
+    const fetchSettings = async () => {
       try {
-        const data = await getSiteConfig();
+        setLoading(true);
+        // Fetch each setting separately with the key parameter
+        const titleData = await getSiteConfig('site_title');
+        const subtitleData = await getSiteConfig('site_subtitle');
+        const contactData = await getSiteConfig('contact_whatsapp');
+        const versionData = await getSiteConfig('app_version');
         
-        // Processar os dados recebidos
-        data.forEach((config: any) => {
-          switch(config.key) {
-            case 'site_name':
-              setSiteName(config.value || '');
-              break;
-            case 'site_description':
-              setSiteDescription(config.value || '');
-              break;
-            case 'contact_email':
-              setContactEmail(config.value || '');
-              break;
-            case 'meta_title':
-              setMetaTitle(config.value || '');
-              break;
-            case 'meta_description':
-              setMetaDescription(config.value || '');
-              break;
-            case 'google_analytics_id':
-              setGoogleAnalyticsId(config.value || '');
-              break;
-            case 'show_featured':
-              setShowFeatured(config.value === 'true');
-              break;
-            case 'show_pricing':
-              setShowPricing(config.value === 'true');
-              break;
-            case 'show_categories':
-              setShowCategories(config.value === 'true');
-              break;
-            default:
-              break;
-          }
-        });
+        if (titleData) setSiteTitle(titleData);
+        if (subtitleData) setSubtitle(subtitleData);
+        if (contactData) setContact(contactData);
+        if (versionData) setAppVersion(versionData);
       } catch (error) {
-        console.error('Erro ao carregar configurações:', error);
+        console.error("Error fetching settings:", error);
         toast({
           title: "Erro",
-          description: "Não foi possível carregar as configurações do site.",
+          description: "Não foi possível carregar as configurações",
           variant: "destructive",
         });
       } finally {
-        setIsLoading(false);
+        setLoading(false);
       }
     };
-    
-    loadSettings();
+
+    fetchSettings();
   }, [toast]);
-
-  // Salvar configurações gerais
-  const saveGeneralSettings = async () => {
-    setIsSaving(true);
+  
+  const handleSaveGeneral = async () => {
     try {
-      await updateSiteConfig('site_name', siteName);
-      await updateSiteConfig('site_description', siteDescription);
-      await updateSiteConfig('contact_email', contactEmail);
+      await updateSiteConfig('site_title', siteTitle);
+      await updateSiteConfig('site_subtitle', siteSubtitle);
+      await updateSiteConfig('app_version', appVersion);
       
       toast({
-        title: "Configurações salvas",
-        description: "As configurações gerais foram atualizadas com sucesso.",
+        title: "Sucesso",
+        description: "Configurações gerais atualizadas com sucesso",
       });
     } catch (error) {
-      console.error('Erro ao salvar configurações gerais:', error);
+      console.error("Error updating general settings:", error);
       toast({
         title: "Erro",
-        description: "Não foi possível salvar as configurações gerais.",
+        description: "Não foi possível salvar as configurações",
         variant: "destructive",
       });
-    } finally {
-      setIsSaving(false);
     }
   };
-
-  // Salvar configurações de SEO
-  const saveSeoSettings = async () => {
-    setIsSaving(true);
+  
+  const handleSaveContact = async () => {
     try {
-      await updateSiteConfig('meta_title', metaTitle);
-      await updateSiteConfig('meta_description', metaDescription);
-      await updateSiteConfig('google_analytics_id', googleAnalyticsId);
+      await updateSiteConfig('contact_whatsapp', contact);
       
       toast({
-        title: "Configurações salvas",
-        description: "As configurações de SEO foram atualizadas com sucesso.",
+        title: "Sucesso",
+        description: "Configurações de contato atualizadas com sucesso",
       });
     } catch (error) {
-      console.error('Erro ao salvar configurações de SEO:', error);
+      console.error("Error updating contact settings:", error);
       toast({
         title: "Erro",
-        description: "Não foi possível salvar as configurações de SEO.",
+        description: "Não foi possível salvar as configurações de contato",
         variant: "destructive",
       });
-    } finally {
-      setIsSaving(false);
     }
   };
-
-  // Salvar configurações de exibição
-  const saveDisplaySettings = async () => {
-    setIsSaving(true);
-    try {
-      await updateSiteConfig('show_featured', showFeatured.toString());
-      await updateSiteConfig('show_pricing', showPricing.toString());
-      await updateSiteConfig('show_categories', showCategories.toString());
-      
-      toast({
-        title: "Configurações salvas",
-        description: "As configurações de exibição foram atualizadas com sucesso.",
-      });
-    } catch (error) {
-      console.error('Erro ao salvar configurações de exibição:', error);
-      toast({
-        title: "Erro",
-        description: "Não foi possível salvar as configurações de exibição.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsSaving(false);
-    }
+  
+  const handleBackupData = async () => {
+    // Implementar backup de dados no futuro
+    toast({
+      title: "Em desenvolvimento",
+      description: "Esta funcionalidade estará disponível em breve",
+    });
   };
 
-  if (isLoading) {
+  // Verify user is admin
+  if (!authState.isAdmin) {
     return (
-      <div className="flex justify-center items-center h-64">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        <span className="ml-2">Carregando configurações...</span>
+      <div className="p-6">
+        <h1 className="text-2xl font-bold mb-4">Acesso Restrito</h1>
+        <p>Você não tem permissão para acessar esta página.</p>
       </div>
     );
   }
-
+  
   return (
-    <div className="space-y-6">
-      <h2 className="text-lg font-medium">Configurações do Site</h2>
+    <div>
+      <h1 className="text-2xl font-bold mb-4">Configurações do Site</h1>
       
-      <Tabs defaultValue="general">
-        <TabsList>
+      <Tabs defaultValue="general" className="w-full">
+        <TabsList className="mb-4">
           <TabsTrigger value="general">Geral</TabsTrigger>
-          <TabsTrigger value="seo">SEO</TabsTrigger>
-          <TabsTrigger value="display">Exibição</TabsTrigger>
+          <TabsTrigger value="contact">Contato</TabsTrigger>
+          <TabsTrigger value="backup">Backup</TabsTrigger>
         </TabsList>
         
         <TabsContent value="general">
           <Card>
-            <CardContent className="pt-6 space-y-4">
-              <div>
-                <Label htmlFor="site-name">Nome do site</Label>
-                <Input 
-                  id="site-name"
-                  value={siteName}
-                  onChange={(e) => setSiteName(e.target.value)}
-                  placeholder="Só Falta a Pipoca"
-                />
+            <CardContent className="pt-6">
+              <div className="space-y-4">
+                <div>
+                  <Label htmlFor="siteTitle">Título do Site</Label>
+                  <Input
+                    id="siteTitle"
+                    value={siteTitle}
+                    onChange={(e) => setSiteTitle(e.target.value)}
+                    placeholder="Título do site"
+                  />
+                </div>
+                
+                <div>
+                  <Label htmlFor="siteSubtitle">Subtítulo</Label>
+                  <Input
+                    id="siteSubtitle"
+                    value={siteSubtitle}
+                    onChange={(e) => setSubtitle(e.target.value)}
+                    placeholder="Subtítulo do site"
+                  />
+                </div>
+                
+                <div>
+                  <Label htmlFor="appVersion">Versão do App</Label>
+                  <Input
+                    id="appVersion"
+                    value={appVersion}
+                    onChange={(e) => setAppVersion(e.target.value)}
+                    placeholder="Exemplo: 2.1.0"
+                  />
+                  <p className="text-sm text-gray-500 mt-1">
+                    Formato sugerido: 2.1.0 (major.minor.patch)
+                  </p>
+                </div>
+                
+                <Button 
+                  onClick={handleSaveGeneral}
+                  disabled={loading}
+                >
+                  Salvar Alterações
+                </Button>
               </div>
-              
-              <div>
-                <Label htmlFor="site-description">Descrição do site</Label>
-                <Textarea 
-                  id="site-description"
-                  value={siteDescription}
-                  onChange={(e) => setSiteDescription(e.target.value)}
-                  placeholder="Seu guia para streamings e assinaturas"
-                />
-              </div>
-              
-              <div>
-                <Label htmlFor="contact-email">Email de contato</Label>
-                <Input 
-                  id="contact-email"
-                  type="email"
-                  value={contactEmail}
-                  onChange={(e) => setContactEmail(e.target.value)}
-                  placeholder="contato@sofaltaapipoca.com"
-                />
-              </div>
-              
-              <Button 
-                onClick={saveGeneralSettings} 
-                disabled={isSaving}
-                className="w-full md:w-auto"
-              >
-                {isSaving ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Salvando...
-                  </>
-                ) : (
-                  <>
-                    <Save className="mr-2 h-4 w-4" />
-                    Salvar configurações
-                  </>
-                )}
-              </Button>
             </CardContent>
           </Card>
         </TabsContent>
         
-        <TabsContent value="seo">
+        <TabsContent value="contact">
           <Card>
-            <CardContent className="pt-6 space-y-4">
-              <div>
-                <Label htmlFor="meta-title">Meta título</Label>
-                <Input 
-                  id="meta-title"
-                  value={metaTitle}
-                  onChange={(e) => setMetaTitle(e.target.value)}
-                  placeholder="Só Falta a Pipoca - Seu guia de streamings"
-                />
+            <CardContent className="pt-6">
+              <div className="space-y-4">
+                <div>
+                  <Label htmlFor="whatsapp">WhatsApp de Contato</Label>
+                  <Input
+                    id="whatsapp"
+                    value={contact}
+                    onChange={(e) => setContact(e.target.value)}
+                    placeholder="Ex: 5511999999999"
+                  />
+                  <p className="text-sm text-gray-500 mt-1">
+                    Formato: código do país + DDD + número (ex: 5511999999999)
+                  </p>
+                </div>
+                
+                <Button 
+                  onClick={handleSaveContact}
+                  disabled={loading}
+                >
+                  Salvar Contato
+                </Button>
               </div>
-              
-              <div>
-                <Label htmlFor="meta-description">Meta descrição</Label>
-                <Textarea 
-                  id="meta-description"
-                  value={metaDescription}
-                  onChange={(e) => setMetaDescription(e.target.value)}
-                  placeholder="O melhor lugar para encontrar assinaturas de serviços de streaming"
-                />
-              </div>
-              
-              <div>
-                <Label htmlFor="google-analytics">ID do Google Analytics</Label>
-                <Input 
-                  id="google-analytics"
-                  value={googleAnalyticsId}
-                  onChange={(e) => setGoogleAnalyticsId(e.target.value)}
-                  placeholder="GA-123456789"
-                />
-              </div>
-              
-              <Button 
-                onClick={saveSeoSettings} 
-                disabled={isSaving}
-                className="w-full md:w-auto"
-              >
-                {isSaving ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Salvando...
-                  </>
-                ) : (
-                  <>
-                    <Save className="mr-2 h-4 w-4" />
-                    Salvar configurações
-                  </>
-                )}
-              </Button>
             </CardContent>
           </Card>
         </TabsContent>
         
-        <TabsContent value="display">
+        <TabsContent value="backup">
           <Card>
-            <CardContent className="pt-6 space-y-4">
-              <div className="flex items-center justify-between">
-                <div className="space-y-0.5">
-                  <Label htmlFor="show-featured">Mostrar assinaturas destacadas</Label>
-                  <p className="text-sm text-gray-500">
-                    Exibir seção de assinaturas destacadas na página inicial
-                  </p>
-                </div>
-                <Switch 
-                  id="show-featured"
-                  checked={showFeatured}
-                  onCheckedChange={setShowFeatured}
-                />
-              </div>
+            <CardContent className="pt-6">
+              <h3 className="text-lg font-medium mb-4">Backup de Dados</h3>
+              <p className="text-gray-500 mb-4">
+                Faça um backup completo do banco de dados. Esta operação pode demorar
+                alguns minutos dependendo da quantidade de dados.
+              </p>
               
-              <div className="flex items-center justify-between">
-                <div className="space-y-0.5">
-                  <Label htmlFor="show-pricing">Mostrar preços</Label>
-                  <p className="text-sm text-gray-500">
-                    Exibir preços das assinaturas para todos os usuários
-                  </p>
-                </div>
-                <Switch 
-                  id="show-pricing"
-                  checked={showPricing}
-                  onCheckedChange={setShowPricing}
-                />
-              </div>
+              <Button 
+                onClick={handleBackupData}
+                variant="outline"
+              >
+                Gerar Backup
+              </Button>
               
-              <div className="flex items-center justify-between">
-                <div className="space-y-0.5">
-                  <Label htmlFor="show-categories">Mostrar categorias</Label>
-                  <p className="text-sm text-gray-500">
-                    Organizar assinaturas por categorias na página inicial
-                  </p>
-                </div>
-                <Switch 
-                  id="show-categories"
-                  checked={showCategories}
-                  onCheckedChange={setShowCategories}
-                />
+              <Separator className="my-6" />
+              
+              <h3 className="text-lg font-medium mb-4">Restaurar Backup</h3>
+              <p className="text-gray-500 mb-4">
+                Atenção: Esta operação substituirá todos os dados atuais.
+              </p>
+              
+              <div>
+                <Label htmlFor="backup-file">Arquivo de Backup</Label>
+                <Input id="backup-file" type="file" className="mt-2" />
               </div>
               
               <Button 
-                onClick={saveDisplaySettings} 
-                disabled={isSaving}
-                className="w-full md:w-auto mt-4"
+                className="mt-4"
+                variant="destructive"
               >
-                {isSaving ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Salvando...
-                  </>
-                ) : (
-                  <>
-                    <Save className="mr-2 h-4 w-4" />
-                    Salvar configurações
-                  </>
-                )}
+                Restaurar Dados
               </Button>
             </CardContent>
           </Card>
