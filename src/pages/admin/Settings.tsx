@@ -1,64 +1,77 @@
 
 import React, { useState, useEffect } from 'react';
-import AdminLayout from '@/components/admin/AdminLayout';
-import { 
-  Card, 
-  CardContent, 
-  CardDescription, 
-  CardFooter, 
-  CardHeader, 
-  CardTitle 
-} from '@/components/ui/card';
-import { 
-  Tabs, 
-  TabsContent, 
-  TabsList, 
-  TabsTrigger 
-} from '@/components/ui/tabs';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Switch } from '@/components/ui/switch';
-import { useToast } from '@/components/ui/use-toast';
-import { Separator } from '@/components/ui/separator';
+import { Card, CardContent } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
+import { Loader2, Save } from "lucide-react";
+import { useToast } from "@/components/ui/use-toast";
 import { getSiteConfig, updateSiteConfig } from '@/services/subscription-service';
-import { Loader2 } from 'lucide-react';
 
 const Settings = () => {
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
-  const [siteTitle, setSiteTitle] = useState("🍿 Só Falta a Pipoca");
-  const [siteSubtitle, setSiteSubtitle] = useState("Assinaturas premium com preços exclusivos");
-  const [contactWhatsapp, setContactWhatsapp] = useState("5513992077804");
-  const [appVersion, setAppVersion] = useState("2.1.0");
-  const [showFeaturedSection, setShowFeaturedSection] = useState(true);
-  const [primaryColor, setPrimaryColor] = useState("#4F46E5");
-  const [secondaryColor, setSecondaryColor] = useState("#10B981");
   
-  // Carregar configurações do site ao montar o componente
+  // Configurações gerais
+  const [siteName, setSiteName] = useState("");
+  const [siteDescription, setSiteDescription] = useState("");
+  const [contactEmail, setContactEmail] = useState("");
+  
+  // Configurações SEO
+  const [metaTitle, setMetaTitle] = useState("");
+  const [metaDescription, setMetaDescription] = useState("");
+  const [googleAnalyticsId, setGoogleAnalyticsId] = useState("");
+  
+  // Configurações de exibição
+  const [showFeatured, setShowFeatured] = useState(true);
+  const [showPricing, setShowPricing] = useState(true);
+  const [showCategories, setShowCategories] = useState(true);
+
+  // Carregar configurações do site
   useEffect(() => {
-    const loadSiteConfigurations = async () => {
+    const loadSettings = async () => {
       setIsLoading(true);
       try {
-        // Carregar configurações do site
-        const title = await getSiteConfig('site_title');
-        const subtitle = await getSiteConfig('site_subtitle');
-        const whatsapp = await getSiteConfig('contact_whatsapp');
-        const version = await getSiteConfig('app_version');
-        const featuredSection = await getSiteConfig('show_featured_section');
-        const primary = await getSiteConfig('primary_color');
-        const secondary = await getSiteConfig('secondary_color');
+        const data = await getSiteConfig();
         
-        // Atualizar estado com valores do banco de dados
-        if (title) setSiteTitle(title);
-        if (subtitle) setSiteSubtitle(subtitle);
-        if (whatsapp) setContactWhatsapp(whatsapp);
-        if (version) setAppVersion(version);
-        if (featuredSection) setShowFeaturedSection(featuredSection === 'true');
-        if (primary) setPrimaryColor(primary);
-        if (secondary) setSecondaryColor(secondary);
-        
+        // Processar os dados recebidos
+        data.forEach((config: any) => {
+          switch(config.key) {
+            case 'site_name':
+              setSiteName(config.value || '');
+              break;
+            case 'site_description':
+              setSiteDescription(config.value || '');
+              break;
+            case 'contact_email':
+              setContactEmail(config.value || '');
+              break;
+            case 'meta_title':
+              setMetaTitle(config.value || '');
+              break;
+            case 'meta_description':
+              setMetaDescription(config.value || '');
+              break;
+            case 'google_analytics_id':
+              setGoogleAnalyticsId(config.value || '');
+              break;
+            case 'show_featured':
+              setShowFeatured(config.value === 'true');
+              break;
+            case 'show_pricing':
+              setShowPricing(config.value === 'true');
+              break;
+            case 'show_categories':
+              setShowCategories(config.value === 'true');
+              break;
+            default:
+              break;
+          }
+        });
       } catch (error) {
         console.error('Erro ao carregar configurações:', error);
         toast({
@@ -71,26 +84,26 @@ const Settings = () => {
       }
     };
     
-    loadSiteConfigurations();
+    loadSettings();
   }, [toast]);
-  
-  const handleSaveGeneral = async () => {
+
+  // Salvar configurações gerais
+  const saveGeneralSettings = async () => {
     setIsSaving(true);
     try {
-      // Salvar configurações gerais
-      await updateSiteConfig('site_title', siteTitle);
-      await updateSiteConfig('site_subtitle', siteSubtitle);
-      await updateSiteConfig('contact_whatsapp', contactWhatsapp);
+      await updateSiteConfig('site_name', siteName);
+      await updateSiteConfig('site_description', siteDescription);
+      await updateSiteConfig('contact_email', contactEmail);
       
       toast({
         title: "Configurações salvas",
         description: "As configurações gerais foram atualizadas com sucesso.",
       });
     } catch (error) {
-      console.error('Erro ao salvar configurações:', error);
+      console.error('Erro ao salvar configurações gerais:', error);
       toast({
         title: "Erro",
-        description: "Não foi possível salvar as configurações.",
+        description: "Não foi possível salvar as configurações gerais.",
         variant: "destructive",
       });
     } finally {
@@ -98,255 +111,250 @@ const Settings = () => {
     }
   };
 
-  const handleSaveAppearance = async () => {
+  // Salvar configurações de SEO
+  const saveSeoSettings = async () => {
     setIsSaving(true);
     try {
-      // Salvar configurações de aparência
-      await updateSiteConfig('show_featured_section', showFeaturedSection.toString());
-      await updateSiteConfig('primary_color', primaryColor);
-      await updateSiteConfig('secondary_color', secondaryColor);
+      await updateSiteConfig('meta_title', metaTitle);
+      await updateSiteConfig('meta_description', metaDescription);
+      await updateSiteConfig('google_analytics_id', googleAnalyticsId);
       
       toast({
-        title: "Aparência atualizada",
-        description: "As configurações de aparência foram atualizadas com sucesso.",
+        title: "Configurações salvas",
+        description: "As configurações de SEO foram atualizadas com sucesso.",
       });
     } catch (error) {
-      console.error('Erro ao salvar aparência:', error);
+      console.error('Erro ao salvar configurações de SEO:', error);
       toast({
         title: "Erro",
-        description: "Não foi possível salvar as configurações de aparência.",
+        description: "Não foi possível salvar as configurações de SEO.",
         variant: "destructive",
       });
     } finally {
       setIsSaving(false);
     }
   };
-  
-  const handleSaveVersion = async () => {
+
+  // Salvar configurações de exibição
+  const saveDisplaySettings = async () => {
     setIsSaving(true);
     try {
-      // Salvar versão do aplicativo
-      await updateSiteConfig('app_version', appVersion);
+      await updateSiteConfig('show_featured', showFeatured.toString());
+      await updateSiteConfig('show_pricing', showPricing.toString());
+      await updateSiteConfig('show_categories', showCategories.toString());
       
       toast({
-        title: "Versão atualizada",
-        description: `A versão do aplicativo foi atualizada para ${appVersion}.`,
+        title: "Configurações salvas",
+        description: "As configurações de exibição foram atualizadas com sucesso.",
       });
     } catch (error) {
-      console.error('Erro ao salvar versão:', error);
+      console.error('Erro ao salvar configurações de exibição:', error);
       toast({
         title: "Erro",
-        description: "Não foi possível atualizar a versão do aplicativo.",
+        description: "Não foi possível salvar as configurações de exibição.",
         variant: "destructive",
       });
     } finally {
       setIsSaving(false);
     }
   };
-  
+
   if (isLoading) {
     return (
-      <AdminLayout title="Configurações">
-        <div className="flex justify-center items-center h-64">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
-          <span className="ml-2">Carregando configurações...</span>
-        </div>
-      </AdminLayout>
+      <div className="flex justify-center items-center h-64">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <span className="ml-2">Carregando configurações...</span>
+      </div>
     );
   }
-  
+
   return (
-    <AdminLayout title="Configurações">
-      <Tabs defaultValue="general" className="space-y-4">
-        <TabsList className="grid w-full max-w-md grid-cols-3">
+    <div className="space-y-6">
+      <h2 className="text-lg font-medium">Configurações do Site</h2>
+      
+      <Tabs defaultValue="general">
+        <TabsList>
           <TabsTrigger value="general">Geral</TabsTrigger>
-          <TabsTrigger value="appearance">Aparência</TabsTrigger>
-          <TabsTrigger value="advanced">Avançado</TabsTrigger>
+          <TabsTrigger value="seo">SEO</TabsTrigger>
+          <TabsTrigger value="display">Exibição</TabsTrigger>
         </TabsList>
         
-        {/* Configurações Gerais */}
         <TabsContent value="general">
           <Card>
-            <CardHeader>
-              <CardTitle>Configurações Gerais</CardTitle>
-              <CardDescription>
-                Configure as informações básicas do site.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="site-title">Título do Site</Label>
+            <CardContent className="pt-6 space-y-4">
+              <div>
+                <Label htmlFor="site-name">Nome do site</Label>
                 <Input 
-                  id="site-title" 
-                  value={siteTitle} 
-                  onChange={(e) => setSiteTitle(e.target.value)}
+                  id="site-name"
+                  value={siteName}
+                  onChange={(e) => setSiteName(e.target.value)}
+                  placeholder="Só Falta a Pipoca"
                 />
               </div>
               
-              <div className="space-y-2">
-                <Label htmlFor="site-subtitle">Subtítulo do Site</Label>
-                <Input 
-                  id="site-subtitle" 
-                  value={siteSubtitle} 
-                  onChange={(e) => setSiteSubtitle(e.target.value)}
+              <div>
+                <Label htmlFor="site-description">Descrição do site</Label>
+                <Textarea 
+                  id="site-description"
+                  value={siteDescription}
+                  onChange={(e) => setSiteDescription(e.target.value)}
+                  placeholder="Seu guia para streamings e assinaturas"
                 />
               </div>
               
-              <Separator className="my-4" />
-              
-              <div className="space-y-2">
-                <Label htmlFor="contact-whatsapp">WhatsApp para Contato</Label>
-                <div className="flex items-center">
-                  <span className="bg-gray-100 px-3 py-2 text-gray-600 border border-r-0 border-gray-300 rounded-l-md">
-                    +
-                  </span>
-                  <Input 
-                    id="contact-whatsapp" 
-                    value={contactWhatsapp} 
-                    onChange={(e) => setContactWhatsapp(e.target.value)}
-                    className="rounded-l-none"
-                  />
-                </div>
-                <p className="text-sm text-gray-500">
-                  Número completo com código do país e DDD, sem espaços ou caracteres especiais.
-                </p>
+              <div>
+                <Label htmlFor="contact-email">Email de contato</Label>
+                <Input 
+                  id="contact-email"
+                  type="email"
+                  value={contactEmail}
+                  onChange={(e) => setContactEmail(e.target.value)}
+                  placeholder="contato@sofaltaapipoca.com"
+                />
               </div>
-            </CardContent>
-            <CardFooter>
-              <Button onClick={handleSaveGeneral} disabled={isSaving}>
+              
+              <Button 
+                onClick={saveGeneralSettings} 
+                disabled={isSaving}
+                className="w-full md:w-auto"
+              >
                 {isSaving ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                     Salvando...
                   </>
                 ) : (
-                  'Salvar Alterações'
+                  <>
+                    <Save className="mr-2 h-4 w-4" />
+                    Salvar configurações
+                  </>
                 )}
               </Button>
-            </CardFooter>
+            </CardContent>
           </Card>
         </TabsContent>
         
-        {/* Configurações de Aparência */}
-        <TabsContent value="appearance">
+        <TabsContent value="seo">
           <Card>
-            <CardHeader>
-              <CardTitle>Aparência</CardTitle>
-              <CardDescription>
-                Personalize a aparência e o layout do site.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="pt-6 space-y-4">
+              <div>
+                <Label htmlFor="meta-title">Meta título</Label>
+                <Input 
+                  id="meta-title"
+                  value={metaTitle}
+                  onChange={(e) => setMetaTitle(e.target.value)}
+                  placeholder="Só Falta a Pipoca - Seu guia de streamings"
+                />
+              </div>
+              
+              <div>
+                <Label htmlFor="meta-description">Meta descrição</Label>
+                <Textarea 
+                  id="meta-description"
+                  value={metaDescription}
+                  onChange={(e) => setMetaDescription(e.target.value)}
+                  placeholder="O melhor lugar para encontrar assinaturas de serviços de streaming"
+                />
+              </div>
+              
+              <div>
+                <Label htmlFor="google-analytics">ID do Google Analytics</Label>
+                <Input 
+                  id="google-analytics"
+                  value={googleAnalyticsId}
+                  onChange={(e) => setGoogleAnalyticsId(e.target.value)}
+                  placeholder="GA-123456789"
+                />
+              </div>
+              
+              <Button 
+                onClick={saveSeoSettings} 
+                disabled={isSaving}
+                className="w-full md:w-auto"
+              >
+                {isSaving ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Salvando...
+                  </>
+                ) : (
+                  <>
+                    <Save className="mr-2 h-4 w-4" />
+                    Salvar configurações
+                  </>
+                )}
+              </Button>
+            </CardContent>
+          </Card>
+        </TabsContent>
+        
+        <TabsContent value="display">
+          <Card>
+            <CardContent className="pt-6 space-y-4">
               <div className="flex items-center justify-between">
-                <div>
-                  <Label htmlFor="featured-section">Mostrar Seção de Destaques</Label>
+                <div className="space-y-0.5">
+                  <Label htmlFor="show-featured">Mostrar assinaturas destacadas</Label>
                   <p className="text-sm text-gray-500">
-                    Exibe os anúncios destacados no topo da página inicial.
+                    Exibir seção de assinaturas destacadas na página inicial
                   </p>
                 </div>
                 <Switch 
-                  id="featured-section"
-                  checked={showFeaturedSection}
-                  onCheckedChange={setShowFeaturedSection}
+                  id="show-featured"
+                  checked={showFeatured}
+                  onCheckedChange={setShowFeatured}
                 />
               </div>
               
-              <Separator className="my-4" />
-              
-              <div className="space-y-2">
-                <Label>Cores do Site</Label>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="primary-color" className="text-xs">Cor Primária</Label>
-                    <div className="flex mt-1">
-                      <Input 
-                        id="primary-color" 
-                        type="color" 
-                        value={primaryColor}
-                        onChange={(e) => setPrimaryColor(e.target.value)} 
-                        className="w-full h-10"
-                      />
-                    </div>
-                  </div>
-                  <div>
-                    <Label htmlFor="secondary-color" className="text-xs">Cor Secundária</Label>
-                    <div className="flex mt-1">
-                      <Input 
-                        id="secondary-color" 
-                        type="color" 
-                        value={secondaryColor}
-                        onChange={(e) => setSecondaryColor(e.target.value)}
-                        className="w-full h-10"
-                      />
-                    </div>
-                  </div>
+              <div className="flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <Label htmlFor="show-pricing">Mostrar preços</Label>
+                  <p className="text-sm text-gray-500">
+                    Exibir preços das assinaturas para todos os usuários
+                  </p>
                 </div>
+                <Switch 
+                  id="show-pricing"
+                  checked={showPricing}
+                  onCheckedChange={setShowPricing}
+                />
               </div>
-            </CardContent>
-            <CardFooter>
-              <Button onClick={handleSaveAppearance} disabled={isSaving}>
+              
+              <div className="flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <Label htmlFor="show-categories">Mostrar categorias</Label>
+                  <p className="text-sm text-gray-500">
+                    Organizar assinaturas por categorias na página inicial
+                  </p>
+                </div>
+                <Switch 
+                  id="show-categories"
+                  checked={showCategories}
+                  onCheckedChange={setShowCategories}
+                />
+              </div>
+              
+              <Button 
+                onClick={saveDisplaySettings} 
+                disabled={isSaving}
+                className="w-full md:w-auto mt-4"
+              >
                 {isSaving ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                     Salvando...
                   </>
                 ) : (
-                  'Salvar Aparência'
+                  <>
+                    <Save className="mr-2 h-4 w-4" />
+                    Salvar configurações
+                  </>
                 )}
               </Button>
-            </CardFooter>
-          </Card>
-        </TabsContent>
-        
-        {/* Configurações Avançadas */}
-        <TabsContent value="advanced">
-          <Card>
-            <CardHeader>
-              <CardTitle>Configurações Avançadas</CardTitle>
-              <CardDescription>
-                Configure opções avançadas do sistema.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="app-version">Versão do Aplicativo</Label>
-                <div className="flex space-x-2">
-                  <Input 
-                    id="app-version" 
-                    value={appVersion} 
-                    onChange={(e) => setAppVersion(e.target.value)}
-                  />
-                  <Button onClick={handleSaveVersion} variant="outline" disabled={isSaving}>
-                    {isSaving ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Salvando...
-                      </>
-                    ) : (
-                      'Atualizar'
-                    )}
-                  </Button>
-                </div>
-              </div>
-              
-              <Separator className="my-4" />
-              
-              <div className="space-y-2">
-                <Label className="text-red-500 font-medium">Zona de Perigo</Label>
-                <div className="space-y-2">
-                  <Button variant="destructive" className="w-full">
-                    Limpar Cache do Sistema
-                  </Button>
-                  <Button variant="destructive" className="w-full">
-                    Redefinir Configurações
-                  </Button>
-                </div>
-              </div>
             </CardContent>
           </Card>
         </TabsContent>
       </Tabs>
-    </AdminLayout>
+    </div>
   );
 };
 

@@ -1,10 +1,9 @@
-
 import React, { useEffect, useState } from "react";
 import FeaturedSubscriptions from "./FeaturedSubscriptions";
 import RegularSubscriptions from "./RegularSubscriptions";
 import MemberSubscriptions from "./MemberSubscriptions";
 import { SubscriptionData } from "@/types/subscriptionTypes";
-import { getAllSubscriptions, getFeaturedSubscriptions, getMemberSubscriptions } from "@/services/subscription-service";
+import { supabase } from '@/integrations/supabase/client';
 
 interface SubscriptionListProps {
   subscriptionRefs: React.MutableRefObject<{
@@ -29,18 +28,61 @@ const SubscriptionList: React.FC<SubscriptionListProps> = ({
     const fetchSubscriptions = async () => {
       try {
         setIsLoading(true);
-        const featured = await getFeaturedSubscriptions();
-        const all = await getAllSubscriptions();
+        
+        // Get featured subscriptions
+        const { data: featured, error: featuredError } = await supabase
+          .from('subscriptions')
+          .select('*')
+          .eq('featured', true);
+          
+        if (featuredError) throw featuredError;
+          
+        // Get all subscriptions
+        const { data: all, error: allError } = await supabase
+          .from('subscriptions')
+          .select('*');
+          
+        if (allError) throw allError;
 
         // Get all visible member submissions
-        const memberSubmissions = await getMemberSubscriptions();
+        const { data: memberSubmissions, error: memberError } = await supabase
+          .from('subscriptions')
+          .select('*')
+          .not('user_id', 'is', null)
+          .eq('visible', true);
+          
+        if (memberError) throw memberError;
 
-        // Filtrar assinaturas regulares (todas exceto as destacadas)
-        const regular = all.filter(sub => !sub.featured && !sub.isMemberSubmission);
+        // Filter regular subscriptions (all except featured and member submissions)
+        const regular = all.filter(sub => 
+          !sub.featured && 
+          (!sub.user_id || sub.user_id === null)
+        );
         
-        setFeaturedList(featured);
-        setRegularList(regular);
-        setMemberSubmissionsList(memberSubmissions);
+        // Transform the data to match our frontend model
+        const transformData = (data: any[]): SubscriptionData[] => {
+          return data.map(item => ({
+            id: item.id,
+            title: item.title,
+            price: item.price,
+            paymentMethod: item.payment_method,
+            status: item.status,
+            access: item.access,
+            headerColor: item.header_color,
+            priceColor: item.price_color,
+            whatsappNumber: item.whatsapp_number,
+            telegramUsername: item.telegram_username,
+            icon: item.icon,
+            addedDate: item.added_date,
+            featured: item.featured,
+            userId: item.user_id,
+            isMemberSubmission: !!item.user_id
+          }));
+        };
+        
+        setFeaturedList(transformData(featured || []));
+        setRegularList(transformData(regular));
+        setMemberSubmissionsList(transformData(memberSubmissions || []));
       } catch (error) {
         console.error("Erro ao buscar assinaturas:", error);
       } finally {

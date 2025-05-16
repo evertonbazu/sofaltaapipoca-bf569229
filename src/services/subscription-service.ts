@@ -16,6 +16,53 @@ export const getUserSubscriptions = async (userId: string) => {
 // This is just an alias for getUserSubscriptions for backward compatibility
 export const getMemberSubscriptions = getUserSubscriptions;
 
+// Get all subscriptions
+export const getAllSubscriptions = async () => {
+  const { data, error } = await supabase
+    .from('subscriptions')
+    .select('*');
+
+  if (error) throw error;
+  return data || [];
+};
+
+// Get featured subscriptions
+export const getFeaturedSubscriptions = async () => {
+  const { data, error } = await supabase
+    .from('subscriptions')
+    .select('*')
+    .eq('featured', true);
+
+  if (error) throw error;
+  return data || [];
+};
+
+// Get site configuration
+export const getSiteConfig = async (key?: string) => {
+  const query = supabase.from('site_configurations').select('*');
+  
+  if (key) {
+    query.eq('key', key);
+  }
+  
+  const { data, error } = await query;
+  
+  if (error) throw error;
+  return data || [];
+};
+
+// Update site config
+export const updateSiteConfig = async (key: string, value: string) => {
+  const { data, error } = await supabase
+    .from('site_configurations')
+    .update({ value })
+    .eq('key', key)
+    .select();
+
+  if (error) throw error;
+  return data ? data[0] : null;
+};
+
 // Add subscription
 export const addSubscription = async (subscription: Partial<SubscriptionData>) => {
   const { data, error } = await supabase
@@ -100,7 +147,7 @@ export const getHeaderButtons = async () => {
   const { data, error } = await supabase
     .from('header_buttons')
     .select('*')
-    .order('order', { ascending: true });
+    .order('position', { ascending: true });
 
   if (error) throw error;
   return data || [];
@@ -140,28 +187,23 @@ export const deleteHeaderButton = async (id: string) => {
   return true;
 };
 
-// Update site config
-export const updateSiteConfig = async (config: any) => {
-  const { data, error } = await supabase
-    .from('site_config')
-    .update(config)
-    .eq('id', 1)
-    .select();
-
-  if (error) throw error;
-  return data ? data[0] : null;
+// Get categories for subscription form
+export const getAllCategories = async () => {
+  return ['Streaming', 'Música', 'Educação', 'Produtividade', 'YouTube', 'Outro'];
 };
 
-// Log error
-export const logError = async (error: any) => {
-  console.error('Error:', error);
+// Log error with correct parameters
+export const logError = async (errorMessage: string, errorContext?: string, errorCode?: string, stackTrace?: string) => {
+  console.error('Error:', errorMessage);
   
   try {
     await supabase
       .from('error_logs')
       .insert({
-        error_message: error.message || JSON.stringify(error),
-        stack_trace: error.stack || '',
+        error_message: errorMessage,
+        error_context: errorContext || '',
+        error_code: errorCode || '',
+        stack_trace: stackTrace || '',
         resolved: false
       });
   } catch (logError) {
