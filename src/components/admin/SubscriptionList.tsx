@@ -10,7 +10,9 @@ import {
   ArrowUp,
   ArrowDown,
   User,
-  FileText
+  FileText,
+  Telegram,
+  MessageSquare
 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -31,6 +33,7 @@ import {
 import { SubscriptionData } from '@/types/subscriptionTypes';
 import { deleteSubscription, getAllSubscriptions, toggleFeaturedStatus } from '@/services/subscription-service';
 import { downloadSubscriptionAsTxt } from '@/utils/exportUtils';
+import { getWhatsAppShareLink, getTelegramShareLink } from '@/utils/shareUtils';
 
 type SortField = 'title' | 'price' | 'status' | 'paymentMethod' | 'telegramUsername' | 'whatsappNumber' | 'featured' | 'addedDate';
 type SortDirection = 'asc' | 'desc';
@@ -439,7 +442,7 @@ const SubscriptionList = () => {
                     {subscription.featured ? 'Sim' : 'Não'}
                   </TableCell>
                   <TableCell>
-                    <div className="flex space-x-1">
+                    <div className="flex space-x-1 flex-wrap gap-1">
                       <Button
                         variant="outline"
                         size="icon"
@@ -467,6 +470,24 @@ const SubscriptionList = () => {
                         title="Salvar como TXT"
                       >
                         <FileText className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        className="text-green-500 hover:text-green-700"
+                        onClick={() => window.open(getWhatsAppShareLink(subscription), '_blank')}
+                        title="Compartilhar via WhatsApp"
+                      >
+                        <MessageSquare className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        className="text-blue-500 hover:text-blue-700"
+                        onClick={() => window.open(getTelegramShareLink(subscription), '_blank')}
+                        title="Compartilhar via Telegram"
+                      >
+                        <Telegram className="h-4 w-4" />
                       </Button>
                       <Button
                         variant="outline"
