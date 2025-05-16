@@ -1,38 +1,53 @@
 
-import React from 'react';
-import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
-import Index from './pages/Index';
-import SubmitSubscription from './pages/SubmitSubscription';
-import Auth from './pages/Auth';
-import Profile from './pages/Profile';
-import Dashboard from './pages/admin/Dashboard';
-import Subscriptions from './pages/admin/Subscriptions';
-import SubscriptionEditor from './pages/admin/SubscriptionEditor';
-import AdminLayout from '@/components/admin/AdminLayout';
-import ContactForm from "./pages/form_contato";
-import NotFound from './pages/NotFound';
+import { Toaster } from "@/components/ui/toaster";
+import { Toaster as Sonner } from "@/components/ui/sonner";
+import { TooltipProvider } from "@/components/ui/tooltip";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
+import Index from "./pages/Index";
+import NotFound from "./pages/NotFound";
+import Auth from "./pages/Auth";
+import { AuthProvider } from "./contexts/AuthContext";
+import Dashboard from "./pages/admin/Dashboard";
+import Subscriptions from "./pages/admin/Subscriptions";
+import SubscriptionEditor from "./pages/admin/SubscriptionEditor";
+import ChatSubscriptionEditor from "./pages/admin/ChatSubscriptionEditor";
+import Settings from "./pages/admin/Settings";
+import HeaderButtons from "./pages/admin/HeaderButtons";
+import Profile from "./pages/Profile";
+import SubmitSubscription from "./pages/SubmitSubscription";
 
-function App() {
-  return (
-    <Router>
-      <Routes>
-        <Route path="/" element={<Index />} />
-        <Route path="/submit-subscription" element={<SubmitSubscription />} />
-        <Route path="/auth" element={<Auth />} />
-        <Route path="/profile" element={<Profile />} />
-        <Route path="/form_contato" element={<ContactForm />} />
-        
-        {/* Admin Routes - Protected by AdminLayout */}
-        <Route path="/admin" element={<AdminLayout><Dashboard /></AdminLayout>} />
-        <Route path="/admin/subscriptions" element={<AdminLayout><Subscriptions /></AdminLayout>} />
-        <Route path="/admin/subscriptions/edit/:id" element={<AdminLayout><SubscriptionEditor /></AdminLayout>} />
-        <Route path="/admin/subscriptions/new" element={<AdminLayout><SubscriptionEditor /></AdminLayout>} />
-        
-        {/* 404 Route */}
-        <Route path="*" element={<NotFound />} />
-      </Routes>
-    </Router>
-  );
-}
+const queryClient = new QueryClient();
+
+const App = () => (
+  <QueryClientProvider client={queryClient}>
+    <AuthProvider>
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
+        <BrowserRouter>
+          <Routes>
+            <Route path="/" element={<Index />} />
+            <Route path="/auth" element={<Auth />} />
+            <Route path="/profile" element={<Profile />} />
+            <Route path="/submit-subscription" element={<SubmitSubscription />} />
+            
+            {/* Rotas Administrativas */}
+            <Route path="/admin" element={<Dashboard />} />
+            <Route path="/admin/subscriptions" element={<Subscriptions />} />
+            <Route path="/admin/subscriptions/new" element={<SubscriptionEditor />} />
+            <Route path="/admin/subscriptions/edit/:id" element={<SubscriptionEditor />} />
+            <Route path="/admin/subscriptions/chat" element={<ChatSubscriptionEditor />} />
+            <Route path="/admin/header-buttons" element={<HeaderButtons />} />
+            <Route path="/admin/settings" element={<Settings />} />
+            
+            {/* Rota de fallback */}
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </BrowserRouter>
+      </TooltipProvider>
+    </AuthProvider>
+  </QueryClientProvider>
+);
 
 export default App;

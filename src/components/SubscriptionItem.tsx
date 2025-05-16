@@ -18,7 +18,6 @@ interface SubscriptionItemProps {
   subscriptionRefs?: React.MutableRefObject<{[key: string]: HTMLDivElement | null}>;
   isSearchResult?: boolean;
   isMemberSubmission?: boolean;
-  featured?: boolean;
 }
 
 const SubscriptionItem: React.FC<SubscriptionItemProps> = ({
@@ -36,9 +35,10 @@ const SubscriptionItem: React.FC<SubscriptionItemProps> = ({
   addedDate,
   subscriptionRefs,
   isSearchResult = false,
-  isMemberSubmission = false,
-  featured = false
+  isMemberSubmission = false
 }) => {
+  console.log(`Rendering subscription: ${title}, isMemberSubmission: ${isMemberSubmission}`);
+
   // If the subscription needs to be referenced (for featured items), use a ref
   if (subscriptionRefs) {
     return (
@@ -58,7 +58,6 @@ const SubscriptionItem: React.FC<SubscriptionItemProps> = ({
           addedDate={addedDate}
           isSearchResult={isSearchResult}
           isMemberSubmission={isMemberSubmission}
-          featured={featured}
         />
       </div>
     );
@@ -81,7 +80,6 @@ const SubscriptionItem: React.FC<SubscriptionItemProps> = ({
       addedDate={addedDate}
       isSearchResult={isSearchResult}
       isMemberSubmission={isMemberSubmission}
-      featured={featured}
     />
   );
 };

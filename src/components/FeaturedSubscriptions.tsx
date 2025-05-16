@@ -71,7 +71,6 @@ const FeaturedSubscriptions: React.FC<FeaturedSubscriptionsProps> = ({
           addedDate={subscription.addedDate}
           subscriptionRefs={subscriptionRefs}
           isMemberSubmission={subscription.isMemberSubmission}
-          featured={true} // These are all featured subscriptions
         />
       ))}
     </div>

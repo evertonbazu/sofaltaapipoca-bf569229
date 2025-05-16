@@ -1,241 +1,352 @@
 
 import React, { useState, useEffect } from 'react';
-import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Label } from "@/components/ui/label";
-import { useToast } from "@/components/ui/use-toast";
+import AdminLayout from '@/components/admin/AdminLayout';
+import { 
+  Card, 
+  CardContent, 
+  CardDescription, 
+  CardFooter, 
+  CardHeader, 
+  CardTitle 
+} from '@/components/ui/card';
 import { 
   Tabs, 
   TabsContent, 
   TabsList, 
   TabsTrigger 
-} from "@/components/ui/tabs";
-import { Separator } from "@/components/ui/separator";
+} from '@/components/ui/tabs';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Switch } from '@/components/ui/switch';
+import { useToast } from '@/components/ui/use-toast';
+import { Separator } from '@/components/ui/separator';
 import { getSiteConfig, updateSiteConfig } from '@/services/subscription-service';
-import { useAuth } from '@/contexts/AuthContext';
+import { Loader2 } from 'lucide-react';
 
 const Settings = () => {
-  const [siteTitle, setSiteTitle] = useState("");
-  const [siteSubtitle, setSubtitle] = useState("");
-  const [contact, setContact] = useState("");
-  const [appVersion, setAppVersion] = useState("");
-  const [loading, setLoading] = useState(true);
   const { toast } = useToast();
-  const { authState } = useAuth();
-
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+  const [siteTitle, setSiteTitle] = useState("🍿 Só Falta a Pipoca");
+  const [siteSubtitle, setSiteSubtitle] = useState("Assinaturas premium com preços exclusivos");
+  const [contactWhatsapp, setContactWhatsapp] = useState("5513992077804");
+  const [appVersion, setAppVersion] = useState("2.1.0");
+  const [showFeaturedSection, setShowFeaturedSection] = useState(true);
+  const [primaryColor, setPrimaryColor] = useState("#4F46E5");
+  const [secondaryColor, setSecondaryColor] = useState("#10B981");
+  
+  // Carregar configurações do site ao montar o componente
   useEffect(() => {
-    const fetchSettings = async () => {
+    const loadSiteConfigurations = async () => {
+      setIsLoading(true);
       try {
-        setLoading(true);
-        // Fetch each setting separately with the key parameter
-        const titleData = await getSiteConfig('site_title');
-        const subtitleData = await getSiteConfig('site_subtitle');
-        const contactData = await getSiteConfig('contact_whatsapp');
-        const versionData = await getSiteConfig('app_version');
+        // Carregar configurações do site
+        const title = await getSiteConfig('site_title');
+        const subtitle = await getSiteConfig('site_subtitle');
+        const whatsapp = await getSiteConfig('contact_whatsapp');
+        const version = await getSiteConfig('app_version');
+        const featuredSection = await getSiteConfig('show_featured_section');
+        const primary = await getSiteConfig('primary_color');
+        const secondary = await getSiteConfig('secondary_color');
         
-        if (titleData) setSiteTitle(titleData);
-        if (subtitleData) setSubtitle(subtitleData);
-        if (contactData) setContact(contactData);
-        if (versionData) setAppVersion(versionData);
+        // Atualizar estado com valores do banco de dados
+        if (title) setSiteTitle(title);
+        if (subtitle) setSiteSubtitle(subtitle);
+        if (whatsapp) setContactWhatsapp(whatsapp);
+        if (version) setAppVersion(version);
+        if (featuredSection) setShowFeaturedSection(featuredSection === 'true');
+        if (primary) setPrimaryColor(primary);
+        if (secondary) setSecondaryColor(secondary);
+        
       } catch (error) {
-        console.error("Error fetching settings:", error);
+        console.error('Erro ao carregar configurações:', error);
         toast({
           title: "Erro",
-          description: "Não foi possível carregar as configurações",
+          description: "Não foi possível carregar as configurações do site.",
           variant: "destructive",
         });
       } finally {
-        setLoading(false);
+        setIsLoading(false);
       }
     };
-
-    fetchSettings();
+    
+    loadSiteConfigurations();
   }, [toast]);
   
   const handleSaveGeneral = async () => {
+    setIsSaving(true);
     try {
+      // Salvar configurações gerais
       await updateSiteConfig('site_title', siteTitle);
       await updateSiteConfig('site_subtitle', siteSubtitle);
+      await updateSiteConfig('contact_whatsapp', contactWhatsapp);
+      
+      toast({
+        title: "Configurações salvas",
+        description: "As configurações gerais foram atualizadas com sucesso.",
+      });
+    } catch (error) {
+      console.error('Erro ao salvar configurações:', error);
+      toast({
+        title: "Erro",
+        description: "Não foi possível salvar as configurações.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleSaveAppearance = async () => {
+    setIsSaving(true);
+    try {
+      // Salvar configurações de aparência
+      await updateSiteConfig('show_featured_section', showFeaturedSection.toString());
+      await updateSiteConfig('primary_color', primaryColor);
+      await updateSiteConfig('secondary_color', secondaryColor);
+      
+      toast({
+        title: "Aparência atualizada",
+        description: "As configurações de aparência foram atualizadas com sucesso.",
+      });
+    } catch (error) {
+      console.error('Erro ao salvar aparência:', error);
+      toast({
+        title: "Erro",
+        description: "Não foi possível salvar as configurações de aparência.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+  
+  const handleSaveVersion = async () => {
+    setIsSaving(true);
+    try {
+      // Salvar versão do aplicativo
       await updateSiteConfig('app_version', appVersion);
       
       toast({
-        title: "Sucesso",
-        description: "Configurações gerais atualizadas com sucesso",
+        title: "Versão atualizada",
+        description: `A versão do aplicativo foi atualizada para ${appVersion}.`,
       });
     } catch (error) {
-      console.error("Error updating general settings:", error);
+      console.error('Erro ao salvar versão:', error);
       toast({
         title: "Erro",
-        description: "Não foi possível salvar as configurações",
+        description: "Não foi possível atualizar a versão do aplicativo.",
         variant: "destructive",
       });
+    } finally {
+      setIsSaving(false);
     }
   };
   
-  const handleSaveContact = async () => {
-    try {
-      await updateSiteConfig('contact_whatsapp', contact);
-      
-      toast({
-        title: "Sucesso",
-        description: "Configurações de contato atualizadas com sucesso",
-      });
-    } catch (error) {
-      console.error("Error updating contact settings:", error);
-      toast({
-        title: "Erro",
-        description: "Não foi possível salvar as configurações de contato",
-        variant: "destructive",
-      });
-    }
-  };
-  
-  const handleBackupData = async () => {
-    // Implementar backup de dados no futuro
-    toast({
-      title: "Em desenvolvimento",
-      description: "Esta funcionalidade estará disponível em breve",
-    });
-  };
-
-  // Verify user is admin
-  if (!authState.isAdmin) {
+  if (isLoading) {
     return (
-      <div className="p-6">
-        <h1 className="text-2xl font-bold mb-4">Acesso Restrito</h1>
-        <p>Você não tem permissão para acessar esta página.</p>
-      </div>
+      <AdminLayout title="Configurações">
+        <div className="flex justify-center items-center h-64">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <span className="ml-2">Carregando configurações...</span>
+        </div>
+      </AdminLayout>
     );
   }
   
   return (
-    <div>
-      <h1 className="text-2xl font-bold mb-4">Configurações do Site</h1>
-      
-      <Tabs defaultValue="general" className="w-full">
-        <TabsList className="mb-4">
+    <AdminLayout title="Configurações">
+      <Tabs defaultValue="general" className="space-y-4">
+        <TabsList className="grid w-full max-w-md grid-cols-3">
           <TabsTrigger value="general">Geral</TabsTrigger>
-          <TabsTrigger value="contact">Contato</TabsTrigger>
-          <TabsTrigger value="backup">Backup</TabsTrigger>
+          <TabsTrigger value="appearance">Aparência</TabsTrigger>
+          <TabsTrigger value="advanced">Avançado</TabsTrigger>
         </TabsList>
         
+        {/* Configurações Gerais */}
         <TabsContent value="general">
           <Card>
-            <CardContent className="pt-6">
-              <div className="space-y-4">
-                <div>
-                  <Label htmlFor="siteTitle">Título do Site</Label>
-                  <Input
-                    id="siteTitle"
-                    value={siteTitle}
-                    onChange={(e) => setSiteTitle(e.target.value)}
-                    placeholder="Título do site"
+            <CardHeader>
+              <CardTitle>Configurações Gerais</CardTitle>
+              <CardDescription>
+                Configure as informações básicas do site.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="site-title">Título do Site</Label>
+                <Input 
+                  id="site-title" 
+                  value={siteTitle} 
+                  onChange={(e) => setSiteTitle(e.target.value)}
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="site-subtitle">Subtítulo do Site</Label>
+                <Input 
+                  id="site-subtitle" 
+                  value={siteSubtitle} 
+                  onChange={(e) => setSiteSubtitle(e.target.value)}
+                />
+              </div>
+              
+              <Separator className="my-4" />
+              
+              <div className="space-y-2">
+                <Label htmlFor="contact-whatsapp">WhatsApp para Contato</Label>
+                <div className="flex items-center">
+                  <span className="bg-gray-100 px-3 py-2 text-gray-600 border border-r-0 border-gray-300 rounded-l-md">
+                    +
+                  </span>
+                  <Input 
+                    id="contact-whatsapp" 
+                    value={contactWhatsapp} 
+                    onChange={(e) => setContactWhatsapp(e.target.value)}
+                    className="rounded-l-none"
                   />
                 </div>
-                
+                <p className="text-sm text-gray-500">
+                  Número completo com código do país e DDD, sem espaços ou caracteres especiais.
+                </p>
+              </div>
+            </CardContent>
+            <CardFooter>
+              <Button onClick={handleSaveGeneral} disabled={isSaving}>
+                {isSaving ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Salvando...
+                  </>
+                ) : (
+                  'Salvar Alterações'
+                )}
+              </Button>
+            </CardFooter>
+          </Card>
+        </TabsContent>
+        
+        {/* Configurações de Aparência */}
+        <TabsContent value="appearance">
+          <Card>
+            <CardHeader>
+              <CardTitle>Aparência</CardTitle>
+              <CardDescription>
+                Personalize a aparência e o layout do site.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex items-center justify-between">
                 <div>
-                  <Label htmlFor="siteSubtitle">Subtítulo</Label>
-                  <Input
-                    id="siteSubtitle"
-                    value={siteSubtitle}
-                    onChange={(e) => setSubtitle(e.target.value)}
-                    placeholder="Subtítulo do site"
-                  />
+                  <Label htmlFor="featured-section">Mostrar Seção de Destaques</Label>
+                  <p className="text-sm text-gray-500">
+                    Exibe os anúncios destacados no topo da página inicial.
+                  </p>
                 </div>
-                
-                <div>
-                  <Label htmlFor="appVersion">Versão do App</Label>
-                  <Input
-                    id="appVersion"
-                    value={appVersion}
+                <Switch 
+                  id="featured-section"
+                  checked={showFeaturedSection}
+                  onCheckedChange={setShowFeaturedSection}
+                />
+              </div>
+              
+              <Separator className="my-4" />
+              
+              <div className="space-y-2">
+                <Label>Cores do Site</Label>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="primary-color" className="text-xs">Cor Primária</Label>
+                    <div className="flex mt-1">
+                      <Input 
+                        id="primary-color" 
+                        type="color" 
+                        value={primaryColor}
+                        onChange={(e) => setPrimaryColor(e.target.value)} 
+                        className="w-full h-10"
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <Label htmlFor="secondary-color" className="text-xs">Cor Secundária</Label>
+                    <div className="flex mt-1">
+                      <Input 
+                        id="secondary-color" 
+                        type="color" 
+                        value={secondaryColor}
+                        onChange={(e) => setSecondaryColor(e.target.value)}
+                        className="w-full h-10"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+            <CardFooter>
+              <Button onClick={handleSaveAppearance} disabled={isSaving}>
+                {isSaving ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Salvando...
+                  </>
+                ) : (
+                  'Salvar Aparência'
+                )}
+              </Button>
+            </CardFooter>
+          </Card>
+        </TabsContent>
+        
+        {/* Configurações Avançadas */}
+        <TabsContent value="advanced">
+          <Card>
+            <CardHeader>
+              <CardTitle>Configurações Avançadas</CardTitle>
+              <CardDescription>
+                Configure opções avançadas do sistema.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="app-version">Versão do Aplicativo</Label>
+                <div className="flex space-x-2">
+                  <Input 
+                    id="app-version" 
+                    value={appVersion} 
                     onChange={(e) => setAppVersion(e.target.value)}
-                    placeholder="Exemplo: 2.1.0"
                   />
-                  <p className="text-sm text-gray-500 mt-1">
-                    Formato sugerido: 2.1.0 (major.minor.patch)
-                  </p>
+                  <Button onClick={handleSaveVersion} variant="outline" disabled={isSaving}>
+                    {isSaving ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Salvando...
+                      </>
+                    ) : (
+                      'Atualizar'
+                    )}
+                  </Button>
                 </div>
-                
-                <Button 
-                  onClick={handleSaveGeneral}
-                  disabled={loading}
-                >
-                  Salvar Alterações
-                </Button>
               </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-        
-        <TabsContent value="contact">
-          <Card>
-            <CardContent className="pt-6">
-              <div className="space-y-4">
-                <div>
-                  <Label htmlFor="whatsapp">WhatsApp de Contato</Label>
-                  <Input
-                    id="whatsapp"
-                    value={contact}
-                    onChange={(e) => setContact(e.target.value)}
-                    placeholder="Ex: 5511999999999"
-                  />
-                  <p className="text-sm text-gray-500 mt-1">
-                    Formato: código do país + DDD + número (ex: 5511999999999)
-                  </p>
+              
+              <Separator className="my-4" />
+              
+              <div className="space-y-2">
+                <Label className="text-red-500 font-medium">Zona de Perigo</Label>
+                <div className="space-y-2">
+                  <Button variant="destructive" className="w-full">
+                    Limpar Cache do Sistema
+                  </Button>
+                  <Button variant="destructive" className="w-full">
+                    Redefinir Configurações
+                  </Button>
                 </div>
-                
-                <Button 
-                  onClick={handleSaveContact}
-                  disabled={loading}
-                >
-                  Salvar Contato
-                </Button>
               </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-        
-        <TabsContent value="backup">
-          <Card>
-            <CardContent className="pt-6">
-              <h3 className="text-lg font-medium mb-4">Backup de Dados</h3>
-              <p className="text-gray-500 mb-4">
-                Faça um backup completo do banco de dados. Esta operação pode demorar
-                alguns minutos dependendo da quantidade de dados.
-              </p>
-              
-              <Button 
-                onClick={handleBackupData}
-                variant="outline"
-              >
-                Gerar Backup
-              </Button>
-              
-              <Separator className="my-6" />
-              
-              <h3 className="text-lg font-medium mb-4">Restaurar Backup</h3>
-              <p className="text-gray-500 mb-4">
-                Atenção: Esta operação substituirá todos os dados atuais.
-              </p>
-              
-              <div>
-                <Label htmlFor="backup-file">Arquivo de Backup</Label>
-                <Input id="backup-file" type="file" className="mt-2" />
-              </div>
-              
-              <Button 
-                className="mt-4"
-                variant="destructive"
-              >
-                Restaurar Dados
-              </Button>
             </CardContent>
           </Card>
         </TabsContent>
       </Tabs>
-    </div>
+    </AdminLayout>
   );
 };
 

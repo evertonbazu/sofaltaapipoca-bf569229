@@ -1,6 +1,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import AdminLayout from '@/components/admin/AdminLayout';
 import SubscriptionForm from '@/components/admin/SubscriptionForm';
 import { supabase } from '@/integrations/supabase/client';
 import { SubscriptionData } from '@/types/subscriptionTypes';
@@ -75,7 +76,7 @@ const SubscriptionEditor = () => {
   }, [id, navigate, toast]);
 
   return (
-    <div>
+    <AdminLayout title={isEditing ? "Editar Assinatura" : "Nova Assinatura"}>
       <div className="mb-4">
         <h2 className="text-lg font-medium">
           {isEditing ? "Editar Detalhes da Assinatura" : "Adicionar Nova Assinatura"}
@@ -98,7 +99,7 @@ const SubscriptionEditor = () => {
           isMemberSubmission={subscriptionData?.isMemberSubmission}
         />
       )}
-    </div>
+    </AdminLayout>
   );
 };
 

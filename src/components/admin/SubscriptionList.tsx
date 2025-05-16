@@ -29,8 +29,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { SubscriptionData } from '@/types/subscriptionTypes';
-import { supabase } from '@/integrations/supabase/client';
-import { deleteSubscription, toggleFeaturedStatus } from '@/services/subscription-service';
+import { deleteSubscription, getAllSubscriptions, toggleFeaturedStatus } from '@/services/subscription-service';
 import { downloadSubscriptionAsTxt } from '@/utils/exportUtils';
 
 type SortField = 'title' | 'price' | 'status' | 'paymentMethod' | 'telegramUsername' | 'whatsappNumber' | 'featured' | 'addedDate';
@@ -50,12 +49,12 @@ const SubscriptionList = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
 
-  // Fetch subscriptions when the component mounts
+  // Buscar assinaturas quando o componente montar
   useEffect(() => {
     fetchSubscriptions();
   }, []);
 
-  // Filter subscriptions based on search term
+  // Filtrar assinaturas com base no termo de busca
   useEffect(() => {
     if (searchTerm.trim() === '') {
       setFilteredSubscriptions(subscriptions);
@@ -76,7 +75,7 @@ const SubscriptionList = () => {
     }
   }, [searchTerm, subscriptions]);
 
-  // Sort subscriptions when sort field or direction changes
+  // Ordenar assinaturas quando o campo ou direção de ordenação mudar
   useEffect(() => {
     if (!sortField) {
       return;
@@ -116,7 +115,7 @@ const SubscriptionList = () => {
           valueB = b.featured || false;
           break;
         case 'addedDate':
-          // For dates in the format DD/MM/YYYY, convert to YYYY/MM/DD for sorting
+          // Para datas no formato DD/MM/YYYY, convertemos para YYYY/MM/DD para ordenação
           if (a.addedDate && b.addedDate) {
             const partsA = a.addedDate.split('/');
             const partsB = b.addedDate.split('/');
@@ -148,21 +147,21 @@ const SubscriptionList = () => {
     });
     
     setFilteredSubscriptions(sorted);
-  }, [sortField, sortDirection, filteredSubscriptions]);
+  }, [sortField, sortDirection]);
 
-  // Function to change sorting when clicking a table header
+  // Função para alterar a ordenação ao clicar em um cabeçalho da tabela
   const handleSort = (field: SortField) => {
     if (sortField === field) {
-      // If we're already sorting by this field, toggle the direction
+      // Se já estamos ordenando por este campo, alternar a direção
       setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
     } else {
-      // Otherwise, set the new field and reset to ascending
+      // Caso contrário, definir o novo campo de ordenação e resetar para ascendente
       setSortField(field);
       setSortDirection('asc');
     }
   };
 
-  // Render sort indicator
+  // Renderizar indicador de ordenação
   const renderSortIndicator = (field: SortField) => {
     if (sortField !== field) {
       return null;
@@ -174,38 +173,14 @@ const SubscriptionList = () => {
     );
   };
 
-  // Function to fetch subscriptions
+  // Função para buscar assinaturas
   const fetchSubscriptions = async () => {
     setIsLoading(true);
     try {
-      const { data, error } = await supabase
-        .from('subscriptions')
-        .select('*');
-        
-      if (error) throw error;
-      
-      // Transform the data to match our frontend model
-      const subscriptionsData: SubscriptionData[] = data.map(item => ({
-        id: item.id,
-        title: item.title,
-        price: item.price,
-        paymentMethod: item.payment_method,
-        status: item.status,
-        access: item.access,
-        headerColor: item.header_color,
-        priceColor: item.price_color,
-        whatsappNumber: item.whatsapp_number,
-        telegramUsername: item.telegram_username,
-        icon: item.icon,
-        addedDate: item.added_date,
-        featured: item.featured,
-        userId: item.user_id,
-        isMemberSubmission: !!item.user_id
-      }));
-      
-      console.log('Subscriptions loaded:', subscriptionsData);
-      setSubscriptions(subscriptionsData);
-      setFilteredSubscriptions(subscriptionsData);
+      const data = await getAllSubscriptions();
+      console.log('Subscriptions loaded:', data);
+      setSubscriptions(data);
+      setFilteredSubscriptions(data);
     } catch (error) {
       toast({
         title: "Erro ao carregar assinaturas",
@@ -218,13 +193,13 @@ const SubscriptionList = () => {
     }
   };
 
-  // Open delete confirmation dialog
+  // Abrir diálogo de confirmação para excluir
   const handleDeleteClick = (id: string) => {
     setSubscriptionToDelete(id);
     setDeleteDialogOpen(true);
   };
 
-  // Delete subscription
+  // Excluir assinatura
   const handleDeleteConfirm = async () => {
     if (!subscriptionToDelete) return;
     
@@ -236,7 +211,7 @@ const SubscriptionList = () => {
         description: "A assinatura foi excluída com sucesso.",
       });
       
-      // Update list after deletion
+      // Atualizar lista após exclusão
       fetchSubscriptions();
     } catch (error) {
       toast({
@@ -251,7 +226,7 @@ const SubscriptionList = () => {
     }
   };
 
-  // Toggle featured status
+  // Alternar status de destaque
   const handleToggleFeatured = async (id: string, currentStatus: boolean) => {
     try {
       await toggleFeaturedStatus(id, !currentStatus);
@@ -263,7 +238,7 @@ const SubscriptionList = () => {
           : "A assinatura foi colocada em destaque.",
       });
       
-      // Update list after change
+      // Atualizar lista após alteração
       fetchSubscriptions();
     } catch (error) {
       toast({
@@ -275,7 +250,7 @@ const SubscriptionList = () => {
     }
   };
 
-  // Manage item selection
+  // Gerenciar seleção de itens
   const toggleItemSelection = (id: string) => {
     const newSelectedItems = new Set(selectedItems);
     if (newSelectedItems.has(id)) {
@@ -286,25 +261,25 @@ const SubscriptionList = () => {
     setSelectedItems(newSelectedItems);
   };
 
-  // Select all items
+  // Selecionar todos os itens
   const selectAll = () => {
     if (selectedItems.size === filteredSubscriptions.length) {
-      // If all are already selected, deselect all
+      // Se todos já estão selecionados, desmarcar todos
       setSelectedItems(new Set());
     } else {
-      // Otherwise, select all
+      // Senão, selecionar todos
       const allIds = filteredSubscriptions.map(sub => sub.id!);
       setSelectedItems(new Set(allIds));
     }
   };
 
-  // Delete multiple items
+  // Excluir múltiplos itens
   const handleDeleteMultipleConfirm = async () => {
     try {
       let successCount = 0;
       let errorCount = 0;
 
-      // Convert the Set to an Array to be able to use Promise.all
+      // Converter o Set para um Array para poder usar o Promise.all
       const deletePromises = Array.from(selectedItems).map(async (id) => {
         try {
           await deleteSubscription(id);
@@ -325,7 +300,7 @@ const SubscriptionList = () => {
         variant: errorCount > 0 ? "destructive" : "default",
       });
       
-      // Clear selection and update list
+      // Limpar seleção e atualizar lista
       setSelectedItems(new Set());
       fetchSubscriptions();
     } catch (error) {
@@ -342,7 +317,7 @@ const SubscriptionList = () => {
 
   return (
     <div className="space-y-4">
-      {/* Search bar and batch actions */}
+      {/* Barra de pesquisa e ações em lote */}
       <div className="flex flex-col md:flex-row gap-4">
         <div className="flex items-center border rounded-md bg-white p-2 flex-1">
           <Search className="h-5 w-5 text-gray-400 mr-2" />
@@ -438,8 +413,8 @@ const SubscriptionList = () => {
                   <TableCell>
                     <div className="flex items-center justify-center">
                       <Checkbox
-                        checked={subscription.id ? selectedItems.has(subscription.id) : false}
-                        onCheckedChange={() => subscription.id && toggleItemSelection(subscription.id)}
+                        checked={selectedItems.has(subscription.id!)}
+                        onCheckedChange={() => toggleItemSelection(subscription.id!)}
                       />
                     </div>
                   </TableCell>
@@ -468,7 +443,7 @@ const SubscriptionList = () => {
                       <Button
                         variant="outline"
                         size="icon"
-                        onClick={() => subscription.id && handleToggleFeatured(subscription.id, subscription.featured || false)}
+                        onClick={() => handleToggleFeatured(subscription.id!, subscription.featured || false)}
                         title={subscription.featured ? "Remover destaque" : "Destacar"}
                       >
                         {subscription.featured ? (
@@ -480,7 +455,7 @@ const SubscriptionList = () => {
                       <Button
                         variant="outline"
                         size="icon"
-                        onClick={() => subscription.id && navigate(`/admin/subscriptions/edit/${subscription.id}`)}
+                        onClick={() => navigate(`/admin/subscriptions/edit/${subscription.id}`)}
                         title="Editar"
                       >
                         <Pencil className="h-4 w-4" />
@@ -488,7 +463,7 @@ const SubscriptionList = () => {
                       <Button
                         variant="outline"
                         size="icon"
-                        onClick={() => subscription && downloadSubscriptionAsTxt(subscription)}
+                        onClick={() => downloadSubscriptionAsTxt(subscription)}
                         title="Salvar como TXT"
                       >
                         <FileText className="h-4 w-4" />
@@ -496,7 +471,7 @@ const SubscriptionList = () => {
                       <Button
                         variant="outline"
                         size="icon"
-                        onClick={() => subscription.id && handleDeleteClick(subscription.id)}
+                        onClick={() => handleDeleteClick(subscription.id!)}
                         className="text-red-500 hover:text-red-700"
                         title="Excluir"
                       >
@@ -530,7 +505,7 @@ const SubscriptionList = () => {
         </div>
       )}
 
-      {/* Delete confirmation dialog */}
+      {/* Diálogo de confirmação para exclusão única */}
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -551,7 +526,7 @@ const SubscriptionList = () => {
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Multiple delete confirmation dialog */}
+      {/* Diálogo de confirmação para exclusão múltipla */}
       <AlertDialog open={isMultiDeleteDialogOpen} onOpenChange={setIsMultiDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>

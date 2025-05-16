@@ -3,13 +3,14 @@ import React from 'react';
 import { Button } from "@/components/ui/button";
 import { Plus } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import AdminLayout from '@/components/admin/AdminLayout';
 import SubscriptionList from '@/components/admin/SubscriptionList';
 
 const Subscriptions = () => {
   const navigate = useNavigate();
 
   return (
-    <div>
+    <AdminLayout title="Gerenciar Assinaturas">
       <div className="mb-4 flex justify-between">
         <div>
           <h2 className="text-lg font-medium">Lista de Assinaturas</h2>
@@ -24,7 +25,7 @@ const Subscriptions = () => {
       </div>
 
       <SubscriptionList />
-    </div>
+    </AdminLayout>
   );
 };
 

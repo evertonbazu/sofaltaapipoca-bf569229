@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import SubscriptionList from '@/components/SubscriptionList';
 import NoResults from '@/components/NoResults';
@@ -8,53 +8,34 @@ import NavBar from '@/components/NavBar';
 import FilterSearch from '@/components/FilterSearch';
 import HeaderButtonsDisplay from '@/components/HeaderButtonsDisplay';
 import { supabase } from '@/integrations/supabase/client';
+import { getSiteConfig } from '@/services/subscription-service';
 import { useAuth } from '@/contexts/AuthContext';
 
 const Index: React.FC = () => {
-  const [searchTerm, setSearchTerm] = React.useState("");
-  const [hasResults, setHasResults] = React.useState(true);
-  const [siteTitle, setSiteTitle] = React.useState("🍿 Só Falta a Pipoca");
-  const [siteSubtitle, setSiteSubtitle] = React.useState("Assinaturas premium com preços exclusivos");
-  const [appVersion, setAppVersion] = React.useState("2.1.2");
-  const [contactWhatsapp, setContactWhatsapp] = React.useState("5513992077804");
-  const subscriptionRefs = React.useRef<{
+  const [searchTerm, setSearchTerm] = useState("");
+  const [hasResults, setHasResults] = useState(true);
+  const [siteTitle, setSiteTitle] = useState("🍿 Só Falta a Pipoca");
+  const [siteSubtitle, setSiteSubtitle] = useState("Assinaturas premium com preços exclusivos");
+  const [appVersion, setAppVersion] = useState("2.1.1"); // Updated version number
+  const [contactWhatsapp, setContactWhatsapp] = useState("5513992077804");
+  const subscriptionRefs = useRef<{
     [key: string]: HTMLDivElement | null;
   }>({});
   const { authState } = useAuth();
   const isLoggedIn = !!authState.session;
 
   // Carregar configurações do site
-  React.useEffect(() => {
+  useEffect(() => {
     const loadSiteConfig = async () => {
       try {
-        const { data: titleData } = await supabase
-          .from('site_configurations')
-          .select('*')
-          .eq('key', 'site_title')
-          .single();
-        
-        const { data: subtitleData } = await supabase
-          .from('site_configurations')
-          .select('*')
-          .eq('key', 'site_subtitle')
-          .single();
-        
-        const { data: versionData } = await supabase
-          .from('site_configurations')
-          .select('*')
-          .eq('key', 'app_version')
-          .single();
-        
-        const { data: whatsappData } = await supabase
-          .from('site_configurations')
-          .select('*')
-          .eq('key', 'contact_whatsapp')
-          .single();
-        
-        if (titleData?.value) setSiteTitle(titleData.value);
-        if (subtitleData?.value) setSiteSubtitle(subtitleData.value);
-        if (versionData?.value) setAppVersion(versionData.value);
-        if (whatsappData?.value) setContactWhatsapp(whatsappData.value);
+        const title = await getSiteConfig('site_title');
+        const subtitle = await getSiteConfig('site_subtitle');
+        const version = await getSiteConfig('app_version');
+        const whatsapp = await getSiteConfig('contact_whatsapp');
+        if (title) setSiteTitle(title);
+        if (subtitle) setSiteSubtitle(subtitle);
+        if (version) setAppVersion(version);
+        if (whatsapp) setContactWhatsapp(whatsapp);
       } catch (error) {
         console.error('Erro ao carregar configurações do site:', error);
       }
@@ -70,8 +51,7 @@ const Index: React.FC = () => {
     }
   };
   
-  return (
-    <div className="min-h-screen bg-gray-100">
+  return <div className="min-h-screen bg-gray-100">
       <NavBar />
       
       <header className="bg-gradient-to-r from-indigo-600 to-indigo-800 text-white py-4 sm:py-6">
@@ -86,36 +66,11 @@ const Index: React.FC = () => {
           
           {/* Botões fixos de Anunciar e Fale Conosco */}
           <div className="flex gap-2 sm:gap-3 mx-auto max-w-xs sm:max-w-sm mt-4">
-            {/* Add contact button */}
-            <Link to="/form_contato" className="flex-1">
-              <button className="w-full bg-white hover:bg-gray-100 text-indigo-700 font-medium py-2 px-4 rounded-lg flex items-center justify-center">
-                <MessageSquare size={18} className="mr-2" />
-                <span>Fale Conosco</span>
-              </button>
-            </Link>
-
-            <Link to="/submit-subscription" className="flex-1">
-              <button className="w-full bg-white hover:bg-gray-100 text-indigo-700 font-medium py-2 px-4 rounded-lg flex items-center justify-center">
-                <Megaphone size={18} className="mr-2" />
-                <span>Anunciar</span>
-              </button>
-            </Link>
-
-            {isLoggedIn ? (
-              <Link to="/profile" className="flex-1">
-                <button className="w-full bg-white hover:bg-gray-100 text-indigo-700 font-medium py-2 px-4 rounded-lg flex items-center justify-center">
-                  <User size={18} className="mr-2" />
-                  <span>Perfil</span>
-                </button>
-              </Link>
-            ) : (
-              <Link to="/auth" className="flex-1">
-                <button className="w-full bg-white hover:bg-gray-100 text-indigo-700 font-medium py-2 px-4 rounded-lg flex items-center justify-center">
-                  <User size={18} className="mr-2" />
-                  <span>Entrar</span>
-                </button>
-              </Link>
-            )}
+            
+            
+            
+            
+            {isLoggedIn}
           </div>
         </div>
       </header>
@@ -132,8 +87,6 @@ const Index: React.FC = () => {
           <p className="text-xs text-gray-400 mt-1">v{appVersion}</p>
         </div>
       </footer>
-    </div>
-  );
+    </div>;
 };
-
 export default Index;
