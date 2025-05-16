@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Tv, Youtube, Apple, Monitor, Banknote, HandHelping, Key, Pin, Edit } from 'lucide-react';
+import { Tv, Youtube, Apple, Monitor, Star, Edit } from 'lucide-react';
 import { Badge } from "@/components/ui/badge";
 import { Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -22,6 +22,7 @@ interface SubscriptionCardProps {
   addedDate?: string;
   version?: string;
   isMemberSubmission?: boolean;
+  featured?: boolean;
 }
 
 const SubscriptionCard = ({
@@ -39,8 +40,9 @@ const SubscriptionCard = ({
   icon = 'monitor',
   isSearchResult = false,
   addedDate,
-  version = '2.1.1',
-  isMemberSubmission = false
+  version = '2.1.2', // Updated version number
+  isMemberSubmission = false,
+  featured = false
 }: SubscriptionCardProps) => {
   // State to track if current user is admin
   const [isAdmin, setIsAdmin] = React.useState(false);
@@ -104,10 +106,16 @@ const SubscriptionCard = ({
   
   return (
     <div className={`card h-full bg-white rounded-xl overflow-hidden shadow-lg ${isSearchResult ? 'search-highlight' : ''}`}>
-      <div className={`${bgColorClass} p-4 flex items-center justify-center h-20 relative`}>
+      <div className={`${bgColorClass} p-4 flex items-center justify-between h-20 relative`}>
         <h2 className="text-xl font-bold text-white flex items-center text-center uppercase">
           🖥 {title}
         </h2>
+        
+        {featured && (
+          <div className="flex items-center justify-center">
+            <Star size={20} className="text-yellow-300 fill-yellow-300" />
+          </div>
+        )}
         
         {isMemberSubmission && (
           <div className="absolute top-2 right-2">

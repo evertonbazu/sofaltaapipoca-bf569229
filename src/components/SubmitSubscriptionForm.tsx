@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -14,6 +13,7 @@ import { Loader2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { SubscriptionData } from '@/types/subscriptionTypes';
 import { getAllCategories } from '@/services/subscription-service';
+import CurrencyInput from '@/components/CurrencyInput';
 
 // Lista de títulos predefinidos
 const PREDEFINED_TITLES = [
@@ -285,7 +285,11 @@ const SubmitSubscriptionForm = () => {
                   <FormItem>
                     <FormLabel>Preço</FormLabel>
                     <FormControl>
-                      <Input placeholder="R$ 19,90" {...field} />
+                      <CurrencyInput 
+                        value={field.value}
+                        onChange={field.onChange}
+                        placeholder="R$ 0,00"
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>

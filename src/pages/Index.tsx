@@ -16,7 +16,7 @@ const Index: React.FC = () => {
   const [hasResults, setHasResults] = useState(true);
   const [siteTitle, setSiteTitle] = useState("🍿 Só Falta a Pipoca");
   const [siteSubtitle, setSiteSubtitle] = useState("Assinaturas premium com preços exclusivos");
-  const [appVersion, setAppVersion] = useState("2.1.1"); // Updated version number
+  const [appVersion, setAppVersion] = useState("2.1.2"); // Updated version number
   const [contactWhatsapp, setContactWhatsapp] = useState("5513992077804");
   const subscriptionRefs = useRef<{
     [key: string]: HTMLDivElement | null;
@@ -66,11 +66,36 @@ const Index: React.FC = () => {
           
           {/* Botões fixos de Anunciar e Fale Conosco */}
           <div className="flex gap-2 sm:gap-3 mx-auto max-w-xs sm:max-w-sm mt-4">
-            
-            
-            
-            
-            {isLoggedIn}
+            {/* Add contact button */}
+            <Link to="/form_contato" className="flex-1">
+              <button className="w-full bg-white hover:bg-gray-100 text-indigo-700 font-medium py-2 px-4 rounded-lg flex items-center justify-center">
+                <MessageSquare size={18} className="mr-2" />
+                <span>Fale Conosco</span>
+              </button>
+            </Link>
+
+            <Link to="/submit-subscription" className="flex-1">
+              <button className="w-full bg-white hover:bg-gray-100 text-indigo-700 font-medium py-2 px-4 rounded-lg flex items-center justify-center">
+                <Megaphone size={18} className="mr-2" />
+                <span>Anunciar</span>
+              </button>
+            </Link>
+
+            {isLoggedIn ? (
+              <Link to="/profile" className="flex-1">
+                <button className="w-full bg-white hover:bg-gray-100 text-indigo-700 font-medium py-2 px-4 rounded-lg flex items-center justify-center">
+                  <User size={18} className="mr-2" />
+                  <span>Perfil</span>
+                </button>
+              </Link>
+            ) : (
+              <Link to="/auth" className="flex-1">
+                <button className="w-full bg-white hover:bg-gray-100 text-indigo-700 font-medium py-2 px-4 rounded-lg flex items-center justify-center">
+                  <User size={18} className="mr-2" />
+                  <span>Entrar</span>
+                </button>
+              </Link>
+            )}
           </div>
         </div>
       </header>
