@@ -19,6 +19,7 @@ interface SubscriptionItemProps {
   isSearchResult?: boolean;
   isMemberSubmission?: boolean;
   featured?: boolean;
+  isAdminSubmission?: boolean;
 }
 
 const SubscriptionItem: React.FC<SubscriptionItemProps> = ({
@@ -37,9 +38,10 @@ const SubscriptionItem: React.FC<SubscriptionItemProps> = ({
   subscriptionRefs,
   isSearchResult = false,
   isMemberSubmission = false,
-  featured = false
+  featured = false,
+  isAdminSubmission = false
 }) => {
-  console.log(`Rendering subscription: ${title}, isMemberSubmission: ${isMemberSubmission}, featured: ${featured}`);
+  console.log(`Rendering subscription: ${title}, isMemberSubmission: ${isMemberSubmission}, featured: ${featured}, isAdminSubmission: ${isAdminSubmission}`);
 
   // If the subscription needs to be referenced (for featured items), use a ref
   if (subscriptionRefs) {
@@ -61,6 +63,7 @@ const SubscriptionItem: React.FC<SubscriptionItemProps> = ({
           isSearchResult={isSearchResult}
           isMemberSubmission={isMemberSubmission}
           featured={featured}
+          isAdminSubmission={isAdminSubmission}
         />
       </div>
     );
@@ -84,6 +87,7 @@ const SubscriptionItem: React.FC<SubscriptionItemProps> = ({
       isSearchResult={isSearchResult}
       isMemberSubmission={isMemberSubmission}
       featured={featured}
+      isAdminSubmission={isAdminSubmission}
     />
   );
 };

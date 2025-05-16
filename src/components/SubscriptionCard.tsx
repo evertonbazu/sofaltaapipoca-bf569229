@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Tv, Youtube, Apple, Monitor, Banknote, HandHelping, Key, Pin, Edit } from 'lucide-react';
+import { Tv, Youtube, Apple, Monitor, Banknote, HandHelping, Key, Pin, Edit, Star } from 'lucide-react';
 import { Badge } from "@/components/ui/badge";
 import { Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -23,6 +23,7 @@ interface SubscriptionCardProps {
   version?: string;
   isMemberSubmission?: boolean;
   featured?: boolean;
+  isAdminSubmission?: boolean;
 }
 
 const SubscriptionCard = ({
@@ -42,7 +43,8 @@ const SubscriptionCard = ({
   addedDate,
   version = '2.1.1',
   isMemberSubmission = false,
-  featured = false
+  featured = false,
+  isAdminSubmission = false
 }: SubscriptionCardProps) => {
   // State to track if current user is admin
   const [isAdmin, setIsAdmin] = React.useState(false);
@@ -108,12 +110,41 @@ const SubscriptionCard = ({
     <div className={`card h-full bg-white rounded-xl overflow-hidden shadow-lg ${isSearchResult ? 'search-highlight' : ''}`}>
       <div className={`${bgColorClass} p-4 flex items-center justify-center h-20 relative`}>
         <h2 className="text-xl font-bold text-white flex items-center text-center uppercase">
-          🖥 {featured && "⭐ "}{title}
+          🖥 {title}
         </h2>
         
+        {/* Posicionar estrela no canto superior direito quando em destaque */}
+        {featured && (
+          <div className="absolute top-2 right-2">
+            <span className="text-yellow-300 text-xl">⭐</span>
+          </div>
+        )}
+        
+        {/* Badge para submissões de membros */}
         {isMemberSubmission && (
           <div className="absolute top-2 right-2">
             <Badge variant="secondary" className="text-xs">Membro</Badge>
+          </div>
+        )}
+        
+        {/* Badge para submissões de administradores */}
+        {isAdminSubmission && (
+          <div className="absolute top-2 right-2">
+            <Badge variant="secondary" className="text-xs bg-purple-600 text-white">Admin</Badge>
+          </div>
+        )}
+
+        {/* Se for destaque e submissão de membro, ajustar a posição da badge de membro */}
+        {featured && isMemberSubmission && (
+          <div className="absolute top-8 right-2">
+            <Badge variant="secondary" className="text-xs">Membro</Badge>
+          </div>
+        )}
+        
+        {/* Se for destaque e submissão de admin, ajustar a posição da badge de admin */}
+        {featured && isAdminSubmission && (
+          <div className="absolute top-8 right-2">
+            <Badge variant="secondary" className="text-xs bg-purple-600 text-white">Admin</Badge>
           </div>
         )}
 
