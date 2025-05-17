@@ -1,13 +1,15 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
-import { Plus } from 'lucide-react';
+import { Plus, Search } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import AdminLayout from '@/components/admin/AdminLayout';
 import SubscriptionList from '@/components/admin/SubscriptionList';
+import { Input } from '@/components/ui/input';
 
 const Subscriptions = () => {
   const navigate = useNavigate();
+  const [searchTerm, setSearchTerm] = useState<string>('');
 
   return (
     <AdminLayout title="Gerenciar Assinaturas">
@@ -24,7 +26,22 @@ const Subscriptions = () => {
         </Button>
       </div>
 
-      <SubscriptionList />
+      <div className="space-y-4">
+        {/* Barra de pesquisa para filtrar assinaturas */}
+        <div className="flex items-center border rounded-md bg-white p-2">
+          <Search className="h-5 w-5 text-gray-400 mr-2" />
+          <Input
+            type="text"
+            placeholder="Buscar assinaturas..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="border-0 focus-visible:ring-0 focus-visible:ring-transparent"
+          />
+        </div>
+
+        {/* Lista de assinaturas filtrada pelo termo de busca */}
+        <SubscriptionList searchTerm={searchTerm} />
+      </div>
     </AdminLayout>
   );
 };

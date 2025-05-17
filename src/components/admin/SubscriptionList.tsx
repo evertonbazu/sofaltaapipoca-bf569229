@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
@@ -18,7 +17,6 @@ import {
   EyeOff
 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useToast } from "@/components/ui/use-toast";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -42,11 +40,14 @@ import { getWhatsAppShareLink, getTelegramShareLink } from '@/utils/shareUtils';
 type SortField = 'title' | 'price' | 'telegramUsername' | 'whatsappNumber' | 'featured' | 'addedDate' | 'visible';
 type SortDirection = 'asc' | 'desc';
 
-const SubscriptionList = () => {
+interface SubscriptionListProps {
+  searchTerm?: string;
+}
+
+const SubscriptionList: React.FC<SubscriptionListProps> = ({ searchTerm = '' }) => {
   const [subscriptions, setSubscriptions] = useState<SubscriptionData[]>([]);
   const [filteredSubscriptions, setFilteredSubscriptions] = useState<SubscriptionData[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
-  const [searchTerm, setSearchTerm] = useState<string>('');
   const [deleteDialogOpen, setDeleteDialogOpen] = useState<boolean>(false);
   const [subscriptionToDelete, setSubscriptionToDelete] = useState<string | null>(null);
   const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
@@ -63,14 +64,14 @@ const SubscriptionList = () => {
 
   // Filtrar assinaturas com base no termo de busca
   useEffect(() => {
-    if (searchTerm.trim() === '') {
+    if (!searchTerm || searchTerm.trim() === '') {
       setFilteredSubscriptions(subscriptions);
     } else {
       const lowercaseSearchTerm = searchTerm.toLowerCase();
       const filtered = subscriptions.filter((subscription) => {
         return (
-          subscription.title.toLowerCase().includes(lowercaseSearchTerm) ||
-          subscription.price.toLowerCase().includes(lowercaseSearchTerm) ||
+          subscription.title?.toLowerCase().includes(lowercaseSearchTerm) ||
+          subscription.price?.toLowerCase().includes(lowercaseSearchTerm) ||
           subscription.telegramUsername?.toLowerCase().includes(lowercaseSearchTerm) ||
           subscription.whatsappNumber?.toLowerCase().includes(lowercaseSearchTerm) ||
           subscription.addedDate?.toLowerCase().includes(lowercaseSearchTerm)
@@ -362,16 +363,6 @@ const SubscriptionList = () => {
     <div className="space-y-4">
       {/* Barra de pesquisa e ações em lote */}
       <div className="flex flex-col md:flex-row gap-4">
-        <div className="flex items-center border rounded-md bg-white p-2 flex-1">
-          <Search className="h-5 w-5 text-gray-400 mr-2" />
-          <Input
-            type="text"
-            placeholder="Buscar assinaturas..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="border-0 focus-visible:ring-0 focus-visible:ring-transparent"
-          />
-        </div>
         {selectedItems.size > 0 && (
           <Button 
             variant="destructive"
