@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { SubscriptionData } from '@/types/subscriptionTypes';
 import { toast } from '@/components/ui/use-toast';
@@ -52,12 +53,23 @@ function mapToDbFormat(subscription: SubscriptionData) {
 // Obter todas as assinaturas
 export async function getAllSubscriptions(): Promise<SubscriptionData[]> {
   try {
+    console.log('Requesting subscriptions from database...');
     const { data, error } = await supabase
       .from('subscriptions')
-      .select('*')
-      .order('featured', { ascending: false });
+      .select('*');
     
-    if (error) throw error;
+    if (error) {
+      console.error('Database error:', error);
+      throw error;
+    }
+
+    console.log(`Retrieved ${data?.length || 0} subscriptions from database`);
+    
+    if (!data || data.length === 0) {
+      console.log('No subscriptions found in database');
+      return [];
+    }
+    
     return data.map(mapToSubscriptionData);
   } catch (error: any) {
     console.error('Erro ao obter assinaturas:', error);

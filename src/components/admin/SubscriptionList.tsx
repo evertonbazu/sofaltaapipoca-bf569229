@@ -5,7 +5,6 @@ import {
   Trash2, 
   Star, 
   StarOff, 
-  Search, 
   Info,
   ArrowUp,
   ArrowDown,
@@ -179,14 +178,22 @@ const SubscriptionList: React.FC<SubscriptionListProps> = ({ searchTerm = '' }) 
   const fetchSubscriptions = async () => {
     setIsLoading(true);
     try {
+      console.log('Fetching subscriptions...');
       const data = await getAllSubscriptions();
-      console.log('Subscriptions loaded:', data);
-      setSubscriptions(data);
-      setFilteredSubscriptions(data);
+      console.log('Subscriptions loaded:', data.length, data);
       
-      // Forçar ordenação inicial por data (mais recentes primeiro)
-      setSortField('addedDate');
-      setSortDirection('desc');
+      if (data && data.length > 0) {
+        setSubscriptions(data);
+        setFilteredSubscriptions(data);
+        
+        // Forçar ordenação inicial por data (mais recentes primeiro)
+        setSortField('addedDate');
+        setSortDirection('desc');
+      } else {
+        console.log('No subscriptions found or data is empty');
+        setSubscriptions([]);
+        setFilteredSubscriptions([]);
+      }
     } catch (error) {
       toast({
         title: "Erro ao carregar assinaturas",
@@ -194,6 +201,8 @@ const SubscriptionList: React.FC<SubscriptionListProps> = ({ searchTerm = '' }) 
         variant: "destructive",
       });
       console.error('Erro ao buscar assinaturas:', error);
+      setSubscriptions([]);
+      setFilteredSubscriptions([]);
     } finally {
       setIsLoading(false);
     }
@@ -359,6 +368,9 @@ const SubscriptionList: React.FC<SubscriptionListProps> = ({ searchTerm = '' }) 
     }
   };
 
+  console.log('Rendering SubscriptionList with', filteredSubscriptions.length, 'subscriptions');
+  console.log('isLoading:', isLoading);
+
   return (
     <div className="space-y-4">
       {/* Barra de pesquisa e ações em lote */}
@@ -376,7 +388,12 @@ const SubscriptionList: React.FC<SubscriptionListProps> = ({ searchTerm = '' }) 
       </div>
 
       {isLoading ? (
-        <div className="text-center py-8">Carregando assinaturas...</div>
+        <div className="text-center py-8">
+          <div className="animate-pulse flex flex-col items-center">
+            <div className="h-6 w-32 bg-gray-300 rounded-md mb-4"></div>
+            <div className="h-4 w-48 bg-gray-200 rounded-md"></div>
+          </div>
+        </div>
       ) : filteredSubscriptions.length > 0 ? (
         <div className="bg-white rounded-md shadow overflow-x-auto">
           <Table>
