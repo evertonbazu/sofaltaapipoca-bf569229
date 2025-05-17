@@ -1,11 +1,10 @@
 
 import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
-import { Plus, Search, RefreshCw } from 'lucide-react';
+import { Plus, RefreshCw } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import AdminLayout from '@/components/admin/AdminLayout';
 import SubscriptionList from '@/components/admin/SubscriptionList';
-import { Input } from '@/components/ui/input';
 import { useToast } from '@/components/ui/use-toast';
 
 const Subscriptions = () => {
@@ -20,6 +19,10 @@ const Subscriptions = () => {
       description: "Buscando dados mais recentes do servidor...",
     });
     setRefreshKey(prev => prev + 1);
+  };
+
+  const handleSearchChange = (term: string) => {
+    setSearchTerm(term);
   };
 
   return (
@@ -51,22 +54,11 @@ const Subscriptions = () => {
       </div>
 
       <div className="space-y-4">
-        {/* Barra de pesquisa para filtrar assinaturas */}
-        <div className="flex items-center border rounded-md bg-white p-2">
-          <Search className="h-5 w-5 text-gray-400 mr-2" />
-          <Input
-            type="text"
-            placeholder="Buscar assinaturas..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="border-0 focus-visible:ring-0 focus-visible:ring-transparent"
-          />
-        </div>
-
-        {/* Lista de assinaturas filtrada pelo termo de busca */}
+        {/* Removendo o campo de busca duplicado e usando apenas o do componente SubscriptionList */}
         <SubscriptionList 
           key={refreshKey} 
-          searchTerm={searchTerm} 
+          searchTerm={searchTerm}
+          onSearchChange={handleSearchChange}
         />
       </div>
     </AdminLayout>

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
@@ -44,12 +43,17 @@ type SortDirection = 'asc' | 'desc';
 
 interface SubscriptionListProps {
   searchTerm?: string;
+  onSearchChange?: (term: string) => void;
 }
 
-const SubscriptionList: React.FC<SubscriptionListProps> = ({ searchTerm = '' }) => {
+const SubscriptionList: React.FC<SubscriptionListProps> = ({ 
+  searchTerm = '', 
+  onSearchChange 
+}) => {
   const [subscriptions, setSubscriptions] = useState<SubscriptionData[]>([]);
   const [filteredSubscriptions, setFilteredSubscriptions] = useState<SubscriptionData[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [localSearchTerm, setLocalSearchTerm] = useState<string>(searchTerm);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState<boolean>(false);
   const [subscriptionToDelete, setSubscriptionToDelete] = useState<string | null>(null);
   const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
@@ -59,6 +63,11 @@ const SubscriptionList: React.FC<SubscriptionListProps> = ({ searchTerm = '' }) 
   const { toast } = useToast();
   const navigate = useNavigate();
 
+  // Sincronizar o termo de busca local com o termo externo
+  useEffect(() => {
+    setLocalSearchTerm(searchTerm);
+  }, [searchTerm]);
+
   // Buscar assinaturas quando o componente montar ou quando refreshKey mudar
   useEffect(() => {
     console.log('SubscriptionList mounted or refreshKey changed, fetching subscriptions...');
@@ -67,11 +76,11 @@ const SubscriptionList: React.FC<SubscriptionListProps> = ({ searchTerm = '' }) 
 
   // Filtrar assinaturas com base no termo de busca
   useEffect(() => {
-    console.log('Filtering subscriptions with search term:', searchTerm);
-    if (!searchTerm || searchTerm.trim() === '') {
+    console.log('Filtering subscriptions with search term:', localSearchTerm);
+    if (!localSearchTerm || localSearchTerm.trim() === '') {
       setFilteredSubscriptions(subscriptions);
     } else {
-      const lowercaseSearchTerm = searchTerm.toLowerCase();
+      const lowercaseSearchTerm = localSearchTerm.toLowerCase();
       const filtered = subscriptions.filter((subscription) => {
         return (
           subscription.title?.toLowerCase().includes(lowercaseSearchTerm) ||
@@ -84,7 +93,7 @@ const SubscriptionList: React.FC<SubscriptionListProps> = ({ searchTerm = '' }) 
       setFilteredSubscriptions(filtered);
       console.log(`Filtered to ${filtered.length} subscriptions`);
     }
-  }, [searchTerm, subscriptions]);
+  }, [localSearchTerm, subscriptions]);
 
   // Ordenar assinaturas quando o campo ou direção de ordenação mudar
   useEffect(() => {
@@ -377,6 +386,15 @@ const SubscriptionList: React.FC<SubscriptionListProps> = ({ searchTerm = '' }) 
     }
   };
 
+  // Atualizar o termo de busca e propagar a mudança para o componente pai
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setLocalSearchTerm(value);
+    if (onSearchChange) {
+      onSearchChange(value);
+    }
+  };
+
   console.log('Rendering SubscriptionList with', filteredSubscriptions.length, 'subscriptions');
   console.log('isLoading:', isLoading);
 
@@ -389,7 +407,8 @@ const SubscriptionList: React.FC<SubscriptionListProps> = ({ searchTerm = '' }) 
           <Input
             type="text"
             placeholder="Buscar assinaturas..."
-            value={searchTerm}
+            value={localSearchTerm}
+            onChange={handleSearchChange}
             className="border-0 focus-visible:ring-0 focus-visible:ring-transparent"
           />
         </div>
