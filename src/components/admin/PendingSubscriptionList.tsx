@@ -34,9 +34,24 @@ import {
 } from "@/components/ui/alert-dialog";
 import { SubscriptionData } from '@/types/subscriptionTypes';
 import { deleteSubscription, getAllSubscriptions, toggleFeaturedStatus, toggleVisibilityStatus } from '@/services/subscription-service';
-import { formatDate } from '@/utils/exportUtils';
 import { downloadSubscriptionAsTxt } from '@/utils/exportUtils';
 import { getWhatsAppShareLink, getTelegramShareLink } from '@/utils/shareUtils';
+
+// Add formatDate function if it's not exported from exportUtils
+const formatDate = (dateString: string | undefined): string => {
+  if (!dateString) return '-';
+  
+  // Handle cases where the date is already formatted
+  if (dateString.includes('/')) return dateString;
+  
+  try {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('pt-BR');
+  } catch (e) {
+    console.error('Error formatting date:', e);
+    return dateString;
+  }
+};
 
 type SortField = 'title' | 'price' | 'telegramUsername' | 'whatsappNumber' | 'featured' | 'addedDate' | 'visible';
 type SortDirection = 'asc' | 'desc';
@@ -68,8 +83,8 @@ const PendingSubscriptionList = () => {
       const lowercaseSearchTerm = searchTerm.toLowerCase();
       const filtered = subscriptions.filter((subscription) => {
         return (
-          subscription.title.toLowerCase().includes(lowercaseSearchTerm) ||
-          subscription.price.toLowerCase().includes(lowercaseSearchTerm) ||
+          subscription.title?.toLowerCase().includes(lowercaseSearchTerm) ||
+          subscription.price?.toLowerCase().includes(lowercaseSearchTerm) ||
           subscription.telegramUsername?.toLowerCase().includes(lowercaseSearchTerm) ||
           subscription.whatsappNumber?.toLowerCase().includes(lowercaseSearchTerm) ||
           subscription.addedDate?.toLowerCase().includes(lowercaseSearchTerm)
@@ -147,7 +162,7 @@ const PendingSubscriptionList = () => {
     });
     
     setFilteredSubscriptions(sorted);
-  }, [sortField, sortDirection, filteredSubscriptions]);
+  }, [sortField, sortDirection]);
 
   // Função para alterar a ordenação ao clicar em um cabeçalho da tabela
   const handleSort = (field: SortField) => {
