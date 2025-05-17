@@ -577,15 +577,6 @@ const SubscriptionList: React.FC<SubscriptionListProps> = ({ searchTerm = '' }) 
               ? "Não foram encontradas assinaturas com esse termo de busca." 
               : "Não há assinaturas cadastradas ainda."}
           </p>
-          {searchTerm && (
-            <Button 
-              variant="link" 
-              onClick={() => setSearchTerm('')}
-              className="mt-2"
-            >
-              Limpar busca
-            </Button>
-          )}
         </div>
       )}
 
