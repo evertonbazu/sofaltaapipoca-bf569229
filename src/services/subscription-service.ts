@@ -54,9 +54,11 @@ function mapToDbFormat(subscription: SubscriptionData) {
 export async function getAllSubscriptions(): Promise<SubscriptionData[]> {
   try {
     console.log('Requesting subscriptions from database...');
+    // Adicionar ordenação para garantir que as assinaturas vêm em ordem consistente
     const { data, error } = await supabase
       .from('subscriptions')
-      .select('*');
+      .select('*')
+      .order('featured', { ascending: false });
     
     if (error) {
       console.error('Database error:', error);
@@ -64,13 +66,16 @@ export async function getAllSubscriptions(): Promise<SubscriptionData[]> {
     }
 
     console.log(`Retrieved ${data?.length || 0} subscriptions from database`);
+    console.log('Subscription data sample:', data && data.length > 0 ? data[0] : 'No data');
     
     if (!data || data.length === 0) {
       console.log('No subscriptions found in database');
       return [];
     }
     
-    return data.map(mapToSubscriptionData);
+    const mappedData = data.map(mapToSubscriptionData);
+    console.log('Mapped data sample:', mappedData && mappedData.length > 0 ? mappedData[0] : 'No mapped data');
+    return mappedData;
   } catch (error: any) {
     console.error('Erro ao obter assinaturas:', error);
     throw error;

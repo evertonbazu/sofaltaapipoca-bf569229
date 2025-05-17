@@ -1,15 +1,26 @@
 
 import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
-import { Plus, Search } from 'lucide-react';
+import { Plus, Search, RefreshCw } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import AdminLayout from '@/components/admin/AdminLayout';
 import SubscriptionList from '@/components/admin/SubscriptionList';
 import { Input } from '@/components/ui/input';
+import { useToast } from '@/components/ui/use-toast';
 
 const Subscriptions = () => {
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState<string>('');
+  const { toast } = useToast();
+  const [refreshKey, setRefreshKey] = useState<number>(0); // Para forçar recarga do componente
+
+  const handleRefresh = () => {
+    toast({
+      title: "Atualizando lista de assinaturas",
+      description: "Buscando dados mais recentes do servidor...",
+    });
+    setRefreshKey(prev => prev + 1);
+  };
 
   return (
     <AdminLayout title="Gerenciar Assinaturas">
@@ -20,10 +31,23 @@ const Subscriptions = () => {
             Visualize, edite, aprove ou exclua assinaturas existentes.
           </p>
         </div>
-        <Button onClick={() => navigate('/admin/subscriptions/new')} className="flex items-center gap-1">
-          <Plus className="h-4 w-4" />
-          Nova Assinatura
-        </Button>
+        <div className="flex gap-2">
+          <Button 
+            variant="outline"
+            onClick={handleRefresh} 
+            className="flex items-center gap-1"
+          >
+            <RefreshCw className="h-4 w-4" />
+            Atualizar
+          </Button>
+          <Button 
+            onClick={() => navigate('/admin/subscriptions/new')} 
+            className="flex items-center gap-1"
+          >
+            <Plus className="h-4 w-4" />
+            Nova Assinatura
+          </Button>
+        </div>
       </div>
 
       <div className="space-y-4">
@@ -40,7 +64,10 @@ const Subscriptions = () => {
         </div>
 
         {/* Lista de assinaturas filtrada pelo termo de busca */}
-        <SubscriptionList searchTerm={searchTerm} />
+        <SubscriptionList 
+          key={refreshKey} 
+          searchTerm={searchTerm} 
+        />
       </div>
     </AdminLayout>
   );

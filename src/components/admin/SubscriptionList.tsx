@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
@@ -13,7 +14,8 @@ import {
   Send,
   MessageSquare,
   Eye,
-  EyeOff
+  EyeOff,
+  Search
 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -21,6 +23,7 @@ import { useToast } from "@/components/ui/use-toast";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
+import { Input } from "@/components/ui/input";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -375,6 +378,16 @@ const SubscriptionList: React.FC<SubscriptionListProps> = ({ searchTerm = '' }) 
     <div className="space-y-4">
       {/* Barra de pesquisa e ações em lote */}
       <div className="flex flex-col md:flex-row gap-4">
+        <div className="flex items-center border rounded-md bg-white p-2 flex-1">
+          <Search className="h-5 w-5 text-gray-400 mr-2" />
+          <Input
+            type="text"
+            placeholder="Buscar assinaturas..."
+            value={searchTerm}
+            onChange={(e) => console.log('Search term changed:', e.target.value)}
+            className="border-0 focus-visible:ring-0 focus-visible:ring-transparent"
+          />
+        </div>
         {selectedItems.size > 0 && (
           <Button 
             variant="destructive"
@@ -594,6 +607,13 @@ const SubscriptionList: React.FC<SubscriptionListProps> = ({ searchTerm = '' }) 
               ? "Não foram encontradas assinaturas com esse termo de busca." 
               : "Não há assinaturas cadastradas ainda."}
           </p>
+          <Button 
+            variant="link" 
+            onClick={fetchSubscriptions}
+            className="mt-4"
+          >
+            Recarregar lista
+          </Button>
         </div>
       )}
 
