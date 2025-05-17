@@ -103,7 +103,8 @@ export async function getMemberSubscriptions(): Promise<SubscriptionData[]> {
     const { data, error } = await supabase
       .from('subscriptions')
       .select('*')
-      .not('user_id', 'is', null);
+      .not('user_id', 'is', null)
+      .eq('visible', true);
     
     if (error) throw error;
     
@@ -206,6 +207,24 @@ export async function toggleFeaturedStatus(id: string, featured: boolean): Promi
     return mapToSubscriptionData(data);
   } catch (error: any) {
     console.error('Erro ao alternar status de destaque:', error);
+    throw error;
+  }
+}
+
+// Alternar o status de visibilidade de uma assinatura
+export async function toggleVisibilityStatus(id: string, visible: boolean): Promise<SubscriptionData> {
+  try {
+    const { data, error } = await supabase
+      .from('subscriptions')
+      .update({ visible })
+      .eq('id', id)
+      .select()
+      .single();
+    
+    if (error) throw error;
+    return mapToSubscriptionData(data);
+  } catch (error: any) {
+    console.error('Erro ao alternar status de visibilidade:', error);
     throw error;
   }
 }

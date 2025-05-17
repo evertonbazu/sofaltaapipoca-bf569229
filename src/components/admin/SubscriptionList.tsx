@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
@@ -12,8 +11,10 @@ import {
   ArrowDown,
   User,
   FileText,
-  Send, // Changed from Telegram to Send, which is available in lucide-react
-  MessageSquare
+  Send,
+  MessageSquare,
+  Eye,
+  EyeOff
 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -21,6 +22,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { useToast } from "@/components/ui/use-toast";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
+import { Switch } from "@/components/ui/switch";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -32,11 +34,11 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { SubscriptionData } from '@/types/subscriptionTypes';
-import { deleteSubscription, getAllSubscriptions, toggleFeaturedStatus } from '@/services/subscription-service';
+import { deleteSubscription, getAllSubscriptions, toggleFeaturedStatus, toggleVisibilityStatus } from '@/services/subscription-service';
 import { downloadSubscriptionAsTxt } from '@/utils/exportUtils';
 import { getWhatsAppShareLink, getTelegramShareLink } from '@/utils/shareUtils';
 
-type SortField = 'title' | 'price' | 'status' | 'paymentMethod' | 'telegramUsername' | 'whatsappNumber' | 'featured' | 'addedDate';
+type SortField = 'title' | 'price' | 'access' | 'telegramUsername' | 'whatsappNumber' | 'featured' | 'addedDate' | 'visible';
 type SortDirection = 'asc' | 'desc';
 
 const SubscriptionList = () => {
@@ -68,8 +70,7 @@ const SubscriptionList = () => {
         return (
           subscription.title.toLowerCase().includes(lowercaseSearchTerm) ||
           subscription.price.toLowerCase().includes(lowercaseSearchTerm) ||
-          subscription.status.toLowerCase().includes(lowercaseSearchTerm) ||
-          subscription.paymentMethod.toLowerCase().includes(lowercaseSearchTerm) ||
+          subscription.access.toLowerCase().includes(lowercaseSearchTerm) ||
           subscription.telegramUsername?.toLowerCase().includes(lowercaseSearchTerm) ||
           subscription.whatsappNumber?.toLowerCase().includes(lowercaseSearchTerm) ||
           subscription.addedDate?.toLowerCase().includes(lowercaseSearchTerm)
@@ -98,13 +99,9 @@ const SubscriptionList = () => {
           valueA = a.price?.toLowerCase() || '';
           valueB = b.price?.toLowerCase() || '';
           break;
-        case 'status':
-          valueA = a.status?.toLowerCase() || '';
-          valueB = b.status?.toLowerCase() || '';
-          break;
-        case 'paymentMethod':
-          valueA = a.paymentMethod?.toLowerCase() || '';
-          valueB = b.paymentMethod?.toLowerCase() || '';
+        case 'access':
+          valueA = a.access?.toLowerCase() || '';
+          valueB = b.access?.toLowerCase() || '';
           break;
         case 'telegramUsername':
           valueA = a.telegramUsername?.toLowerCase() || '';
@@ -117,6 +114,10 @@ const SubscriptionList = () => {
         case 'featured':
           valueA = a.featured || false;
           valueB = b.featured || false;
+          break;
+        case 'visible':
+          valueA = a.visible || false;
+          valueB = b.visible || false;
           break;
         case 'addedDate':
           // Para datas no formato DD/MM/YYYY, convertemos para YYYY/MM/DD para ordenação
@@ -254,6 +255,30 @@ const SubscriptionList = () => {
     }
   };
 
+  // Alternar status de visibilidade
+  const handleToggleVisibility = async (id: string, currentStatus: boolean) => {
+    try {
+      await toggleVisibilityStatus(id, !currentStatus);
+      
+      toast({
+        title: currentStatus ? "Assinatura ocultada" : "Assinatura aprovada",
+        description: currentStatus 
+          ? "A assinatura não será exibida no site." 
+          : "A assinatura será exibida no site.",
+      });
+      
+      // Atualizar lista após alteração
+      fetchSubscriptions();
+    } catch (error) {
+      toast({
+        title: "Erro ao alterar visibilidade",
+        description: "Não foi possível alterar o status de visibilidade.",
+        variant: "destructive",
+      });
+      console.error('Erro ao alternar visibilidade:', error);
+    }
+  };
+
   // Gerenciar seleção de itens
   const toggleItemSelection = (id: string) => {
     const newSelectedItems = new Set(selectedItems);
@@ -374,15 +399,9 @@ const SubscriptionList = () => {
                 </TableHead>
                 <TableHead 
                   className="hidden md:table-cell cursor-pointer"
-                  onClick={() => handleSort('status')}
+                  onClick={() => handleSort('access')}
                 >
-                  Status {renderSortIndicator('status')}
-                </TableHead>
-                <TableHead 
-                  className="hidden md:table-cell cursor-pointer"
-                  onClick={() => handleSort('paymentMethod')}
-                >
-                  Pagamento {renderSortIndicator('paymentMethod')}
+                  Acesso {renderSortIndicator('access')}
                 </TableHead>
                 <TableHead 
                   className="hidden md:table-cell cursor-pointer"
@@ -407,6 +426,12 @@ const SubscriptionList = () => {
                   onClick={() => handleSort('featured')}
                 >
                   Destaque {renderSortIndicator('featured')}
+                </TableHead>
+                <TableHead 
+                  className="hidden md:table-cell cursor-pointer"
+                  onClick={() => handleSort('visible')}
+                >
+                  Aprovado? {renderSortIndicator('visible')}
                 </TableHead>
                 <TableHead>Ações</TableHead>
               </TableRow>
@@ -434,13 +459,21 @@ const SubscriptionList = () => {
                     </div>
                   </TableCell>
                   <TableCell>{subscription.price}</TableCell>
-                  <TableCell className="hidden md:table-cell">{subscription.status}</TableCell>
-                  <TableCell className="hidden md:table-cell">{subscription.paymentMethod}</TableCell>
+                  <TableCell className="hidden md:table-cell">{subscription.access}</TableCell>
                   <TableCell className="hidden md:table-cell">{subscription.telegramUsername || '-'}</TableCell>
                   <TableCell className="hidden md:table-cell">{subscription.whatsappNumber || '-'}</TableCell>
                   <TableCell className="hidden md:table-cell">{subscription.addedDate || '-'}</TableCell>
                   <TableCell className="hidden md:table-cell">
                     {subscription.featured ? 'Sim' : 'Não'}
+                  </TableCell>
+                  <TableCell className="hidden md:table-cell">
+                    <div className="flex items-center">
+                      <Switch
+                        checked={subscription.visible ?? true}
+                        onCheckedChange={() => handleToggleVisibility(subscription.id!, subscription.visible ?? true)}
+                      />
+                      <span className="ml-2">{subscription.visible ? 'Sim' : 'Não'}</span>
+                    </div>
                   </TableCell>
                   <TableCell>
                     <div className="flex flex-col gap-2">
