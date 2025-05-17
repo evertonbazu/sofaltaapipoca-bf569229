@@ -59,13 +59,15 @@ const SubscriptionList: React.FC<SubscriptionListProps> = ({ searchTerm = '' }) 
   const { toast } = useToast();
   const navigate = useNavigate();
 
-  // Buscar assinaturas quando o componente montar
+  // Buscar assinaturas quando o componente montar ou quando refreshKey mudar
   useEffect(() => {
+    console.log('SubscriptionList mounted or refreshKey changed, fetching subscriptions...');
     fetchSubscriptions();
   }, []);
 
   // Filtrar assinaturas com base no termo de busca
   useEffect(() => {
+    console.log('Filtering subscriptions with search term:', searchTerm);
     if (!searchTerm || searchTerm.trim() === '') {
       setFilteredSubscriptions(subscriptions);
     } else {
@@ -80,6 +82,7 @@ const SubscriptionList: React.FC<SubscriptionListProps> = ({ searchTerm = '' }) 
         );
       });
       setFilteredSubscriptions(filtered);
+      console.log(`Filtered to ${filtered.length} subscriptions`);
     }
   }, [searchTerm, subscriptions]);
 
@@ -151,7 +154,7 @@ const SubscriptionList: React.FC<SubscriptionListProps> = ({ searchTerm = '' }) 
     });
     
     setFilteredSubscriptions(sorted);
-  }, [sortField, sortDirection, filteredSubscriptions]);
+  }, [sortField, sortDirection]);
 
   // Função para alterar a ordenação ao clicar em um cabeçalho da tabela
   const handleSort = (field: SortField) => {
@@ -181,17 +184,20 @@ const SubscriptionList: React.FC<SubscriptionListProps> = ({ searchTerm = '' }) 
   const fetchSubscriptions = async () => {
     setIsLoading(true);
     try {
-      console.log('Fetching subscriptions...');
+      console.log('Fetching all subscriptions from the database...');
       const data = await getAllSubscriptions();
       console.log('Subscriptions loaded:', data.length, data);
       
       if (data && data.length > 0) {
+        // Update the state with all subscriptions
         setSubscriptions(data);
         setFilteredSubscriptions(data);
         
-        // Forçar ordenação inicial por data (mais recentes primeiro)
+        // Force initial sorting by date (newest first)
         setSortField('addedDate');
         setSortDirection('desc');
+        
+        console.log(`Successfully loaded ${data.length} subscriptions`);
       } else {
         console.log('No subscriptions found or data is empty');
         setSubscriptions([]);
@@ -384,7 +390,6 @@ const SubscriptionList: React.FC<SubscriptionListProps> = ({ searchTerm = '' }) 
             type="text"
             placeholder="Buscar assinaturas..."
             value={searchTerm}
-            onChange={(e) => console.log('Search term changed:', e.target.value)}
             className="border-0 focus-visible:ring-0 focus-visible:ring-transparent"
           />
         </div>
