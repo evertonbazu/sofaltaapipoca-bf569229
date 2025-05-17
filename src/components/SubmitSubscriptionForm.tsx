@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -44,7 +45,8 @@ const PREDEFINED_TITLES = [
   "OUTRO",
 ];
 
-// Schema para validação do formulário - Agora todos os campos são obrigatórios
+// Schema para validação do formulário
+// Telegram é opcional, todos os outros campos são obrigatórios
 const formSchema = z.object({
   title: z.string().min(1, { message: "O título é obrigatório" }),
   customTitle: z.string().min(1, { message: "O título personalizado é obrigatório" }).optional().or(z.literal("")),
@@ -55,7 +57,7 @@ const formSchema = z.object({
   access: z.string().min(1, { message: "O acesso é obrigatório" }),
   customAccess: z.string().min(1, { message: "O tipo de acesso personalizado é obrigatório" }).optional().or(z.literal("")),
   whatsappNumber: z.string().min(1, { message: "O número do WhatsApp é obrigatório" }),
-  telegramUsername: z.string().min(1, { message: "O usuário do Telegram é obrigatório" }),
+  telegramUsername: z.string().optional().or(z.literal("")),
   pixKey: z.string().min(1, { message: "A chave PIX é obrigatória" }),
   category: z.string().min(1, { message: "A categoria é obrigatória" }).optional().or(z.literal("")),
 });
@@ -191,7 +193,7 @@ const SubmitSubscriptionForm = () => {
       // Adicionar asterisco ao título para anúncios de membros
       const titleWithAsterisk = `* ${finalTitle.toUpperCase()}`;
       
-      // Enviar para o banco de dados - Agora definir visible como false para novos anúncios
+      // Enviar para o banco de dados - Definir visible como false para novos anúncios
       const { error } = await supabase
         .from('subscriptions')
         .insert({
@@ -489,15 +491,15 @@ const SubmitSubscriptionForm = () => {
                 )}
               />
               
-              {/* Telegram */}
+              {/* Telegram - Agora opcional */}
               <FormField
                 control={form.control}
                 name="telegramUsername"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Usuário do Telegram</FormLabel>
+                    <FormLabel>Usuário do Telegram (opcional)</FormLabel>
                     <FormControl>
-                      <Input placeholder="usuariotelegram" {...field} />
+                      <Input placeholder="@usuariodotelegram" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>

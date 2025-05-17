@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
@@ -38,7 +39,7 @@ import { deleteSubscription, getAllSubscriptions, toggleFeaturedStatus, toggleVi
 import { downloadSubscriptionAsTxt } from '@/utils/exportUtils';
 import { getWhatsAppShareLink, getTelegramShareLink } from '@/utils/shareUtils';
 
-type SortField = 'title' | 'price' | 'access' | 'telegramUsername' | 'whatsappNumber' | 'featured' | 'addedDate' | 'visible';
+type SortField = 'title' | 'price' | 'telegramUsername' | 'whatsappNumber' | 'featured' | 'addedDate' | 'visible';
 type SortDirection = 'asc' | 'desc';
 
 const SubscriptionList = () => {
@@ -50,8 +51,8 @@ const SubscriptionList = () => {
   const [subscriptionToDelete, setSubscriptionToDelete] = useState<string | null>(null);
   const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
   const [isMultiDeleteDialogOpen, setIsMultiDeleteDialogOpen] = useState<boolean>(false);
-  const [sortField, setSortField] = useState<SortField | null>(null);
-  const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
+  const [sortField, setSortField] = useState<SortField>('addedDate');
+  const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -70,7 +71,6 @@ const SubscriptionList = () => {
         return (
           subscription.title.toLowerCase().includes(lowercaseSearchTerm) ||
           subscription.price.toLowerCase().includes(lowercaseSearchTerm) ||
-          subscription.access.toLowerCase().includes(lowercaseSearchTerm) ||
           subscription.telegramUsername?.toLowerCase().includes(lowercaseSearchTerm) ||
           subscription.whatsappNumber?.toLowerCase().includes(lowercaseSearchTerm) ||
           subscription.addedDate?.toLowerCase().includes(lowercaseSearchTerm)
@@ -98,10 +98,6 @@ const SubscriptionList = () => {
         case 'price':
           valueA = a.price?.toLowerCase() || '';
           valueB = b.price?.toLowerCase() || '';
-          break;
-        case 'access':
-          valueA = a.access?.toLowerCase() || '';
-          valueB = b.access?.toLowerCase() || '';
           break;
         case 'telegramUsername':
           valueA = a.telegramUsername?.toLowerCase() || '';
@@ -152,7 +148,7 @@ const SubscriptionList = () => {
     });
     
     setFilteredSubscriptions(sorted);
-  }, [sortField, sortDirection]);
+  }, [sortField, sortDirection, filteredSubscriptions]);
 
   // Função para alterar a ordenação ao clicar em um cabeçalho da tabela
   const handleSort = (field: SortField) => {
@@ -186,6 +182,10 @@ const SubscriptionList = () => {
       console.log('Subscriptions loaded:', data);
       setSubscriptions(data);
       setFilteredSubscriptions(data);
+      
+      // Forçar ordenação inicial por data (mais recentes primeiro)
+      setSortField('addedDate');
+      setSortDirection('desc');
     } catch (error) {
       toast({
         title: "Erro ao carregar assinaturas",
@@ -196,6 +196,20 @@ const SubscriptionList = () => {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  // Gerar link para Telegram
+  const getTelegramLink = (username: string) => {
+    if (!username) return '#';
+    // Remove @ if present at the beginning of the username
+    const cleanUsername = username.startsWith('@') ? username.substring(1) : username;
+    return `https://telegram.me/${cleanUsername}`;
+  };
+
+  // Gerar link para WhatsApp
+  const getWhatsappLink = (number: string) => {
+    if (!number) return '#';
+    return `https://wa.me/${number}`;
   };
 
   // Abrir diálogo de confirmação para excluir
@@ -399,12 +413,6 @@ const SubscriptionList = () => {
                 </TableHead>
                 <TableHead 
                   className="hidden md:table-cell cursor-pointer"
-                  onClick={() => handleSort('access')}
-                >
-                  Acesso {renderSortIndicator('access')}
-                </TableHead>
-                <TableHead 
-                  className="hidden md:table-cell cursor-pointer"
                   onClick={() => handleSort('telegramUsername')}
                 >
                   Telegram {renderSortIndicator('telegramUsername')}
@@ -459,9 +467,32 @@ const SubscriptionList = () => {
                     </div>
                   </TableCell>
                   <TableCell>{subscription.price}</TableCell>
-                  <TableCell className="hidden md:table-cell">{subscription.access}</TableCell>
-                  <TableCell className="hidden md:table-cell">{subscription.telegramUsername || '-'}</TableCell>
-                  <TableCell className="hidden md:table-cell">{subscription.whatsappNumber || '-'}</TableCell>
+                  <TableCell className="hidden md:table-cell">
+                    {subscription.telegramUsername ? (
+                      <a 
+                        href={getTelegramLink(subscription.telegramUsername)} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="text-blue-600 hover:underline flex items-center"
+                      >
+                        <Send className="h-3 w-3 mr-1" />
+                        {subscription.telegramUsername}
+                      </a>
+                    ) : '-'}
+                  </TableCell>
+                  <TableCell className="hidden md:table-cell">
+                    {subscription.whatsappNumber ? (
+                      <a 
+                        href={getWhatsappLink(subscription.whatsappNumber)} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="text-green-600 hover:underline flex items-center"
+                      >
+                        <MessageSquare className="h-3 w-3 mr-1" />
+                        {subscription.whatsappNumber}
+                      </a>
+                    ) : '-'}
+                  </TableCell>
                   <TableCell className="hidden md:table-cell">{subscription.addedDate || '-'}</TableCell>
                   <TableCell className="hidden md:table-cell">
                     {subscription.featured ? 'Sim' : 'Não'}
