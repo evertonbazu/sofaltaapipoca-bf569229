@@ -2,6 +2,18 @@
 import { SubscriptionData } from '@/types/subscriptionTypes';
 
 /**
+ * Formata uma data para o formato DD/MM/YYYY
+ */
+export const formatDate = (dateString: string): string => {
+  const date = new Date(dateString);
+  return date.toLocaleDateString('pt-BR', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric'
+  });
+};
+
+/**
  * Formata dados da assinatura para um arquivo de texto usando o modelo especificado
  */
 export const formatSubscriptionAsTxt = (subscription: SubscriptionData): string => {
