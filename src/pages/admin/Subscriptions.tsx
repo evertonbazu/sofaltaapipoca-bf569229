@@ -15,7 +15,7 @@ const Subscriptions = () => {
         <div>
           <h2 className="text-lg font-medium">Lista de Assinaturas</h2>
           <p className="text-sm text-gray-500">
-            Visualize, edite ou exclua assinaturas existentes.
+            Visualize, edite, aprove ou exclua assinaturas existentes.
           </p>
         </div>
         <Button onClick={() => navigate('/admin/subscriptions/new')} className="flex items-center gap-1">

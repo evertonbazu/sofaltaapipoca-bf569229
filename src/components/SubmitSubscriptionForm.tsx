@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -45,20 +44,20 @@ const PREDEFINED_TITLES = [
   "OUTRO",
 ];
 
-// Schema para validação do formulário
+// Schema para validação do formulário - Agora todos os campos são obrigatórios
 const formSchema = z.object({
   title: z.string().min(1, { message: "O título é obrigatório" }),
-  customTitle: z.string().optional(),
+  customTitle: z.string().min(1, { message: "O título personalizado é obrigatório" }).optional().or(z.literal("")),
   price: z.string().min(1, { message: "O preço é obrigatório" }),
   paymentMethod: z.string().min(1, { message: "O método de pagamento é obrigatório" }),
-  customPaymentMethod: z.string().optional(),
+  customPaymentMethod: z.string().min(1, { message: "O método de pagamento personalizado é obrigatório" }).optional().or(z.literal("")),
   status: z.string().min(1, { message: "O status é obrigatório" }),
   access: z.string().min(1, { message: "O acesso é obrigatório" }),
-  customAccess: z.string().optional(),
+  customAccess: z.string().min(1, { message: "O tipo de acesso personalizado é obrigatório" }).optional().or(z.literal("")),
   whatsappNumber: z.string().min(1, { message: "O número do WhatsApp é obrigatório" }),
   telegramUsername: z.string().min(1, { message: "O usuário do Telegram é obrigatório" }),
-  pixKey: z.string().optional(),
-  category: z.string().optional(),
+  pixKey: z.string().min(1, { message: "A chave PIX é obrigatória" }),
+  category: z.string().min(1, { message: "A categoria é obrigatória" }).optional().or(z.literal("")),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -124,7 +123,6 @@ const SubmitSubscriptionForm = () => {
     },
   });
   
-  // Manipular mudança de método de pagamento
   const handlePaymentMethodChange = (value: string) => {
     setSelectedPaymentMethod(value);
     form.setValue("paymentMethod", value);
@@ -154,6 +152,24 @@ const SubmitSubscriptionForm = () => {
     }
   };
   
+  // Formatação de preço em reais
+  const handlePriceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    let value = e.target.value;
+    
+    // Garantir que sempre começa com R$ 
+    if (!value.startsWith("R$ ")) {
+      value = "R$ " + value.replace("R$ ", "");
+    }
+    
+    // Remover qualquer caractere não numérico, exceto vírgula e ponto
+    const numericValue = value.substring(3).replace(/[^\d,\.]/g, "");
+    
+    // Formatar o valor como moeda brasileira
+    let formattedValue = "R$ " + numericValue;
+    
+    form.setValue("price", formattedValue);
+  };
+  
   // Manipulador para envio do formulário
   const onSubmit = async (data: FormValues) => {
     setIsLoading(true);
@@ -175,7 +191,7 @@ const SubmitSubscriptionForm = () => {
       // Adicionar asterisco ao título para anúncios de membros
       const titleWithAsterisk = `* ${finalTitle.toUpperCase()}`;
       
-      // Enviar para o banco de dados - Removendo o campo visible que está causando erro
+      // Enviar para o banco de dados - Agora definir visible como false para novos anúncios
       const { error } = await supabase
         .from('subscriptions')
         .insert({
@@ -192,15 +208,15 @@ const SubmitSubscriptionForm = () => {
           code: code,
           user_id: userId,
           pix_key: data.pixKey,
-          featured: false
-          // Removido o campo visible que estava causando o erro
+          featured: false,
+          visible: false // Definir como não aprovado por padrão
         });
       
       if (error) throw error;
       
       toast({
         title: "Anúncio enviado",
-        description: "Seu anúncio foi adicionado com sucesso e já está visível no site.",
+        description: "Seu anúncio foi enviado com sucesso e será revisado pelo administrador.",
       });
       
       // Limpar formulário
@@ -285,7 +301,14 @@ const SubmitSubscriptionForm = () => {
                   <FormItem>
                     <FormLabel>Preço</FormLabel>
                     <FormControl>
-                      <Input placeholder="R$ 19,90" {...field} />
+                      <Input 
+                        placeholder="R$ 19,90" 
+                        {...field} 
+                        onChange={(e) => {
+                          handlePriceChange(e);
+                          field.onChange(e);
+                        }}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
