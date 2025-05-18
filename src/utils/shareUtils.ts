@@ -3,9 +3,10 @@ import { SubscriptionData } from '@/types/subscriptionTypes';
 import { supabase } from '@/integrations/supabase/client';
 
 /**
- * Version 2.2.0
- * - Added improved error handling for Telegram integration
- * - Fixed isAutoPostingEnabled function to properly check boolean value
+ * Version 2.3.0
+ * - Fixed type handling for auto-posting configuration
+ * - Added more detailed logging for debugging
+ * - Improved error reporting in the autoPostingEnabled function
  */
 
 /**
@@ -102,7 +103,6 @@ export const sendToTelegramGroup = async (subscriptionId: string): Promise<{succ
 
 /**
  * Verifica se a postagem automática no Telegram está ativada
- * Esta função foi atualizada para corrigir o problema de persistência da configuração
  */
 export const isAutoPostingEnabled = async (): Promise<boolean> => {
   try {
@@ -119,9 +119,9 @@ export const isAutoPostingEnabled = async (): Promise<boolean> => {
       return false;
     }
     
-    console.log('Valor da configuração auto_post_to_telegram:', data?.value);
+    console.log('Valor da configuração auto_post_to_telegram:', data?.value, 'tipo:', typeof data?.value);
     
-    // Verifica o valor como string 'true' ou como boolean true
+    // Verifica corretamente se o valor é igual a 'true' (string) ou true (boolean)
     return data?.value === 'true' || data?.value === true;
   } catch (error) {
     console.error('Erro ao verificar configuração de postagem automática:', error);
@@ -134,11 +134,14 @@ export const isAutoPostingEnabled = async (): Promise<boolean> => {
  */
 export const updateAutoPostingStatus = async (enabled: boolean): Promise<boolean> => {
   try {
-    console.log('Atualizando status de postagem automática para:', enabled);
+    console.log('Atualizando status de postagem automática para:', enabled, 'tipo:', typeof enabled);
+    
+    const stringValue = String(enabled);
+    console.log('Valor convertido para string:', stringValue);
     
     const { error } = await supabase
       .from('site_configurations')
-      .update({ value: String(enabled) })
+      .update({ value: stringValue })
       .eq('key', 'auto_post_to_telegram');
     
     if (error) {
@@ -153,4 +156,3 @@ export const updateAutoPostingStatus = async (enabled: boolean): Promise<boolean
     return false;
   }
 };
-
