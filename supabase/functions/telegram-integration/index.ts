@@ -18,6 +18,9 @@ function formatSubscriptionForSharing(subscription: any): string {
   // Price
   content += `🏦 ${subscription.price}\n`;
   
+  // Payment method (always include)
+  content += `🤝🏼 ${subscription.payment_method}\n`;
+  
   // Status
   content += `📌 ${subscription.status}\n`;
   
@@ -38,14 +41,6 @@ function formatSubscriptionForSharing(subscription: any): string {
     content += `\n📅 Adicionado em: ${subscription.added_date}`;
   }
   
-  // Subscription code
-  if (subscription.code) {
-    content += `\n🔑 Código: ${subscription.code}`;
-  }
-  
-  // Note that it was posted automatically
-  content += `\n\n✨ Enviado automaticamente por SóFaltaAPipoca`;
-  
   return content;
 }
 
@@ -53,11 +48,13 @@ function formatSubscriptionForSharing(subscription: any): string {
 async function sendTelegramMessage(botToken: string, chatId: string, text: string) {
   console.log(`Sending message to Telegram. Chat ID: ${chatId}`);
   
-  // Ensure chatId is properly formatted
+  // Ensure chatId is properly formatted for supergroups
   let formattedChatId = chatId;
-  if (!chatId.startsWith('-') && !chatId.startsWith('@')) {
-    // If it's a numeric group ID without the hyphen, add it
-    // Telegram group IDs typically start with -100 for supergroups
+  if (chatId.startsWith('100') && !chatId.startsWith('-100')) {
+    // If it's a numeric group ID that starts with 100 but not with -100, add the hyphen
+    formattedChatId = `-${chatId}`;
+  } else if (!chatId.startsWith('-') && !chatId.startsWith('@')) {
+    // If it's a numeric group ID without the hyphen, add it with -100 prefix
     formattedChatId = `-100${chatId}`;
   }
   

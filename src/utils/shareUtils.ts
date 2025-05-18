@@ -15,15 +15,20 @@ export const formatSubscriptionForSharing = (subscription: SubscriptionData): st
   // Price
   content += `🏦 ${subscription.price}\n`;
   
+  // Payment method (added)
+  if (subscription.paymentMethod) {
+    content += `🤝🏼 ${subscription.paymentMethod}\n`;
+  }
+  
   // Status
-  content += `📌${subscription.status}\n`;
+  content += `📌 ${subscription.status}\n`;
   
   // Access method
   content += `🔐 ${subscription.access}\n`;
   
   // Contact methods
   if (subscription.telegramUsername) {
-    content += `📩${subscription.telegramUsername}\n`;
+    content += `📩 ${subscription.telegramUsername}\n`;
   }
   
   if (subscription.whatsappNumber) {
