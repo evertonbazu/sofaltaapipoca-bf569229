@@ -23,14 +23,15 @@ import { Separator } from '@/components/ui/separator';
 import { getSiteConfig, updateSiteConfig } from '@/services/subscription-service';
 import { Loader2, Send, Info } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
-import { updateAutoPostingStatus } from '@/utils/shareUtils';
+import { updateAutoPostingStatus, toBooleanSafe } from '@/utils/shareUtils';
 
-// Versão atual: 2.3.0
+// Versão atual: 2.4.0
 // Alterações:
+// - 2.4.0: Correção de problemas adicionais de tipo e implementação de função utilitária toBooleanSafe
 // - 2.3.0: Correção do problema de tipo na configuração de auto-postagem
 // - 2.2.0: Correção da persistência das configurações de integração com Telegram
 // - 2.1.1: Versão anterior
-const APP_VERSION = "2.3.0";
+const APP_VERSION = "2.4.0";
 
 const Settings = () => {
   const { toast } = useToast();
@@ -81,10 +82,12 @@ const Settings = () => {
         if (subtitle) setSiteSubtitle(subtitle);
         if (whatsapp) setContactWhatsapp(whatsapp);
         if (version) setAppVersion(version);
-        // Corrigido: Conversão explícita para booleano
+        
+        // Usar função utilitária para conversão segura para booleano
         if (featuredSection !== null) {
-          setShowFeaturedSection(featuredSection === 'true' || featuredSection === true);
+          setShowFeaturedSection(toBooleanSafe(featuredSection));
         }
+        
         if (primary) setPrimaryColor(primary);
         if (secondary) setSecondaryColor(secondary);
         
@@ -93,9 +96,8 @@ const Settings = () => {
         if (tgGroupId) setTelegramGroupId(tgGroupId);
         
         // Verificar se a configuração auto_post_to_telegram existe e converter para boolean
-        // Corrigido: Verificação de tipo e conversão explícita para booleano
         if (autoPostTg !== null) {
-          const isEnabled = autoPostTg === 'true' || autoPostTg === true;
+          const isEnabled = toBooleanSafe(autoPostTg);
           console.log('Auto post to Telegram setting:', autoPostTg, '-> converted to:', isEnabled);
           setAutoPostToTelegram(isEnabled);
         }

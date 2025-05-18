@@ -1,8 +1,12 @@
-
 import { SubscriptionData } from '@/types/subscriptionTypes';
 import { supabase } from '@/integrations/supabase/client';
 
 /**
+ * Version 2.4.0
+ * - Fixed additional type handling issues
+ * - Improved string-to-boolean conversion logic
+ * - Better handling of configuration values with strict typing
+ * 
  * Version 2.3.0
  * - Fixed type handling for auto-posting configuration
  * - Added more detailed logging for debugging
@@ -102,6 +106,27 @@ export const sendToTelegramGroup = async (subscriptionId: string): Promise<{succ
 };
 
 /**
+ * Helper function to convert any value to a proper boolean
+ * This ensures consistent boolean conversion throughout the app
+ */
+export const toBooleanSafe = (value: any): boolean => {
+  if (typeof value === 'boolean') {
+    return value;
+  }
+  
+  if (typeof value === 'string') {
+    const lowercaseValue = value.toLowerCase();
+    return lowercaseValue === 'true' || lowercaseValue === '1' || lowercaseValue === 'yes';
+  }
+  
+  if (typeof value === 'number') {
+    return value === 1;
+  }
+  
+  return false;
+};
+
+/**
  * Verifica se a postagem automática no Telegram está ativada
  */
 export const isAutoPostingEnabled = async (): Promise<boolean> => {
@@ -121,8 +146,8 @@ export const isAutoPostingEnabled = async (): Promise<boolean> => {
     
     console.log('Valor da configuração auto_post_to_telegram:', data?.value, 'tipo:', typeof data?.value);
     
-    // Verifica corretamente se o valor é igual a 'true' (string) ou true (boolean)
-    return data?.value === 'true' || data?.value === true;
+    // Use the helper function for safe boolean conversion
+    return toBooleanSafe(data?.value);
   } catch (error) {
     console.error('Erro ao verificar configuração de postagem automática:', error);
     return false;
