@@ -1,15 +1,17 @@
 
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+// Follow this setup guide to integrate the Deno language server with your editor:
+// https://deno.land/manual/getting_started/setup_your_environment
+// This enables autocomplete, go to definition, etc.
 
-// CORS configuration to allow calls from the web application
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.31.0';
+import { corsHeaders } from '../_shared/cors.ts';
 
-// Format subscription for sharing
-function formatSubscriptionForSharing(subscription: any): string {
+const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? '';
+const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY') ?? '';
+const supabase = createClient(supabaseUrl, supabaseAnonKey);
+
+// Função para formatar o conteúdo de uma assinatura para o Telegram
+function formatSubscriptionForTelegram(subscription: any) {
   let content = '';
   
   // Title with icon
@@ -36,7 +38,7 @@ function formatSubscriptionForSharing(subscription: any): string {
     content += `📱 https://wa.me/${subscription.whatsapp_number}\n`;
   }
   
-  // Added date
+  // Date added
   if (subscription.added_date) {
     content += `\n📅 Adicionado em: ${subscription.added_date}`;
   }
@@ -44,7 +46,7 @@ function formatSubscriptionForSharing(subscription: any): string {
   return content;
 }
 
-// Send message to Telegram
+// Função auxiliar para enviar mensagem para o Telegram
 async function sendTelegramMessage(botToken: string, chatId: string, text: string) {
   console.log(`Sending message to Telegram. Chat ID: ${chatId}`);
   
@@ -58,232 +60,182 @@ async function sendTelegramMessage(botToken: string, chatId: string, text: strin
     formattedChatId = `-100${chatId}`;
   }
   
-  const url = `https://api.telegram.org/bot${botToken}/sendMessage`;
+  const apiUrl = `https://api.telegram.org/bot${botToken}/sendMessage`;
+  const options = {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      chat_id: formattedChatId,
+      text: text,
+      parse_mode: 'HTML'
+    })
+  };
   
   try {
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        chat_id: formattedChatId,
-        text: text,
-        parse_mode: 'HTML',
-      }),
-    });
-    
+    const response = await fetch(apiUrl, options);
     const responseData = await response.json();
+    
     console.log('Telegram API response:', JSON.stringify(responseData));
     
-    if (!response.ok) {
-      console.error('Telegram API error:', responseData);
-      return {
-        success: false,
-        error: `Telegram API error: ${responseData.description || 'Unknown error'}`
-      };
+    if (!responseData.ok) {
+      throw new Error(`Telegram API error: ${responseData.description}`);
     }
     
     return { success: true };
   } catch (error) {
     console.error('Error sending Telegram message:', error);
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : 'Unknown error'
-    };
+    throw error;
   }
 }
 
-// Get site configuration
-async function getSiteConfig(supabase: any, key: string): Promise<string | null> {
-  const { data, error } = await supabase
-    .from('site_configurations')
-    .select('value')
-    .eq('key', key)
-    .maybeSingle();
-  
-  if (error) {
-    console.error(`Error getting site config ${key}:`, error);
-    return null;
-  }
-  
-  return data?.value || null;
-}
-
-// Edge function handler
-serve(async (req) => {
-  // Handle CORS for OPTIONS requests
-  if (req.method === 'OPTIONS') {
-    return new Response(null, { 
-      status: 204, 
-      headers: corsHeaders 
-    });
-  }
-
+// Função para obter as configurações do Telegram do banco de dados
+async function getTelegramConfig() {
   try {
-    // Create Supabase client with the URL and anon key from environment variables
-    const supabaseUrl = Deno.env.get('SUPABASE_URL') as string;
-    const supabaseKey = Deno.env.get('SUPABASE_ANON_KEY') as string;
-    const supabase = createClient(supabaseUrl, supabaseKey);
-
-    // Get request data
-    const requestData = await req.json();
-
-    // Check the requested action
-    const action = requestData.action;
-
-    // Route for sending test message
-    if (action === 'send-telegram-test') {
-      const { botToken, groupId } = requestData;
+    // Get bot token
+    const { data: tokenData, error: tokenError } = await supabase
+      .from('site_configurations')
+      .select('value')
+      .eq('key', 'telegram_bot_token')
+      .maybeSingle();
       
-      if (!botToken || !groupId) {
-        return new Response(
-          JSON.stringify({ 
-            success: false, 
-            error: 'Bot token and group ID are required' 
-          }),
-          { 
-            status: 400,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-          }
-        );
-      }
+    if (tokenError) throw new Error(`Failed to get bot token: ${tokenError.message}`);
+    if (!tokenData?.value) throw new Error('Telegram bot token not configured');
+    
+    // Get group ID
+    const { data: groupData, error: groupError } = await supabase
+      .from('site_configurations')
+      .select('value')
+      .eq('key', 'telegram_group_id')
+      .maybeSingle();
       
-      const testMessage = `🧪 Test message from SóFaltaAPipoca integration\n\n✅ Your Telegram integration is working correctly!\n\n⏱️ Sent at: ${new Date().toLocaleString('pt-BR')}`;
-      
-      const result = await sendTelegramMessage(botToken, groupId, testMessage);
-      
-      return new Response(
-        JSON.stringify(result),
-        {
-          status: result.success ? 200 : 500,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        }
-      );
+    if (groupError) throw new Error(`Failed to get group ID: ${groupError.message}`);
+    if (!groupData?.value) throw new Error('Telegram group ID not configured');
+    
+    // Get auto-post setting
+    const { data: autoPostData, error: autoPostError } = await supabase
+      .from('site_configurations')
+      .select('value')
+      .eq('key', 'auto_post_to_telegram')
+      .maybeSingle();
+    
+    let autoPost = false;
+    if (!autoPostError && autoPostData?.value) {
+      autoPost = autoPostData.value === 'true';
     }
     
-    // Route for sending a specific subscription
+    return {
+      botToken: tokenData.value,
+      groupId: groupData.value,
+      autoPost
+    };
+  } catch (error) {
+    console.error('Error fetching Telegram config:', error);
+    throw error;
+  }
+}
+
+// Endpoint para o serviço de integração com o Telegram
+Deno.serve(async (req) => {
+  // Verificar se é uma requisição OPTIONS (CORS preflight)
+  if (req.method === 'OPTIONS') {
+    return new Response(null, { headers: corsHeaders });
+  }
+  
+  try {
+    const { action, botToken, groupId, subscriptionId } = await req.json();
+    
+    // Teste de envio - usa os parâmetros fornecidos diretamente
+    if (action === 'send-telegram-test') {
+      if (!botToken) {
+        throw new Error('Token do bot não fornecido');
+      }
+      
+      if (!groupId) {
+        throw new Error('ID do grupo não fornecido');
+      }
+      
+      const currentDate = new Date().toLocaleString('pt-BR', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit'
+      });
+      
+      const testMessage = `🧪 Test message from SóFaltaAPipoca integration
+
+✅ Your Telegram integration is working correctly!
+
+⏱️ Sent at: ${currentDate}`;
+      
+      try {
+        await sendTelegramMessage(botToken, groupId, testMessage);
+        return new Response(JSON.stringify({ success: true }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      } catch (error) {
+        console.error('Error in test message:', error);
+        return new Response(JSON.stringify({ 
+          success: false, 
+          error: `Falha ao enviar mensagem de teste: ${error.message}` 
+        }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 200 // Retorna 200 mesmo com erro para facilitar o tratamento no frontend
+        });
+      }
+    }
+    
+    // Envio de uma assinatura específica
     if (action === 'send-subscription') {
-      // Check if automatic posting is enabled
-      const autoPostEnabled = await getSiteConfig(supabase, 'auto_post_to_telegram');
-      
-      if (autoPostEnabled !== 'true') {
-        return new Response(
-          JSON.stringify({ 
-            success: false, 
-            error: 'Automatic posting to Telegram is disabled' 
-          }),
-          { 
-            status: 400,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-          }
-        );
-      }
-      
-      // Get bot token and group ID from configuration
-      const botToken = await getSiteConfig(supabase, 'telegram_bot_token');
-      const groupId = await getSiteConfig(supabase, 'telegram_group_id');
-      
-      if (!botToken || !groupId) {
-        return new Response(
-          JSON.stringify({ 
-            success: false, 
-            error: 'Bot token or group ID not configured' 
-          }),
-          { 
-            status: 400,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-          }
-        );
-      }
-      
-      // Get subscription ID and fetch data
-      const { subscriptionId } = requestData;
-      
       if (!subscriptionId) {
-        return new Response(
-          JSON.stringify({ 
-            success: false, 
-            error: 'Subscription ID is required' 
-          }),
-          { 
-            status: 400,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-          }
-        );
+        throw new Error('ID da assinatura não fornecido');
       }
       
-      // Get subscription data
-      const { data: subscription, error: subscriptionError } = await supabase
+      // Obter a configuração do Telegram
+      const config = await getTelegramConfig();
+      
+      // Obter os detalhes da assinatura
+      const { data: subscription, error: fetchError } = await supabase
         .from('subscriptions')
         .select('*')
         .eq('id', subscriptionId)
         .maybeSingle();
       
-      if (subscriptionError || !subscription) {
-        return new Response(
-          JSON.stringify({ 
-            success: false, 
-            error: 'Subscription not found' 
-          }),
-          { 
-            status: 404,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-          }
-        );
+      if (fetchError) {
+        throw new Error(`Erro ao buscar assinatura: ${fetchError.message}`);
       }
       
-      // Format and send message
-      const formattedMessage = formatSubscriptionForSharing(subscription);
-      const result = await sendTelegramMessage(botToken, groupId, formattedMessage);
-      
-      // Log the result
-      if (result.success) {
-        await supabase
-          .from('error_logs')
-          .insert({
-            error_message: 'Telegram message sent successfully',
-            error_context: `Subscription ID: ${subscriptionId}`,
-            error_code: 'telegram_success',
-            stack_trace: JSON.stringify({ subscription_title: subscription.title })
-          });
+      if (!subscription) {
+        throw new Error('Assinatura não encontrada');
       }
       
-      return new Response(
-        JSON.stringify(result),
-        {
-          status: result.success ? 200 : 500,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        }
-      );
+      // Formatar e enviar a mensagem
+      const message = formatSubscriptionForTelegram(subscription);
+      await sendTelegramMessage(config.botToken, config.groupId, message);
+      
+      return new Response(JSON.stringify({ success: true }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
     }
-
-    // Default route
-    return new Response(
-      JSON.stringify({
-        message: 'Telegram Integration API',
-        endpoints: [
-          'send-telegram-test - Send a test message',
-          'send-subscription - Send a subscription to Telegram'
-        ]
-      }),
-      {
-        status: 200,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      }
-    );
-  } catch (error) {
-    console.error('Unhandled error:', error);
     
-    return new Response(
-      JSON.stringify({
-        success: false,
-        error: error instanceof Error ? error.message : 'Unknown server error'
-      }),
-      {
-        status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      }
-    );
+    // Ação não reconhecida
+    return new Response(JSON.stringify({ 
+      success: false, 
+      error: 'Ação não reconhecida' 
+    }), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      status: 400
+    });
+    
+  } catch (error) {
+    console.error('Error in Telegram integration:', error);
+    return new Response(JSON.stringify({ 
+      success: false, 
+      error: `Erro na integração do Telegram: ${error.message}` 
+    }), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      status: 500
+    });
   }
 });

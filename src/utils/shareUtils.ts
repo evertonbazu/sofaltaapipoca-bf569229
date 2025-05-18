@@ -76,9 +76,9 @@ export const sendToTelegramGroup = async (subscriptionId: string): Promise<{succ
       throw new Error(error.message || 'Falha ao enviar para o grupo do Telegram');
     }
     
-    if (!data.success) {
-      console.error('Erro no envio para o Telegram:', data.error);
-      throw new Error(data.error || 'Falha ao enviar para o grupo do Telegram');
+    if (!data?.success) {
+      console.error('Erro no envio para o Telegram:', data?.error);
+      throw new Error(data?.error || 'Falha ao enviar para o grupo do Telegram');
     }
     
     return { success: true };
@@ -88,5 +88,28 @@ export const sendToTelegramGroup = async (subscriptionId: string): Promise<{succ
       success: false, 
       error: error instanceof Error ? error.message : 'Erro desconhecido ao enviar para o Telegram'
     };
+  }
+};
+
+/**
+ * Verifica se a postagem automática no Telegram está ativada
+ */
+export const isAutoPostingEnabled = async (): Promise<boolean> => {
+  try {
+    const { data, error } = await supabase
+      .from('site_configurations')
+      .select('value')
+      .eq('key', 'auto_post_to_telegram')
+      .single();
+    
+    if (error) {
+      console.error('Erro ao verificar configuração de postagem automática:', error);
+      return false;
+    }
+    
+    return data?.value === 'true';
+  } catch (error) {
+    console.error('Erro ao verificar configuração de postagem automática:', error);
+    return false;
   }
 };

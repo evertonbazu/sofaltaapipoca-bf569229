@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import AdminLayout from '@/components/admin/AdminLayout';
 import { 
@@ -24,6 +25,9 @@ import { getSiteConfig, updateSiteConfig } from '@/services/subscription-service
 import { Loader2, Send } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 
+// Versão atual: 2.1.1
+const APP_VERSION = "2.1.1";
+
 const Settings = () => {
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(true);
@@ -32,12 +36,12 @@ const Settings = () => {
   const [siteTitle, setSiteTitle] = useState("🍿 Só Falta a Pipoca");
   const [siteSubtitle, setSiteSubtitle] = useState("Assinaturas premium com preços exclusivos");
   const [contactWhatsapp, setContactWhatsapp] = useState("5513992077804");
-  const [appVersion, setAppVersion] = useState("2.1.0");
+  const [appVersion, setAppVersion] = useState(APP_VERSION);
   const [showFeaturedSection, setShowFeaturedSection] = useState(true);
   const [primaryColor, setPrimaryColor] = useState("#4F46E5");
   const [secondaryColor, setSecondaryColor] = useState("#10B981");
   
-  // Novas configurações para integração com Telegram
+  // Configurações para integração com Telegram
   const [telegramBotToken, setTelegramBotToken] = useState("");
   const [telegramGroupId, setTelegramGroupId] = useState("");
   const [autoPostToTelegram, setAutoPostToTelegram] = useState(false);
@@ -61,19 +65,24 @@ const Settings = () => {
         const tgGroupId = await getSiteConfig('telegram_group_id');
         const autoPostTg = await getSiteConfig('auto_post_to_telegram');
         
+        console.log('Configurações carregadas:', {
+          title, subtitle, whatsapp, version, featuredSection, primary, secondary,
+          tgBotToken, tgGroupId, autoPostTg
+        });
+        
         // Atualizar estado com valores do banco de dados
         if (title) setSiteTitle(title);
         if (subtitle) setSiteSubtitle(subtitle);
         if (whatsapp) setContactWhatsapp(whatsapp);
         if (version) setAppVersion(version);
-        if (featuredSection) setShowFeaturedSection(featuredSection === 'true');
+        if (featuredSection !== null) setShowFeaturedSection(featuredSection === 'true');
         if (primary) setPrimaryColor(primary);
         if (secondary) setSecondaryColor(secondary);
         
         // Atualizar estado com valores das integrações
         if (tgBotToken) setTelegramBotToken(tgBotToken);
         if (tgGroupId) setTelegramGroupId(tgGroupId);
-        if (autoPostTg) setAutoPostToTelegram(autoPostTg === 'true');
+        if (autoPostTg !== null) setAutoPostToTelegram(autoPostTg === 'true');
         
       } catch (error) {
         console.error('Erro ao carregar configurações:', error);
@@ -167,6 +176,10 @@ const Settings = () => {
       await updateSiteConfig('telegram_bot_token', telegramBotToken);
       await updateSiteConfig('telegram_group_id', telegramGroupId);
       await updateSiteConfig('auto_post_to_telegram', autoPostToTelegram.toString());
+      
+      console.log('Salvando configurações de integração:', {
+        telegramBotToken, telegramGroupId, autoPostToTelegram: autoPostToTelegram.toString()
+      });
       
       toast({
         title: "Integrações atualizadas",
@@ -405,7 +418,10 @@ const Settings = () => {
                     <Switch 
                       id="auto-post-telegram"
                       checked={autoPostToTelegram}
-                      onCheckedChange={setAutoPostToTelegram}
+                      onCheckedChange={(checked) => {
+                        console.log('Switch alterado para:', checked);
+                        setAutoPostToTelegram(checked);
+                      }}
                     />
                   </div>
                   
