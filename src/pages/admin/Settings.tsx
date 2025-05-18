@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import AdminLayout from '@/components/admin/AdminLayout';
 import { 
@@ -22,12 +21,13 @@ import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/components/ui/use-toast';
 import { Separator } from '@/components/ui/separator';
 import { getSiteConfig, updateSiteConfig } from '@/services/subscription-service';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Send } from 'lucide-react';
 
 const Settings = () => {
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [isTestingSend, setIsTestingSend] = useState(false);
   const [siteTitle, setSiteTitle] = useState("🍿 Só Falta a Pipoca");
   const [siteSubtitle, setSiteSubtitle] = useState("Assinaturas premium com preços exclusivos");
   const [contactWhatsapp, setContactWhatsapp] = useState("5513992077804");
@@ -35,6 +35,11 @@ const Settings = () => {
   const [showFeaturedSection, setShowFeaturedSection] = useState(true);
   const [primaryColor, setPrimaryColor] = useState("#4F46E5");
   const [secondaryColor, setSecondaryColor] = useState("#10B981");
+  
+  // Novas configurações para integração com Telegram
+  const [telegramBotToken, setTelegramBotToken] = useState("");
+  const [telegramGroupId, setTelegramGroupId] = useState("");
+  const [autoPostToTelegram, setAutoPostToTelegram] = useState(false);
   
   // Carregar configurações do site ao montar o componente
   useEffect(() => {
@@ -50,6 +55,11 @@ const Settings = () => {
         const primary = await getSiteConfig('primary_color');
         const secondary = await getSiteConfig('secondary_color');
         
+        // Carregar configurações de integração
+        const tgBotToken = await getSiteConfig('telegram_bot_token');
+        const tgGroupId = await getSiteConfig('telegram_group_id');
+        const autoPostTg = await getSiteConfig('auto_post_to_telegram');
+        
         // Atualizar estado com valores do banco de dados
         if (title) setSiteTitle(title);
         if (subtitle) setSiteSubtitle(subtitle);
@@ -58,6 +68,11 @@ const Settings = () => {
         if (featuredSection) setShowFeaturedSection(featuredSection === 'true');
         if (primary) setPrimaryColor(primary);
         if (secondary) setSecondaryColor(secondary);
+        
+        // Atualizar estado com valores das integrações
+        if (tgBotToken) setTelegramBotToken(tgBotToken);
+        if (tgGroupId) setTelegramGroupId(tgGroupId);
+        if (autoPostTg) setAutoPostToTelegram(autoPostTg === 'true');
         
       } catch (error) {
         console.error('Erro ao carregar configurações:', error);
@@ -144,6 +159,67 @@ const Settings = () => {
     }
   };
   
+  const handleSaveIntegrations = async () => {
+    setIsSaving(true);
+    try {
+      // Salvar configurações de integração
+      await updateSiteConfig('telegram_bot_token', telegramBotToken);
+      await updateSiteConfig('telegram_group_id', telegramGroupId);
+      await updateSiteConfig('auto_post_to_telegram', autoPostToTelegram.toString());
+      
+      toast({
+        title: "Integrações atualizadas",
+        description: "As configurações de integração foram atualizadas com sucesso.",
+      });
+    } catch (error) {
+      console.error('Erro ao salvar integrações:', error);
+      toast({
+        title: "Erro",
+        description: "Não foi possível salvar as configurações de integração.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleTestTelegramSend = async () => {
+    setIsTestingSend(true);
+    try {
+      // Enviar mensagem de teste para o Telegram
+      const response = await fetch('/api/send-telegram-test', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          botToken: telegramBotToken,
+          groupId: telegramGroupId
+        }),
+      });
+
+      const result = await response.json();
+      
+      if (result.success) {
+        toast({
+          title: "Teste enviado com sucesso",
+          description: "A mensagem de teste foi enviada para o grupo do Telegram.",
+        });
+      } else {
+        throw new Error(result.error || 'Erro desconhecido ao enviar mensagem de teste');
+      }
+    } catch (error) {
+      console.error('Erro ao testar envio:', error);
+      toast({
+        title: "Erro",
+        description: error instanceof Error ? error.message : "Erro ao enviar mensagem de teste para o Telegram.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsTestingSend(false);
+    }
+  };
+  
   if (isLoading) {
     return (
       <AdminLayout title="Configurações">
@@ -158,9 +234,10 @@ const Settings = () => {
   return (
     <AdminLayout title="Configurações">
       <Tabs defaultValue="general" className="space-y-4">
-        <TabsList className="grid w-full max-w-md grid-cols-3">
+        <TabsList className="grid w-full max-w-md grid-cols-4">
           <TabsTrigger value="general">Geral</TabsTrigger>
           <TabsTrigger value="appearance">Aparência</TabsTrigger>
+          <TabsTrigger value="integrations">Integrações</TabsTrigger>
           <TabsTrigger value="advanced">Avançado</TabsTrigger>
         </TabsList>
         
@@ -292,6 +369,103 @@ const Settings = () => {
                   </>
                 ) : (
                   'Salvar Aparência'
+                )}
+              </Button>
+            </CardFooter>
+          </Card>
+        </TabsContent>
+        
+        {/* Configurações de Integrações */}
+        <TabsContent value="integrations">
+          <Card>
+            <CardHeader>
+              <CardTitle>Integrações</CardTitle>
+              <CardDescription>
+                Configure integrações com serviços externos.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div>
+                <h3 className="text-lg font-medium mb-2">Integração com Telegram</h3>
+                <p className="text-sm text-gray-500 mb-4">
+                  Configure a integração para enviar novos anúncios automaticamente para um grupo do Telegram.
+                </p>
+                
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <Label htmlFor="auto-post-telegram">Postar automaticamente no Telegram</Label>
+                      <p className="text-sm text-gray-500">
+                        Envia automaticamente novos anúncios para o grupo do Telegram configurado.
+                      </p>
+                    </div>
+                    <Switch 
+                      id="auto-post-telegram"
+                      checked={autoPostToTelegram}
+                      onCheckedChange={setAutoPostToTelegram}
+                    />
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="telegram-bot-token">Token do Bot do Telegram</Label>
+                    <Input 
+                      id="telegram-bot-token" 
+                      value={telegramBotToken} 
+                      onChange={(e) => setTelegramBotToken(e.target.value)}
+                      placeholder="5921988686:AAHXpA6Wyre4BIGACaFLOqB6YrhTavIdbQQ"
+                      className="font-mono text-sm"
+                    />
+                    <p className="text-xs text-gray-500">
+                      Token de acesso do bot obtido através do BotFather.
+                    </p>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="telegram-group-id">ID do Grupo/Canal</Label>
+                    <Input 
+                      id="telegram-group-id" 
+                      value={telegramGroupId} 
+                      onChange={(e) => setTelegramGroupId(e.target.value)}
+                      placeholder="-1001484207364"
+                      className="font-mono text-sm"
+                    />
+                    <p className="text-xs text-gray-500">
+                      ID do grupo ou canal do Telegram onde as mensagens serão enviadas.
+                    </p>
+                  </div>
+                  
+                  <div className="pt-2">
+                    <Button 
+                      variant="outline" 
+                      onClick={handleTestTelegramSend}
+                      disabled={!telegramBotToken || !telegramGroupId || isTestingSend}
+                      className="flex items-center gap-2"
+                    >
+                      {isTestingSend ? (
+                        <>
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                          Enviando...
+                        </>
+                      ) : (
+                        <>
+                          <Send className="h-4 w-4" />
+                          Enviar Mensagem de Teste
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+            <CardFooter>
+              <Button onClick={handleSaveIntegrations} disabled={isSaving}>
+                {isSaving ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Salvando...
+                  </>
+                ) : (
+                  'Salvar Integrações'
                 )}
               </Button>
             </CardFooter>

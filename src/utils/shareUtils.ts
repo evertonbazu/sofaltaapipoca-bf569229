@@ -52,3 +52,32 @@ export const getTelegramShareLink = (subscription: SubscriptionData): string => 
   const formattedText = encodeURIComponent(formatSubscriptionForSharing(subscription));
   return `https://t.me/share/url?url=&text=${formattedText}`;
 };
+
+/**
+ * Sends a subscription to the Telegram group configured in settings
+ */
+export const sendToTelegramGroup = async (subscriptionId: string): Promise<{success: boolean, error?: string}> => {
+  try {
+    const response = await fetch('/api/telegram-integration/send-subscription', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ subscriptionId }),
+    });
+    
+    const result = await response.json();
+    
+    if (!response.ok) {
+      throw new Error(result.error || 'Failed to send to Telegram group');
+    }
+    
+    return { success: true };
+  } catch (error) {
+    console.error('Error sending to Telegram:', error);
+    return { 
+      success: false, 
+      error: error instanceof Error ? error.message : 'Unknown error sending to Telegram'
+    };
+  }
+};

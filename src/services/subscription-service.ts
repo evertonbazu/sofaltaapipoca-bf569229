@@ -1,6 +1,7 @@
 import { supabase } from '@/integrations/supabase/client';
 import { SubscriptionData } from '@/types/subscriptionTypes';
 import { toast } from '@/components/ui/use-toast';
+import { sendToTelegramGroup } from '@/utils/shareUtils';
 
 // Função para mapear dados do banco de dados para o formato da aplicação
 function mapToSubscriptionData(data: any): SubscriptionData {
@@ -47,6 +48,33 @@ function mapToDbFormat(subscription: SubscriptionData) {
     category: subscription.category,
     visible: subscription.visible
   };
+}
+
+// Obter configuração do site pelo chave
+export async function getSiteConfig(key: string): Promise<string | null> {
+  try {
+    const { data, error } = await supabase
+      .from('site_configurations')
+      .select('value')
+      .eq('key', key)
+      .single();
+    
+    if (error) {
+      console.error(`Erro ao obter configuração ${key}:`, error);
+      return null;
+    }
+    
+    return data?.value || null;
+  } catch (error: any) {
+    console.error(`Erro ao obter configuração ${key}:`, error);
+    return null;
+  }
+}
+
+// Verificar se o envio automático para o Telegram está ativado
+async function isAutoTelegramEnabled(): Promise<boolean> {
+  const autoPostSetting = await getSiteConfig('auto_post_to_telegram');
+  return autoPostSetting === 'true';
 }
 
 // Obter todas as assinaturas sem filtros ou restrições
@@ -168,6 +196,23 @@ export async function addSubscription(subscription: SubscriptionData): Promise<S
       .single();
     
     if (error) throw error;
+    
+    // Se for uma submissão de membro e estiver visível, enviar para o Telegram
+    if (data.user_id && data.visible) {
+      try {
+        // Verificar se o envio automático está ativado
+        const autoTelegramEnabled = await isAutoTelegramEnabled();
+        
+        if (autoTelegramEnabled) {
+          // Enviar assinatura para o grupo do Telegram
+          await sendToTelegramGroup(data.id);
+        }
+      } catch (sharingError) {
+        console.error('Erro ao compartilhar no Telegram:', sharingError);
+        // Não interromper o fluxo se o compartilhamento falhar
+      }
+    }
+    
     return mapToSubscriptionData(data);
   } catch (error: any) {
     console.error('Erro ao adicionar assinatura:', error);
@@ -178,6 +223,16 @@ export async function addSubscription(subscription: SubscriptionData): Promise<S
 // Atualizar uma assinatura existente
 export async function updateSubscription(id: string, subscription: SubscriptionData): Promise<SubscriptionData> {
   try {
+    // Verificar se a assinatura estava invisível antes
+    const { data: oldData } = await supabase
+      .from('subscriptions')
+      .select('visible, user_id')
+      .eq('id', id)
+      .single();
+    
+    const wasInvisible = oldData?.visible === false;
+    const isMemberSubmission = oldData?.user_id !== null;
+    
     const { data, error } = await supabase
       .from('subscriptions')
       .update(mapToDbFormat(subscription))
@@ -186,6 +241,23 @@ export async function updateSubscription(id: string, subscription: SubscriptionD
       .single();
     
     if (error) throw error;
+    
+    // Se era invisível antes e agora está visível e é uma submissão de membro
+    if (wasInvisible && subscription.visible === true && isMemberSubmission) {
+      try {
+        // Verificar se o envio automático está ativado
+        const autoTelegramEnabled = await isAutoTelegramEnabled();
+        
+        if (autoTelegramEnabled) {
+          // Enviar assinatura para o grupo do Telegram
+          await sendToTelegramGroup(id);
+        }
+      } catch (sharingError) {
+        console.error('Erro ao compartilhar no Telegram:', sharingError);
+        // Não interromper o fluxo se o compartilhamento falhar
+      }
+    }
+    
     return mapToSubscriptionData(data);
   } catch (error: any) {
     console.error('Erro ao atualizar assinatura:', error);
@@ -229,6 +301,16 @@ export async function toggleFeaturedStatus(id: string, featured: boolean): Promi
 // Alternar o status de visibilidade de uma assinatura
 export async function toggleVisibilityStatus(id: string, visible: boolean): Promise<SubscriptionData> {
   try {
+    // Verificar se é uma submissão de membro
+    const { data: oldData } = await supabase
+      .from('subscriptions')
+      .select('user_id, visible')
+      .eq('id', id)
+      .single();
+    
+    const isMemberSubmission = oldData?.user_id !== null;
+    const wasInvisible = oldData?.visible === false;
+    
     const { data, error } = await supabase
       .from('subscriptions')
       .update({ visible })
@@ -237,31 +319,27 @@ export async function toggleVisibilityStatus(id: string, visible: boolean): Prom
       .single();
     
     if (error) throw error;
+    
+    // Se está sendo tornado visível e é uma submissão de membro
+    if (visible === true && wasInvisible && isMemberSubmission) {
+      try {
+        // Verificar se o envio automático está ativado
+        const autoTelegramEnabled = await isAutoTelegramEnabled();
+        
+        if (autoTelegramEnabled) {
+          // Enviar assinatura para o grupo do Telegram
+          await sendToTelegramGroup(id);
+        }
+      } catch (sharingError) {
+        console.error('Erro ao compartilhar no Telegram:', sharingError);
+        // Não interromper o fluxo se o compartilhamento falhar
+      }
+    }
+    
     return mapToSubscriptionData(data);
   } catch (error: any) {
     console.error('Erro ao alternar status de visibilidade:', error);
     throw error;
-  }
-}
-
-// Obter configuração do site pelo chave
-export async function getSiteConfig(key: string): Promise<string | null> {
-  try {
-    const { data, error } = await supabase
-      .from('site_configurations')
-      .select('value')
-      .eq('key', key)
-      .single();
-    
-    if (error) {
-      console.error(`Erro ao obter configuração ${key}:`, error);
-      return null;
-    }
-    
-    return data?.value || null;
-  } catch (error: any) {
-    console.error(`Erro ao obter configuração ${key}:`, error);
-    return null;
   }
 }
 
