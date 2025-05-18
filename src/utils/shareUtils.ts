@@ -67,19 +67,21 @@ export const sendToTelegramGroup = async (subscriptionId: string): Promise<{succ
     });
     
     if (error) {
-      throw new Error(error.message || 'Failed to send to Telegram group');
+      console.error('Erro na função edge do Telegram:', error);
+      throw new Error(error.message || 'Falha ao enviar para o grupo do Telegram');
     }
     
     if (!data.success) {
-      throw new Error(data.error || 'Failed to send to Telegram group');
+      console.error('Erro no envio para o Telegram:', data.error);
+      throw new Error(data.error || 'Falha ao enviar para o grupo do Telegram');
     }
     
     return { success: true };
   } catch (error) {
-    console.error('Error sending to Telegram:', error);
+    console.error('Erro enviando para o Telegram:', error);
     return { 
       success: false, 
-      error: error instanceof Error ? error.message : 'Unknown error sending to Telegram'
+      error: error instanceof Error ? error.message : 'Erro desconhecido ao enviar para o Telegram'
     };
   }
 };

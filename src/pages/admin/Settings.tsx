@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import AdminLayout from '@/components/admin/AdminLayout';
 import { 
@@ -188,7 +187,7 @@ const Settings = () => {
   const handleTestTelegramSend = async () => {
     setIsTestingSend(true);
     try {
-      // Usar a função do Supabase diretamente para chamar a Edge Function
+      // Calling the Edge Function with correct parameters
       const { data, error } = await supabase.functions.invoke('telegram-integration', {
         body: {
           action: 'send-telegram-test',
@@ -198,17 +197,20 @@ const Settings = () => {
       });
       
       if (error) {
-        throw error;
+        console.error('Erro na função edge:', error);
+        throw new Error('Erro ao chamar a função de integração: ' + error.message);
       }
       
-      if (data.success) {
-        toast({
-          title: "Teste enviado com sucesso",
-          description: "A mensagem de teste foi enviada para o grupo do Telegram.",
-        });
-      } else {
-        throw new Error(data.error || 'Erro desconhecido ao enviar mensagem de teste');
+      if (!data || !data.success) {
+        const errorMsg = data?.error || 'Erro desconhecido ao enviar mensagem de teste';
+        console.error('Erro retornado pela API:', errorMsg);
+        throw new Error(errorMsg);
       }
+      
+      toast({
+        title: "Teste enviado com sucesso",
+        description: "A mensagem de teste foi enviada para o grupo do Telegram.",
+      });
     } catch (error) {
       console.error('Erro ao testar envio:', error);
       toast({

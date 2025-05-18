@@ -2,29 +2,29 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
-// Configurações CORS para permitir chamadas da aplicação web
+// CORS configuration to allow calls from the web application
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// Formatar assinatura para compartilhamento
+// Format subscription for sharing
 function formatSubscriptionForSharing(subscription: any): string {
   let content = '';
   
-  // Título com ícone
+  // Title with icon
   content += `${subscription.icon || '🖥'} ${subscription.title}\n`;
   
-  // Preço
+  // Price
   content += `🏦 ${subscription.price}\n`;
   
   // Status
   content += `📌 ${subscription.status}\n`;
   
-  // Método de acesso
+  // Access method
   content += `🔐 ${subscription.access}\n`;
   
-  // Métodos de contato
+  // Contact methods
   if (subscription.telegram_username) {
     content += `📩 ${subscription.telegram_username}\n`;
   }
@@ -33,24 +33,34 @@ function formatSubscriptionForSharing(subscription: any): string {
     content += `📱 https://wa.me/${subscription.whatsapp_number}\n`;
   }
   
-  // Data de adição
+  // Added date
   if (subscription.added_date) {
     content += `\n📅 Adicionado em: ${subscription.added_date}`;
   }
   
-  // Código da assinatura
+  // Subscription code
   if (subscription.code) {
     content += `\n🔑 Código: ${subscription.code}`;
   }
   
-  // Nota que foi postado automaticamente
+  // Note that it was posted automatically
   content += `\n\n✨ Enviado automaticamente por SóFaltaAPipoca`;
   
   return content;
 }
 
-// Enviar mensagem para o Telegram
+// Send message to Telegram
 async function sendTelegramMessage(botToken: string, chatId: string, text: string) {
+  console.log(`Sending message to Telegram. Chat ID: ${chatId}`);
+  
+  // Ensure chatId is properly formatted
+  let formattedChatId = chatId;
+  if (!chatId.startsWith('-') && !chatId.startsWith('@')) {
+    // If it's a numeric group ID without the hyphen, add it
+    // Telegram group IDs typically start with -100 for supergroups
+    formattedChatId = `-100${chatId}`;
+  }
+  
   const url = `https://api.telegram.org/bot${botToken}/sendMessage`;
   
   try {
@@ -60,18 +70,20 @@ async function sendTelegramMessage(botToken: string, chatId: string, text: strin
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        chat_id: chatId,
+        chat_id: formattedChatId,
         text: text,
         parse_mode: 'HTML',
       }),
     });
     
+    const responseData = await response.json();
+    console.log('Telegram API response:', JSON.stringify(responseData));
+    
     if (!response.ok) {
-      const errorData = await response.json();
-      console.error('Telegram API error:', errorData);
+      console.error('Telegram API error:', responseData);
       return {
         success: false,
-        error: `Telegram API error: ${errorData.description || 'Unknown error'}`
+        error: `Telegram API error: ${responseData.description || 'Unknown error'}`
       };
     }
     
@@ -85,7 +97,7 @@ async function sendTelegramMessage(botToken: string, chatId: string, text: strin
   }
 }
 
-// Obter configuração do site
+// Get site configuration
 async function getSiteConfig(supabase: any, key: string): Promise<string | null> {
   const { data, error } = await supabase
     .from('site_configurations')
@@ -101,9 +113,9 @@ async function getSiteConfig(supabase: any, key: string): Promise<string | null>
   return data?.value || null;
 }
 
-// Handler da função edge
+// Edge function handler
 serve(async (req) => {
-  // Tratamento de CORS para requisições OPTIONS
+  // Handle CORS for OPTIONS requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { 
       status: 204, 
@@ -112,18 +124,18 @@ serve(async (req) => {
   }
 
   try {
-    // Cria cliente do Supabase com a URL e a chave anon do projeto
+    // Create Supabase client with the URL and anon key from environment variables
     const supabaseUrl = Deno.env.get('SUPABASE_URL') as string;
     const supabaseKey = Deno.env.get('SUPABASE_ANON_KEY') as string;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // Obter dados da requisição
+    // Get request data
     const requestData = await req.json();
 
-    // Verificar a ação solicitada
+    // Check the requested action
     const action = requestData.action;
 
-    // Rota para enviar mensagem de teste
+    // Route for sending test message
     if (action === 'send-telegram-test') {
       const { botToken, groupId } = requestData;
       
@@ -131,7 +143,7 @@ serve(async (req) => {
         return new Response(
           JSON.stringify({ 
             success: false, 
-            error: 'Token do bot e ID do grupo são obrigatórios' 
+            error: 'Bot token and group ID are required' 
           }),
           { 
             status: 400,
@@ -140,7 +152,7 @@ serve(async (req) => {
         );
       }
       
-      const testMessage = `🧪 Mensagem de teste da integração SóFaltaAPipoca\n\n✅ Sua integração com o Telegram está funcionando corretamente!\n\n⏱️ Enviado em: ${new Date().toLocaleString('pt-BR')}`;
+      const testMessage = `🧪 Test message from SóFaltaAPipoca integration\n\n✅ Your Telegram integration is working correctly!\n\n⏱️ Sent at: ${new Date().toLocaleString('pt-BR')}`;
       
       const result = await sendTelegramMessage(botToken, groupId, testMessage);
       
@@ -153,16 +165,16 @@ serve(async (req) => {
       );
     }
     
-    // Rota para enviar uma assinatura específica
+    // Route for sending a specific subscription
     if (action === 'send-subscription') {
-      // Verificar se o envio automático está ativado
+      // Check if automatic posting is enabled
       const autoPostEnabled = await getSiteConfig(supabase, 'auto_post_to_telegram');
       
       if (autoPostEnabled !== 'true') {
         return new Response(
           JSON.stringify({ 
             success: false, 
-            error: 'Envio automático para o Telegram está desativado' 
+            error: 'Automatic posting to Telegram is disabled' 
           }),
           { 
             status: 400,
@@ -171,7 +183,7 @@ serve(async (req) => {
         );
       }
       
-      // Obter token e ID do grupo das configurações
+      // Get bot token and group ID from configuration
       const botToken = await getSiteConfig(supabase, 'telegram_bot_token');
       const groupId = await getSiteConfig(supabase, 'telegram_group_id');
       
@@ -179,7 +191,7 @@ serve(async (req) => {
         return new Response(
           JSON.stringify({ 
             success: false, 
-            error: 'Token do bot ou ID do grupo não configurados' 
+            error: 'Bot token or group ID not configured' 
           }),
           { 
             status: 400,
@@ -188,14 +200,14 @@ serve(async (req) => {
         );
       }
       
-      // Obter ID da assinatura e buscar dados
+      // Get subscription ID and fetch data
       const { subscriptionId } = requestData;
       
       if (!subscriptionId) {
         return new Response(
           JSON.stringify({ 
             success: false, 
-            error: 'ID da assinatura é obrigatório' 
+            error: 'Subscription ID is required' 
           }),
           { 
             status: 400,
@@ -204,7 +216,7 @@ serve(async (req) => {
         );
       }
       
-      // Buscar dados da assinatura
+      // Get subscription data
       const { data: subscription, error: subscriptionError } = await supabase
         .from('subscriptions')
         .select('*')
@@ -215,7 +227,7 @@ serve(async (req) => {
         return new Response(
           JSON.stringify({ 
             success: false, 
-            error: 'Assinatura não encontrada' 
+            error: 'Subscription not found' 
           }),
           { 
             status: 404,
@@ -224,14 +236,14 @@ serve(async (req) => {
         );
       }
       
-      // Formatar e enviar mensagem
+      // Format and send message
       const formattedMessage = formatSubscriptionForSharing(subscription);
       const result = await sendTelegramMessage(botToken, groupId, formattedMessage);
       
-      // Registrar o envio
+      // Log the result
       if (result.success) {
         await supabase
-          .from('error_logs') // Usando a tabela de logs existente para registrar eventos
+          .from('error_logs')
           .insert({
             error_message: 'Telegram message sent successfully',
             error_context: `Subscription ID: ${subscriptionId}`,
@@ -249,7 +261,7 @@ serve(async (req) => {
       );
     }
 
-    // Rota padrão
+    // Default route
     return new Response(
       JSON.stringify({
         message: 'Telegram Integration API',
