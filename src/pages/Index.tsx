@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import SubscriptionList from '@/components/SubscriptionList';
@@ -11,7 +10,6 @@ import { supabase } from '@/integrations/supabase/client';
 import { getSiteConfig } from '@/services/subscription-service';
 import { useAuth } from '@/contexts/AuthContext';
 import { APP_VERSION } from '@/utils/shareUtils';
-
 const Index: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [hasResults, setHasResults] = useState(true);
@@ -22,7 +20,9 @@ const Index: React.FC = () => {
   const subscriptionRefs = useRef<{
     [key: string]: HTMLDivElement | null;
   }>({});
-  const { authState } = useAuth();
+  const {
+    authState
+  } = useAuth();
   const isLoggedIn = !!authState.session;
 
   // Carregar configurações do site
@@ -46,7 +46,6 @@ const Index: React.FC = () => {
     };
     loadSiteConfig();
   }, []);
-
   const handleSearch = (term: string) => {
     setSearchTerm(term.toLowerCase());
     // Make sure we show all results when search is cleared
@@ -54,7 +53,6 @@ const Index: React.FC = () => {
       setHasResults(true);
     }
   };
-  
   return <div className="min-h-screen bg-gray-100">
       <NavBar />
       
@@ -71,31 +69,18 @@ const Index: React.FC = () => {
           {/* Botões fixos de Anunciar e Fale Conosco */}
           <div className="flex gap-2 sm:gap-3 mx-auto max-w-xs sm:max-w-sm mt-4">
             <Link to="/submit" className="flex-1">
-              <button className="w-full bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded-md flex items-center justify-center">
-                <Megaphone className="mr-2 h-4 w-4" />
-                <span>Anunciar</span>
-              </button>
+              
             </Link>
             
-            <a 
-              href={`https://wa.me/${contactWhatsapp}`} 
-              target="_blank" 
-              rel="noopener noreferrer"
-              className="flex-1"
-            >
-              <button className="w-full bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded-md flex items-center justify-center">
-                <MessageSquare className="mr-2 h-4 w-4" />
-                <span>Fale conosco</span>
-              </button>
+            <a href={`https://wa.me/${contactWhatsapp}`} target="_blank" rel="noopener noreferrer" className="flex-1">
+              
             </a>
             
-            {isLoggedIn && (
-              <Link to="/profile" className="flex-initial">
+            {isLoggedIn && <Link to="/profile" className="flex-initial">
                 <button className="w-full bg-indigo-700 hover:bg-indigo-800 text-white py-2 px-4 rounded-md flex items-center justify-center">
                   <User className="h-4 w-4" />
                 </button>
-              </Link>
-            )}
+              </Link>}
           </div>
         </div>
       </header>
