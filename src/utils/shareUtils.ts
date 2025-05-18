@@ -2,6 +2,10 @@ import { SubscriptionData } from '@/types/subscriptionTypes';
 import { supabase } from '@/integrations/supabase/client';
 
 /**
+ * Version 2.5.0
+ * - Added default auto-posting enabled
+ * - Updated version display mechanism
+ * 
  * Version 2.4.0
  * - Fixed additional type handling issues
  * - Improved string-to-boolean conversion logic
@@ -12,6 +16,9 @@ import { supabase } from '@/integrations/supabase/client';
  * - Added more detailed logging for debugging
  * - Improved error reporting in the autoPostingEnabled function
  */
+
+// Export the current version as a constant for use throughout the app
+export const APP_VERSION = "2.5.0";
 
 /**
  * Formats subscription data for sharing on messaging platforms
@@ -128,6 +135,7 @@ export const toBooleanSafe = (value: any): boolean => {
 
 /**
  * Verifica se a postagem automática no Telegram está ativada
+ * Default: true (enabled by default)
  */
 export const isAutoPostingEnabled = async (): Promise<boolean> => {
   try {
@@ -141,16 +149,23 @@ export const isAutoPostingEnabled = async (): Promise<boolean> => {
     
     if (error) {
       console.error('Erro ao verificar configuração de postagem automática:', error);
-      return false;
+      // Return true by default if the configuration doesn't exist yet
+      return true;
     }
     
     console.log('Valor da configuração auto_post_to_telegram:', data?.value, 'tipo:', typeof data?.value);
+    
+    // Default to true if value is null or undefined
+    if (data?.value === null || data?.value === undefined) {
+      return true;
+    }
     
     // Use the helper function for safe boolean conversion
     return toBooleanSafe(data?.value);
   } catch (error) {
     console.error('Erro ao verificar configuração de postagem automática:', error);
-    return false;
+    // Return true by default in case of error
+    return true;
   }
 };
 

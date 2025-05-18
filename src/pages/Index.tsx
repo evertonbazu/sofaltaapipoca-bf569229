@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import SubscriptionList from '@/components/SubscriptionList';
@@ -10,13 +9,14 @@ import HeaderButtonsDisplay from '@/components/HeaderButtonsDisplay';
 import { supabase } from '@/integrations/supabase/client';
 import { getSiteConfig } from '@/services/subscription-service';
 import { useAuth } from '@/contexts/AuthContext';
+import { APP_VERSION } from '@/utils/shareUtils';
 
 const Index: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [hasResults, setHasResults] = useState(true);
   const [siteTitle, setSiteTitle] = useState("🍿 Só Falta a Pipoca");
   const [siteSubtitle, setSiteSubtitle] = useState("Assinaturas premium com preços exclusivos");
-  const [appVersion, setAppVersion] = useState("2.1.1"); // Updated version number
+  const [appVersion, setAppVersion] = useState(APP_VERSION); // Use version directly from shareUtils
   const [contactWhatsapp, setContactWhatsapp] = useState("5513992077804");
   const subscriptionRefs = useRef<{
     [key: string]: HTMLDivElement | null;
@@ -34,10 +34,13 @@ const Index: React.FC = () => {
         const whatsapp = await getSiteConfig('contact_whatsapp');
         if (title) setSiteTitle(title);
         if (subtitle) setSiteSubtitle(subtitle);
-        if (version) setAppVersion(version);
+        // If version is not set in the database, or doesn't match current app version, use the current app version
+        setAppVersion(version || APP_VERSION);
         if (whatsapp) setContactWhatsapp(whatsapp);
       } catch (error) {
         console.error('Erro ao carregar configurações do site:', error);
+        // In case of error, use the current app version from shareUtils
+        setAppVersion(APP_VERSION);
       }
     };
     loadSiteConfig();

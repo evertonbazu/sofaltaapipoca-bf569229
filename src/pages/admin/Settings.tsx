@@ -23,15 +23,14 @@ import { Separator } from '@/components/ui/separator';
 import { getSiteConfig, updateSiteConfig } from '@/services/subscription-service';
 import { Loader2, Send, Info } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
-import { updateAutoPostingStatus, toBooleanSafe } from '@/utils/shareUtils';
+import { 
+  updateAutoPostingStatus, 
+  toBooleanSafe,
+  APP_VERSION 
+} from '@/utils/shareUtils';
 
-// Versão atual: 2.4.0
-// Alterações:
-// - 2.4.0: Correção de problemas adicionais de tipo e implementação de função utilitária toBooleanSafe
-// - 2.3.0: Correção do problema de tipo na configuração de auto-postagem
-// - 2.2.0: Correção da persistência das configurações de integração com Telegram
-// - 2.1.1: Versão anterior
-const APP_VERSION = "2.4.0";
+// Link this file version to the shared version in shareUtils
+const CURRENT_VERSION = APP_VERSION;
 
 const Settings = () => {
   const { toast } = useToast();
@@ -41,7 +40,7 @@ const Settings = () => {
   const [siteTitle, setSiteTitle] = useState("🍿 Só Falta a Pipoca");
   const [siteSubtitle, setSiteSubtitle] = useState("Assinaturas premium com preços exclusivos");
   const [contactWhatsapp, setContactWhatsapp] = useState("5513992077804");
-  const [appVersion, setAppVersion] = useState(APP_VERSION);
+  const [appVersion, setAppVersion] = useState(CURRENT_VERSION);
   const [showFeaturedSection, setShowFeaturedSection] = useState(true);
   const [primaryColor, setPrimaryColor] = useState("#4F46E5");
   const [secondaryColor, setSecondaryColor] = useState("#10B981");
@@ -49,7 +48,7 @@ const Settings = () => {
   // Configurações para integração com Telegram
   const [telegramBotToken, setTelegramBotToken] = useState("");
   const [telegramGroupId, setTelegramGroupId] = useState("");
-  const [autoPostToTelegram, setAutoPostToTelegram] = useState(false);
+  const [autoPostToTelegram, setAutoPostToTelegram] = useState(true); // Default to true
   
   // Carregar configurações do site ao montar o componente
   useEffect(() => {
@@ -95,11 +94,22 @@ const Settings = () => {
         if (tgBotToken) setTelegramBotToken(tgBotToken);
         if (tgGroupId) setTelegramGroupId(tgGroupId);
         
-        // Verificar se a configuração auto_post_to_telegram existe e converter para boolean
-        if (autoPostTg !== null) {
+        // Verificar se a configuração auto_post_to_telegram existe
+        // Se não existir ou for null, usar true como padrão
+        if (autoPostTg !== null && autoPostTg !== undefined) {
           const isEnabled = toBooleanSafe(autoPostTg);
           console.log('Auto post to Telegram setting:', autoPostTg, '-> converted to:', isEnabled);
           setAutoPostToTelegram(isEnabled);
+        } else {
+          // Set to true by default
+          console.log('Auto post to Telegram setting not found, defaulting to true');
+          setAutoPostToTelegram(true);
+        }
+        
+        // Update app version in the database to match current version
+        if (version !== CURRENT_VERSION) {
+          console.log(`Updating app version from ${version || 'undefined'} to ${CURRENT_VERSION}`);
+          await updateSiteConfig('app_version', CURRENT_VERSION);
         }
         
       } catch (error) {
