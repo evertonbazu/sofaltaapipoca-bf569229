@@ -1,3 +1,4 @@
+
 import { SubscriptionData } from '@/types/subscriptionTypes';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -18,7 +19,7 @@ import { supabase } from '@/integrations/supabase/client';
  */
 
 // Export the current version as a constant for use throughout the app
-export const APP_VERSION = "2.5.0";
+export const APP_VERSION = "2.6.0";
 
 /**
  * Formats subscription data for sharing on messaging platforms
@@ -141,6 +142,33 @@ export const isAutoPostingEnabled = async (): Promise<boolean> => {
   try {
     console.log('Verificando configuração de postagem automática');
     
+    // Verifica se já existe configurações no banco de dados
+    const { data: configExists, error: checkError } = await supabase
+      .from('site_configurations')
+      .select('count')
+      .eq('key', 'auto_post_to_telegram')
+      .single();
+      
+    // Se não existir configuração, vamos criar uma com valor padrão true
+    if (checkError || !configExists || configExists.count === 0) {
+      console.log('Configuração de postagem automática não encontrada, criando com valor padrão true');
+      
+      await supabase
+        .from('site_configurations')
+        .insert({ key: 'auto_post_to_telegram', value: 'true' });
+      
+      await supabase
+        .from('site_configurations')
+        .insert({ key: 'telegram_bot_token', value: '5921988686:AAHXpA6Wyre4BIGACaFLOqB6YrhTavIdbQQ' });
+      
+      await supabase
+        .from('site_configurations')
+        .insert({ key: 'telegram_group_id', value: '1001484207364' });
+      
+      return true;
+    }
+    
+    // Se existir, busca o valor atual
     const { data, error } = await supabase
       .from('site_configurations')
       .select('value')
@@ -149,7 +177,7 @@ export const isAutoPostingEnabled = async (): Promise<boolean> => {
     
     if (error) {
       console.error('Erro ao verificar configuração de postagem automática:', error);
-      // Return true by default if the configuration doesn't exist yet
+      // Return true by default if there's an error
       return true;
     }
     
@@ -179,14 +207,34 @@ export const updateAutoPostingStatus = async (enabled: boolean): Promise<boolean
     const stringValue = String(enabled);
     console.log('Valor convertido para string:', stringValue);
     
-    const { error } = await supabase
+    // Verificar se a configuração já existe
+    const { data: configExists, error: checkError } = await supabase
       .from('site_configurations')
-      .update({ value: stringValue })
-      .eq('key', 'auto_post_to_telegram');
+      .select('count')
+      .eq('key', 'auto_post_to_telegram')
+      .single();
     
-    if (error) {
-      console.error('Erro ao atualizar configuração de postagem automática:', error);
-      return false;
+    // Se não existir, inserir
+    if (checkError || !configExists || configExists.count === 0) {
+      const { error: insertError } = await supabase
+        .from('site_configurations')
+        .insert({ key: 'auto_post_to_telegram', value: stringValue });
+      
+      if (insertError) {
+        console.error('Erro ao criar configuração de postagem automática:', insertError);
+        return false;
+      }
+    } else {
+      // Se existir, atualizar
+      const { error } = await supabase
+        .from('site_configurations')
+        .update({ value: stringValue })
+        .eq('key', 'auto_post_to_telegram');
+      
+      if (error) {
+        console.error('Erro ao atualizar configuração de postagem automática:', error);
+        return false;
+      }
     }
     
     console.log('Configuração de postagem automática atualizada com sucesso');

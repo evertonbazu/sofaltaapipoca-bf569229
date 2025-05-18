@@ -7,6 +7,10 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.31.0';
 import { corsHeaders } from '../_shared/cors.ts';
 
 /**
+ * Version 2.6.0
+ * - Set default bot token and group ID
+ * - Improved auto-posting logic and error handling
+ * 
  * Version 2.2.0
  * - Improved group ID formatting
  * - Added better error handling and logging
@@ -15,6 +19,10 @@ import { corsHeaders } from '../_shared/cors.ts';
 const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? '';
 const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY') ?? '';
 const supabase = createClient(supabaseUrl, supabaseAnonKey);
+
+// Defaults values
+const DEFAULT_BOT_TOKEN = '5921988686:AAHXpA6Wyre4BIGACaFLOqB6YrhTavIdbQQ';
+const DEFAULT_GROUP_ID = '1001484207364';
 
 // Função para formatar o conteúdo de uma assinatura para o Telegram
 function formatSubscriptionForTelegram(subscription: any) {
@@ -137,9 +145,12 @@ async function sendTelegramMessage(botToken: string, chatId: string, text: strin
   }
 }
 
-// Função para obter as configurações do Telegram do banco de dados
+// Função para obter ou criar as configurações do Telegram do banco de dados
 async function getTelegramConfig() {
   try {
+    // Verifica e possivelmente cria configurações padrão
+    await ensureDefaultConfigurations();
+    
     // Get bot token
     const { data: tokenData, error: tokenError } = await supabase
       .from('site_configurations')
@@ -147,8 +158,10 @@ async function getTelegramConfig() {
       .eq('key', 'telegram_bot_token')
       .maybeSingle();
       
-    if (tokenError) throw new Error(`Failed to get bot token: ${tokenError.message}`);
-    if (!tokenData?.value) throw new Error('Telegram bot token not configured');
+    const botToken = tokenData?.value || DEFAULT_BOT_TOKEN;
+    if (tokenError) {
+      console.log(`Failed to get bot token, using default: ${DEFAULT_BOT_TOKEN}`);
+    }
     
     // Get group ID
     const { data: groupData, error: groupError } = await supabase
@@ -157,30 +170,89 @@ async function getTelegramConfig() {
       .eq('key', 'telegram_group_id')
       .maybeSingle();
       
-    if (groupError) throw new Error(`Failed to get group ID: ${groupError.message}`);
-    if (!groupData?.value) throw new Error('Telegram group ID not configured');
+    const groupId = groupData?.value || DEFAULT_GROUP_ID;
+    if (groupError) {
+      console.log(`Failed to get group ID, using default: ${DEFAULT_GROUP_ID}`);
+    }
     
-    // Get auto-post setting
+    // Get auto-post setting - default to true if not found
     const { data: autoPostData, error: autoPostError } = await supabase
       .from('site_configurations')
       .select('value')
       .eq('key', 'auto_post_to_telegram')
       .maybeSingle();
     
-    let autoPost = false;
-    if (!autoPostError && autoPostData?.value) {
-      autoPost = autoPostData.value === 'true' || autoPostData.value === true;
-      console.log(`Auto post setting: ${autoPostData.value} (${typeof autoPostData.value}) -> ${autoPost}`);
+    let autoPost = true; // Default to true
+    if (!autoPostError && autoPostData?.value !== undefined && autoPostData?.value !== null) {
+      const value = autoPostData.value;
+      autoPost = value === 'true' || value === true;
+      console.log(`Auto post setting: ${value} (${typeof value}) -> ${autoPost}`);
+    } else {
+      console.log('Auto post setting not found or error, defaulting to true');
     }
     
     return {
-      botToken: tokenData.value,
-      groupId: groupData.value,
+      botToken,
+      groupId,
       autoPost
     };
   } catch (error) {
     console.error('Error fetching Telegram config:', error);
-    throw error;
+    // Use defaults if there was an error
+    return {
+      botToken: DEFAULT_BOT_TOKEN,
+      groupId: DEFAULT_GROUP_ID,
+      autoPost: true
+    };
+  }
+}
+
+// Garantir que as configurações padrão existem no banco
+async function ensureDefaultConfigurations() {
+  try {
+    // Verificar token do bot
+    const { data: tokenData, error: tokenError } = await supabase
+      .from('site_configurations')
+      .select('count')
+      .eq('key', 'telegram_bot_token')
+      .single();
+    
+    if (tokenError || !tokenData || tokenData.count === 0) {
+      console.log('Creating default bot token configuration');
+      await supabase
+        .from('site_configurations')
+        .insert({ key: 'telegram_bot_token', value: DEFAULT_BOT_TOKEN });
+    }
+    
+    // Verificar ID do grupo
+    const { data: groupData, error: groupError } = await supabase
+      .from('site_configurations')
+      .select('count')
+      .eq('key', 'telegram_group_id')
+      .single();
+    
+    if (groupError || !groupData || groupData.count === 0) {
+      console.log('Creating default group ID configuration');
+      await supabase
+        .from('site_configurations')
+        .insert({ key: 'telegram_group_id', value: DEFAULT_GROUP_ID });
+    }
+    
+    // Verificar configuração de auto-posting
+    const { data: autoPostData, error: autoPostError } = await supabase
+      .from('site_configurations')
+      .select('count')
+      .eq('key', 'auto_post_to_telegram')
+      .single();
+    
+    if (autoPostError || !autoPostData || autoPostData.count === 0) {
+      console.log('Creating default auto-posting configuration (true)');
+      await supabase
+        .from('site_configurations')
+        .insert({ key: 'auto_post_to_telegram', value: 'true' });
+    }
+  } catch (error) {
+    console.error('Error ensuring default configurations:', error);
   }
 }
 
@@ -192,6 +264,9 @@ Deno.serve(async (req) => {
   }
   
   try {
+    // Garantir que as configurações padrão existem
+    await ensureDefaultConfigurations();
+    
     const { action, botToken, groupId, subscriptionId } = await req.json();
     console.log(`Received request with action: ${action}`);
     
@@ -199,11 +274,15 @@ Deno.serve(async (req) => {
     if (action === 'send-telegram-test') {
       console.log('Processing send-telegram-test action');
       
-      if (!botToken) {
+      // Usa o token fornecido ou o padrão se não fornecido
+      const tokenToUse = botToken || DEFAULT_BOT_TOKEN;
+      if (!tokenToUse) {
         throw new Error('Token do bot não fornecido');
       }
       
-      if (!groupId) {
+      // Usa o ID do grupo fornecido ou o padrão se não fornecido
+      const groupIdToUse = groupId || DEFAULT_GROUP_ID;
+      if (!groupIdToUse) {
         throw new Error('ID do grupo não fornecido');
       }
       
@@ -223,7 +302,7 @@ Deno.serve(async (req) => {
 ⏱️ Sent at: ${currentDate}`;
       
       try {
-        await sendTelegramMessage(botToken, groupId, testMessage);
+        await sendTelegramMessage(tokenToUse, groupIdToUse, testMessage);
         return new Response(JSON.stringify({ success: true }), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         });
