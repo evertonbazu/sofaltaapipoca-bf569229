@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import AdminLayout from '@/components/admin/AdminLayout';
 import { 
@@ -22,6 +23,7 @@ import { useToast } from '@/components/ui/use-toast';
 import { Separator } from '@/components/ui/separator';
 import { getSiteConfig, updateSiteConfig } from '@/services/subscription-service';
 import { Loader2, Send } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 
 const Settings = () => {
   const { toast } = useToast();
@@ -186,27 +188,26 @@ const Settings = () => {
   const handleTestTelegramSend = async () => {
     setIsTestingSend(true);
     try {
-      // Enviar mensagem de teste para o Telegram
-      const response = await fetch('/api/send-telegram-test', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
+      // Usar a função do Supabase diretamente para chamar a Edge Function
+      const { data, error } = await supabase.functions.invoke('telegram-integration', {
+        body: {
+          action: 'send-telegram-test',
           botToken: telegramBotToken,
           groupId: telegramGroupId
-        }),
+        }
       });
-
-      const result = await response.json();
       
-      if (result.success) {
+      if (error) {
+        throw error;
+      }
+      
+      if (data.success) {
         toast({
           title: "Teste enviado com sucesso",
           description: "A mensagem de teste foi enviada para o grupo do Telegram.",
         });
       } else {
-        throw new Error(result.error || 'Erro desconhecido ao enviar mensagem de teste');
+        throw new Error(data.error || 'Erro desconhecido ao enviar mensagem de teste');
       }
     } catch (error) {
       console.error('Erro ao testar envio:', error);

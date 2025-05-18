@@ -1,5 +1,6 @@
 
 import { SubscriptionData } from '@/types/subscriptionTypes';
+import { supabase } from '@/integrations/supabase/client';
 
 /**
  * Formats subscription data for sharing on messaging platforms
@@ -58,18 +59,19 @@ export const getTelegramShareLink = (subscription: SubscriptionData): string => 
  */
 export const sendToTelegramGroup = async (subscriptionId: string): Promise<{success: boolean, error?: string}> => {
   try {
-    const response = await fetch('/api/telegram-integration/send-subscription', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ subscriptionId }),
+    const { data, error } = await supabase.functions.invoke('telegram-integration', {
+      body: {
+        action: 'send-subscription',
+        subscriptionId
+      }
     });
     
-    const result = await response.json();
+    if (error) {
+      throw new Error(error.message || 'Failed to send to Telegram group');
+    }
     
-    if (!response.ok) {
-      throw new Error(result.error || 'Failed to send to Telegram group');
+    if (!data.success) {
+      throw new Error(data.error || 'Failed to send to Telegram group');
     }
     
     return { success: true };

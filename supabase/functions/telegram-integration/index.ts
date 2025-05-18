@@ -91,7 +91,7 @@ async function getSiteConfig(supabase: any, key: string): Promise<string | null>
     .from('site_configurations')
     .select('value')
     .eq('key', key)
-    .single();
+    .maybeSingle();
   
   if (error) {
     console.error(`Error getting site config ${key}:`, error);
@@ -118,13 +118,13 @@ serve(async (req) => {
     const supabase = createClient(supabaseUrl, supabaseKey);
 
     // Obter dados da requisição
-    let requestData;
-    if (req.method === 'POST') {
-      requestData = await req.json();
-    }
+    const requestData = await req.json();
+
+    // Verificar a ação solicitada
+    const action = requestData.action;
 
     // Rota para enviar mensagem de teste
-    if (req.url.includes('/send-telegram-test')) {
+    if (action === 'send-telegram-test') {
       const { botToken, groupId } = requestData;
       
       if (!botToken || !groupId) {
@@ -154,7 +154,7 @@ serve(async (req) => {
     }
     
     // Rota para enviar uma assinatura específica
-    if (req.url.includes('/send-subscription')) {
+    if (action === 'send-subscription') {
       // Verificar se o envio automático está ativado
       const autoPostEnabled = await getSiteConfig(supabase, 'auto_post_to_telegram');
       
@@ -209,7 +209,7 @@ serve(async (req) => {
         .from('subscriptions')
         .select('*')
         .eq('id', subscriptionId)
-        .single();
+        .maybeSingle();
       
       if (subscriptionError || !subscription) {
         return new Response(
@@ -249,13 +249,13 @@ serve(async (req) => {
       );
     }
 
-    // Rota padrão - documentação
+    // Rota padrão
     return new Response(
       JSON.stringify({
         message: 'Telegram Integration API',
         endpoints: [
-          '/send-telegram-test - Send a test message',
-          '/send-subscription - Send a subscription to Telegram'
+          'send-telegram-test - Send a test message',
+          'send-subscription - Send a subscription to Telegram'
         ]
       }),
       {
