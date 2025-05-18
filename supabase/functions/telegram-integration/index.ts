@@ -6,6 +6,12 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.31.0';
 import { corsHeaders } from '../_shared/cors.ts';
 
+/**
+ * Version 2.2.0
+ * - Improved group ID formatting
+ * - Added better error handling and logging
+ */
+
 const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? '';
 const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY') ?? '';
 const supabase = createClient(supabaseUrl, supabaseAnonKey);
@@ -46,19 +52,61 @@ function formatSubscriptionForTelegram(subscription: any) {
   return content;
 }
 
+// Função auxiliar para formatar corretamente o ID do grupo
+function formatChatId(chatId: string): string {
+  console.log(`Formatting chat ID: '${chatId}'`);
+  
+  // Remover espaços
+  let formattedChatId = chatId.trim();
+  
+  // Se o ID já começar com -100, mantém como está
+  if (formattedChatId.startsWith('-100')) {
+    console.log(`Chat ID already in correct format: ${formattedChatId}`);
+    return formattedChatId;
+  }
+  
+  // Se o ID começar com -, mas não com -100, verificamos o formato
+  if (formattedChatId.startsWith('-')) {
+    if (formattedChatId.substring(1).startsWith('100')) {
+      // Já tem o formato -100, então mantemos
+      console.log(`Chat ID already in format -100: ${formattedChatId}`);
+      return formattedChatId;
+    } else {
+      // Tem - mas não tem 100, então adicionamos o 100
+      formattedChatId = `-100${formattedChatId.substring(1)}`;
+      console.log(`Added -100 prefix, new chat ID: ${formattedChatId}`);
+      return formattedChatId;
+    }
+  }
+  
+  // Verificamos se começa com @ (username do canal)
+  if (formattedChatId.startsWith('@')) {
+    console.log(`Chat ID is a username: ${formattedChatId}`);
+    return formattedChatId;
+  }
+  
+  // Se começar com 100, adicionamos apenas o -
+  if (formattedChatId.startsWith('100')) {
+    formattedChatId = `-${formattedChatId}`;
+    console.log(`Added hyphen prefix, new chat ID: ${formattedChatId}`);
+    return formattedChatId;
+  }
+  
+  // Para outros casos numéricos, adicionamos -100
+  if (/^\d+$/.test(formattedChatId)) {
+    formattedChatId = `-100${formattedChatId}`;
+    console.log(`Added -100 prefix to numeric ID, new chat ID: ${formattedChatId}`);
+    return formattedChatId;
+  }
+  
+  // Retorna o ID original caso não se encaixe em nenhuma regra
+  return formattedChatId;
+}
+
 // Função auxiliar para enviar mensagem para o Telegram
 async function sendTelegramMessage(botToken: string, chatId: string, text: string) {
-  console.log(`Sending message to Telegram. Chat ID: ${chatId}`);
-  
-  // Ensure chatId is properly formatted for supergroups
-  let formattedChatId = chatId;
-  if (chatId.startsWith('100') && !chatId.startsWith('-100')) {
-    // If it's a numeric group ID that starts with 100 but not with -100, add the hyphen
-    formattedChatId = `-${chatId}`;
-  } else if (!chatId.startsWith('-') && !chatId.startsWith('@')) {
-    // If it's a numeric group ID without the hyphen, add it with -100 prefix
-    formattedChatId = `-100${chatId}`;
-  }
+  const formattedChatId = formatChatId(chatId);
+  console.log(`Sending message to Telegram. Chat ID: ${formattedChatId}`);
   
   const apiUrl = `https://api.telegram.org/bot${botToken}/sendMessage`;
   const options = {
@@ -72,6 +120,7 @@ async function sendTelegramMessage(botToken: string, chatId: string, text: strin
   };
   
   try {
+    console.log(`Making request to Telegram API: ${apiUrl}`);
     const response = await fetch(apiUrl, options);
     const responseData = await response.json();
     
@@ -120,7 +169,8 @@ async function getTelegramConfig() {
     
     let autoPost = false;
     if (!autoPostError && autoPostData?.value) {
-      autoPost = autoPostData.value === 'true';
+      autoPost = autoPostData.value === 'true' || autoPostData.value === true;
+      console.log(`Auto post setting: ${autoPostData.value} (${typeof autoPostData.value}) -> ${autoPost}`);
     }
     
     return {
@@ -143,9 +193,12 @@ Deno.serve(async (req) => {
   
   try {
     const { action, botToken, groupId, subscriptionId } = await req.json();
+    console.log(`Received request with action: ${action}`);
     
     // Teste de envio - usa os parâmetros fornecidos diretamente
     if (action === 'send-telegram-test') {
+      console.log('Processing send-telegram-test action');
+      
       if (!botToken) {
         throw new Error('Token do bot não fornecido');
       }
@@ -188,12 +241,19 @@ Deno.serve(async (req) => {
     
     // Envio de uma assinatura específica
     if (action === 'send-subscription') {
+      console.log('Processing send-subscription action for ID:', subscriptionId);
+      
       if (!subscriptionId) {
         throw new Error('ID da assinatura não fornecido');
       }
       
       // Obter a configuração do Telegram
       const config = await getTelegramConfig();
+      console.log('Retrieved Telegram config:', {
+        botToken: '***',
+        groupId: config.groupId,
+        autoPost: config.autoPost
+      });
       
       // Obter os detalhes da assinatura
       const { data: subscription, error: fetchError } = await supabase
@@ -210,9 +270,12 @@ Deno.serve(async (req) => {
         throw new Error('Assinatura não encontrada');
       }
       
+      console.log('Found subscription:', { id: subscription.id, title: subscription.title });
+      
       // Formatar e enviar a mensagem
       const message = formatSubscriptionForTelegram(subscription);
       await sendTelegramMessage(config.botToken, config.groupId, message);
+      console.log('Successfully sent subscription to Telegram');
       
       return new Response(JSON.stringify({ success: true }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
@@ -220,6 +283,7 @@ Deno.serve(async (req) => {
     }
     
     // Ação não reconhecida
+    console.log('Unrecognized action:', action);
     return new Response(JSON.stringify({ 
       success: false, 
       error: 'Ação não reconhecida' 

@@ -3,6 +3,12 @@ import { SubscriptionData } from '@/types/subscriptionTypes';
 import { supabase } from '@/integrations/supabase/client';
 
 /**
+ * Version 2.2.0
+ * - Added improved error handling for Telegram integration
+ * - Fixed isAutoPostingEnabled function to properly check boolean value
+ */
+
+/**
  * Formats subscription data for sharing on messaging platforms
  */
 export const formatSubscriptionForSharing = (subscription: SubscriptionData): string => {
@@ -64,6 +70,8 @@ export const getTelegramShareLink = (subscription: SubscriptionData): string => 
  */
 export const sendToTelegramGroup = async (subscriptionId: string): Promise<{success: boolean, error?: string}> => {
   try {
+    console.log('Sending subscription to Telegram group:', subscriptionId);
+    
     const { data, error } = await supabase.functions.invoke('telegram-integration', {
       body: {
         action: 'send-subscription',
@@ -81,6 +89,7 @@ export const sendToTelegramGroup = async (subscriptionId: string): Promise<{succ
       throw new Error(data?.error || 'Falha ao enviar para o grupo do Telegram');
     }
     
+    console.log('Successfully sent subscription to Telegram group');
     return { success: true };
   } catch (error) {
     console.error('Erro enviando para o Telegram:', error);
@@ -93,9 +102,12 @@ export const sendToTelegramGroup = async (subscriptionId: string): Promise<{succ
 
 /**
  * Verifica se a postagem automática no Telegram está ativada
+ * Esta função foi atualizada para corrigir o problema de persistência da configuração
  */
 export const isAutoPostingEnabled = async (): Promise<boolean> => {
   try {
+    console.log('Verificando configuração de postagem automática');
+    
     const { data, error } = await supabase
       .from('site_configurations')
       .select('value')
@@ -107,9 +119,38 @@ export const isAutoPostingEnabled = async (): Promise<boolean> => {
       return false;
     }
     
-    return data?.value === 'true';
+    console.log('Valor da configuração auto_post_to_telegram:', data?.value);
+    
+    // Verifica o valor como string 'true' ou como boolean true
+    return data?.value === 'true' || data?.value === true;
   } catch (error) {
     console.error('Erro ao verificar configuração de postagem automática:', error);
     return false;
   }
 };
+
+/**
+ * Atualiza o status da postagem automática no Telegram
+ */
+export const updateAutoPostingStatus = async (enabled: boolean): Promise<boolean> => {
+  try {
+    console.log('Atualizando status de postagem automática para:', enabled);
+    
+    const { error } = await supabase
+      .from('site_configurations')
+      .update({ value: String(enabled) })
+      .eq('key', 'auto_post_to_telegram');
+    
+    if (error) {
+      console.error('Erro ao atualizar configuração de postagem automática:', error);
+      return false;
+    }
+    
+    console.log('Configuração de postagem automática atualizada com sucesso');
+    return true;
+  } catch (error) {
+    console.error('Erro ao atualizar configuração de postagem automática:', error);
+    return false;
+  }
+};
+

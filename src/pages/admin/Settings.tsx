@@ -22,11 +22,15 @@ import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/components/ui/use-toast';
 import { Separator } from '@/components/ui/separator';
 import { getSiteConfig, updateSiteConfig } from '@/services/subscription-service';
-import { Loader2, Send } from 'lucide-react';
+import { Loader2, Send, Info } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import { updateAutoPostingStatus } from '@/utils/shareUtils';
 
-// Versão atual: 2.1.1
-const APP_VERSION = "2.1.1";
+// Versão atual: 2.2.0
+// Alterações:
+// - 2.2.0: Correção da persistência das configurações de integração com Telegram
+// - 2.1.1: Versão anterior
+const APP_VERSION = "2.2.0";
 
 const Settings = () => {
   const { toast } = useToast();
@@ -67,7 +71,9 @@ const Settings = () => {
         
         console.log('Configurações carregadas:', {
           title, subtitle, whatsapp, version, featuredSection, primary, secondary,
-          tgBotToken, tgGroupId, autoPostTg
+          tgBotToken: tgBotToken ? '***' : undefined, 
+          tgGroupId,
+          autoPostTg
         });
         
         // Atualizar estado com valores do banco de dados
@@ -82,7 +88,13 @@ const Settings = () => {
         // Atualizar estado com valores das integrações
         if (tgBotToken) setTelegramBotToken(tgBotToken);
         if (tgGroupId) setTelegramGroupId(tgGroupId);
-        if (autoPostTg !== null) setAutoPostToTelegram(autoPostTg === 'true');
+        
+        // Verificar se a configuração auto_post_to_telegram existe e converter para boolean
+        if (autoPostTg !== null) {
+          const isEnabled = autoPostTg === 'true' || autoPostTg === true;
+          console.log('Auto post to Telegram setting:', autoPostTg, '-> converted to:', isEnabled);
+          setAutoPostToTelegram(isEnabled);
+        }
         
       } catch (error) {
         console.error('Erro ao carregar configurações:', error);
@@ -172,14 +184,20 @@ const Settings = () => {
   const handleSaveIntegrations = async () => {
     setIsSaving(true);
     try {
+      console.log('Início do salvamento de integrações');
+      
       // Salvar configurações de integração
       await updateSiteConfig('telegram_bot_token', telegramBotToken);
       await updateSiteConfig('telegram_group_id', telegramGroupId);
-      await updateSiteConfig('auto_post_to_telegram', autoPostToTelegram.toString());
       
-      console.log('Salvando configurações de integração:', {
-        telegramBotToken, telegramGroupId, autoPostToTelegram: autoPostToTelegram.toString()
-      });
+      // Atualizar o status da postagem automática usando a função do shareUtils
+      const updated = await updateAutoPostingStatus(autoPostToTelegram);
+      
+      if (!updated) {
+        throw new Error('Falha ao atualizar configuração de postagem automática');
+      }
+      
+      console.log('Configurações de integração salvas com sucesso');
       
       toast({
         title: "Integrações atualizadas",
@@ -189,7 +207,7 @@ const Settings = () => {
       console.error('Erro ao salvar integrações:', error);
       toast({
         title: "Erro",
-        description: "Não foi possível salvar as configurações de integração.",
+        description: error instanceof Error ? error.message : "Não foi possível salvar as configurações de integração.",
         variant: "destructive",
       });
     } finally {
@@ -200,6 +218,9 @@ const Settings = () => {
   const handleTestTelegramSend = async () => {
     setIsTestingSend(true);
     try {
+      console.log('Iniciando teste de envio para o Telegram');
+      console.log('Parametros: botToken=*****, groupId=', telegramGroupId);
+      
       // Calling the Edge Function with correct parameters
       const { data, error } = await supabase.functions.invoke('telegram-integration', {
         body: {
@@ -213,6 +234,8 @@ const Settings = () => {
         console.error('Erro na função edge:', error);
         throw new Error('Erro ao chamar a função de integração: ' + error.message);
       }
+      
+      console.log('Resposta da função edge:', data);
       
       if (!data || !data.success) {
         const errorMsg = data?.error || 'Erro desconhecido ao enviar mensagem de teste';
@@ -234,6 +257,11 @@ const Settings = () => {
     } finally {
       setIsTestingSend(false);
     }
+  };
+  
+  const handleAutoPostToggle = (checked: boolean) => {
+    console.log('Switch alterado para:', checked);
+    setAutoPostToTelegram(checked);
   };
   
   if (isLoading) {
@@ -418,10 +446,7 @@ const Settings = () => {
                     <Switch 
                       id="auto-post-telegram"
                       checked={autoPostToTelegram}
-                      onCheckedChange={(checked) => {
-                        console.log('Switch alterado para:', checked);
-                        setAutoPostToTelegram(checked);
-                      }}
+                      onCheckedChange={handleAutoPostToggle}
                     />
                   </div>
                   
@@ -451,6 +476,19 @@ const Settings = () => {
                     <p className="text-xs text-gray-500">
                       ID do grupo ou canal do Telegram onde as mensagens serão enviadas.
                     </p>
+                  </div>
+                  
+                  <div className="bg-blue-50 border-l-4 border-blue-500 p-4 rounded text-sm">
+                    <div className="flex items-start">
+                      <Info className="h-5 w-5 text-blue-500 mr-2 mt-0.5" />
+                      <div>
+                        <p className="text-blue-700 font-medium">Dica para ID do grupo</p>
+                        <p className="text-blue-600 mt-1">
+                          Para grupos com ID começando com -100, você pode inserir apenas os números após -100.
+                          Por exemplo, para "-100<strong>1484207364</strong>", você pode inserir apenas "<strong>1484207364</strong>".
+                        </p>
+                      </div>
+                    </div>
                   </div>
                   
                   <div className="pt-2">
