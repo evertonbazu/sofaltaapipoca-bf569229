@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
@@ -69,14 +68,21 @@ const PendingSubscriptionList = () => {
   const fetchPendingSubscriptions = async () => {
     setLoading(true);
     try {
+      console.log('Buscando assinaturas pendentes...');
+      
+      // Corrigindo a consulta para selecionar apenas assinaturas com status_approval = 'pending'
       const { data, error } = await supabase
         .from('pending_subscriptions')
         .select('*')
+        .eq('status_approval', 'pending') // Filtro adicionado para garantir que apenas assinaturas pendentes sejam mostradas
         .order('submitted_at', { ascending: false });
 
       if (error) {
+        console.error('Erro ao buscar assinaturas pendentes:', error);
         throw error;
       }
+
+      console.log('Assinaturas pendentes encontradas:', data?.length || 0);
 
       // Map the database column names to our frontend property names
       const mappedData = data.map((item: any) => ({

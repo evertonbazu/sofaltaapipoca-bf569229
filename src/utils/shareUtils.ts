@@ -1,8 +1,11 @@
-
 import { SubscriptionData } from '@/types/subscriptionTypes';
 import { supabase } from '@/integrations/supabase/client';
 
 /**
+ * Version 2.9.0
+ * - Corrigido problema de envio duplicado para o Telegram
+ * - Adicionada verificação para evitar envios repetidos
+ * 
  * Version 2.8.0
  * - Adicionado suporte para botões inline no Telegram
  * - Implementada funcionalidade para excluir mensagens do Telegram
@@ -20,7 +23,7 @@ import { supabase } from '@/integrations/supabase/client';
  */
 
 // Export the current version as a constant for use throughout the app
-export const APP_VERSION = "2.8.0";
+export const APP_VERSION = "2.9.0";
 
 /**
  * Formats subscription data for sharing on messaging platforms
@@ -80,10 +83,44 @@ export const getTelegramShareLink = (subscription: SubscriptionData): string => 
 };
 
 /**
+ * Verifica se uma assinatura já foi enviada para o Telegram
+ * para evitar envios duplicados
+ */
+async function isSubscriptionAlreadySentToTelegram(subscriptionId: string): Promise<boolean> {
+  try {
+    // Verifica se já existe um registro de mensagem para esta assinatura
+    const { data, error } = await supabase
+      .from('telegram_messages')
+      .select('message_id')
+      .eq('subscription_id', subscriptionId)
+      .maybeSingle();
+    
+    if (error) {
+      console.error('Erro ao verificar se a assinatura já foi enviada:', error);
+      return false;
+    }
+    
+    return !!data?.message_id; // Retorna true se já foi enviada
+  } catch (error) {
+    console.error('Erro ao verificar envio anterior:', error);
+    return false;
+  }
+}
+
+/**
  * Sends a subscription to the Telegram group configured in settings
  */
 export const sendToTelegramGroup = async (subscriptionId: string): Promise<{success: boolean, error?: string, messageId?: number}> => {
   try {
+    console.log('Verificando se a assinatura já foi enviada:', subscriptionId);
+    
+    // Verifica se a assinatura já foi enviada anteriormente
+    const alreadySent = await isSubscriptionAlreadySentToTelegram(subscriptionId);
+    if (alreadySent) {
+      console.log('Assinatura já foi enviada anteriormente, ignorando envio duplicado.');
+      return { success: true, error: "Assinatura já foi enviada anteriormente." };
+    }
+    
     console.log('Enviando assinatura ao grupo do Telegram:', subscriptionId);
     
     const { data, error } = await supabase.functions.invoke('telegram-integration', {

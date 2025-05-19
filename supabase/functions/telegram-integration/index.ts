@@ -1,4 +1,3 @@
-
 // Follow this setup guide to integrate the Deno language server with your editor:
 // https://deno.land/manual/getting_started/setup_your_environment
 // This enables autocomplete, go to definition, etc.
@@ -7,6 +6,10 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.31.0';
 import { corsHeaders } from '../_shared/cors.ts';
 
 /**
+ * Version 2.9.0
+ * - Corrigido problema de envio duplicado para o Telegram
+ * - Adicionada criação automática da tabela telegram_messages se não existir
+ * 
  * Version 2.8.0
  * - Adicionado suporte para botões inline no Telegram
  * - Implementada funcionalidade para excluir mensagens
@@ -129,6 +132,40 @@ function createInlineButtons(subscription: any) {
   }
   
   return buttons.length > 0 ? buttons : null;
+}
+
+// Função para garantir que a tabela telegram_messages exista
+async function ensureTelegramMessagesTableExists() {
+  try {
+    // Verificar se a tabela existe
+    const { data: tableExists, error: checkError } = await supabase.rpc(
+      'check_table_exists',
+      { table_name: 'telegram_messages' }
+    );
+    
+    if (checkError || !tableExists) {
+      console.log('Tabela telegram_messages não existe, criando...');
+      
+      // Criar tabela
+      const { error: createError } = await supabase.rpc(
+        'execute_system_task', 
+        { 
+          task_type: 'create_telegram_messages_table',
+          task_params: {} 
+        }
+      );
+      
+      if (createError) {
+        console.error('Erro ao criar tabela telegram_messages:', createError);
+      } else {
+        console.log('Tabela telegram_messages criada com sucesso');
+      }
+    } else {
+      console.log('Tabela telegram_messages já existe');
+    }
+  } catch (error) {
+    console.error('Erro ao verificar ou criar tabela telegram_messages:', error);
+  }
 }
 
 // Função auxiliar para enviar mensagem para o Telegram
@@ -332,6 +369,9 @@ Deno.serve(async (req) => {
     // Garantir que as configurações padrão existem
     await ensureDefaultConfigurations();
     
+    // Garantir que a tabela telegram_messages existe
+    await ensureTelegramMessagesTableExists();
+    
     const { action, botToken, groupId, subscriptionId, messageId } = await req.json();
     console.log(`Received request with action: ${action}, subscriptionId: ${subscriptionId}, messageId: ${messageId}`);
     
@@ -431,6 +471,24 @@ Deno.serve(async (req) => {
       
       if (!subscriptionId) {
         throw new Error('ID da assinatura não fornecido');
+      }
+      
+      // Verificar se a assinatura já foi enviada (verificação dupla)
+      const { data: existingMessage } = await supabase
+        .from('telegram_messages')
+        .select('message_id')
+        .eq('subscription_id', subscriptionId)
+        .maybeSingle();
+      
+      if (existingMessage?.message_id) {
+        console.log('Assinatura já foi enviada anteriormente, ID da mensagem:', existingMessage.message_id);
+        return new Response(JSON.stringify({ 
+          success: true, 
+          messageId: existingMessage.message_id,
+          info: "Assinatura já enviada anteriormente"
+        }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
       }
       
       // Obter a configuração do Telegram
