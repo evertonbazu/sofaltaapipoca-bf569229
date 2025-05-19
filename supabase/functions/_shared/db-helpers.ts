@@ -1,7 +1,7 @@
 
 /**
  * Funções auxiliares para operações no banco de dados
- * Version 1.0.0
+ * Version 1.0.1
  * 
  * Este arquivo contém funções auxiliares para operações no banco de dados
  * que são utilizadas pelos Edge Functions.

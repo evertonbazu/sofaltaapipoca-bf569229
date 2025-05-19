@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
@@ -9,7 +10,7 @@ import {
   Star, 
   Clock, 
   Download, 
-  MessageCircle // Alterado de Telegram para MessageCircle
+  MessageCircle 
 } from 'lucide-react';
 import {
   Table,
@@ -70,11 +71,11 @@ const PendingSubscriptionList = () => {
     try {
       console.log('Buscando assinaturas pendentes...');
       
-      // Corrigindo a consulta para selecionar apenas assinaturas com status_approval = 'pending'
+      // Importante: Asseguramos que apenas assinaturas com status_approval = 'pending' sejam retornadas
       const { data, error } = await supabase
         .from('pending_subscriptions')
         .select('*')
-        .eq('status_approval', 'pending') // Filtro adicionado para garantir que apenas assinaturas pendentes sejam mostradas
+        .eq('status_approval', 'pending')
         .order('submitted_at', { ascending: false });
 
       if (error) {
@@ -98,8 +99,7 @@ const PendingSubscriptionList = () => {
         telegramUsername: item.telegram_username,
         icon: item.icon,
         addedDate: item.added_date || formatDate(item.submitted_at),
-        // Correção: renomear para submitted_at para corresponder ao tipo SubscriptionData
-        submitted_at: item.submitted_at, 
+        submitted_at: item.submitted_at,
         statusApproval: item.status_approval,
         userId: item.user_id,
         code: item.code,
@@ -107,7 +107,7 @@ const PendingSubscriptionList = () => {
         paymentProofImage: item.payment_proof_image,
         isMemberSubmission: !!item.user_id,
         rejectionReason: item.rejection_reason,
-        piqQrCode: item.pix_qr_code,
+        pixQrCode: item.pix_qr_code,
         visible: item.visible
       }));
 
