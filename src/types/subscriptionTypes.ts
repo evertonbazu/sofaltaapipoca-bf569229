@@ -22,7 +22,7 @@ export interface SubscriptionData {
   // Fields needed for handling previous pending subscriptions
   statusApproval?: string;
   rejectionReason?: string;
-  submitted_at?: string;
+  submitted_at?: string; // Adicionada esta propriedade
   reviewed_at?: string;
   paymentProofImage?: string;
   pixQrCode?: string;

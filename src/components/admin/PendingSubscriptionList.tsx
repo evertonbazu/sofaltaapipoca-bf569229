@@ -10,7 +10,7 @@ import {
   Star, 
   Clock, 
   Download, 
-  Telegram
+  MessageCircle // Alterado de Telegram para MessageCircle
 } from 'lucide-react';
 import {
   Table,
@@ -92,7 +92,8 @@ const PendingSubscriptionList = () => {
         telegramUsername: item.telegram_username,
         icon: item.icon,
         addedDate: item.added_date || formatDate(item.submitted_at),
-        submittedAt: item.submitted_at,
+        // Correção: renomear para submitted_at para corresponder ao tipo SubscriptionData
+        submitted_at: item.submitted_at, 
         statusApproval: item.status_approval,
         userId: item.user_id,
         code: item.code,
@@ -331,7 +332,7 @@ const PendingSubscriptionList = () => {
               <TableCell className="font-medium">{subscription.title}</TableCell>
               <TableCell>{subscription.price}</TableCell>
               <TableCell>{subscription.status}</TableCell>
-              <TableCell>{formatDate(subscription.submittedAt)}</TableCell>
+              <TableCell>{formatDate(subscription.submitted_at)}</TableCell>
               <TableCell>
                 {subscription.statusApproval === 'pending' && <span className="flex items-center"><Clock className="w-4 h-4 mr-1 text-amber-500" /> Pendente</span>}
                 {subscription.statusApproval === 'approved' && <span className="flex items-center"><Check className="w-4 h-4 mr-1 text-green-500" /> Aprovada</span>}
@@ -433,7 +434,7 @@ const PendingSubscriptionList = () => {
                       }}
                       title="Enviar para o Telegram"
                     >
-                      <Telegram className="h-4 w-4 text-blue-500" />
+                      <MessageCircle className="h-4 w-4 text-blue-500" />
                     </Button>
                   )}
                   <Button 
