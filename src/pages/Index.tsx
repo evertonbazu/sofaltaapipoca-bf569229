@@ -3,7 +3,6 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import SubscriptionList from '@/components/SubscriptionList';
 import NoResults from '@/components/NoResults';
-import { MessageSquare, Megaphone, User } from 'lucide-react';
 import NavBar from '@/components/NavBar';
 import FilterSearch from '@/components/FilterSearch';
 import HeaderButtonsDisplay from '@/components/HeaderButtonsDisplay';
@@ -36,7 +35,6 @@ const Index: React.FC = () => {
       try {
         const title = await getSiteConfig('site_title');
         const subtitle = await getSiteConfig('site_subtitle');
-        const version = await getSiteConfig('app_version');
         const whatsapp = await getSiteConfig('contact_whatsapp');
         
         if (title) setSiteTitle(title);
@@ -46,16 +44,16 @@ const Index: React.FC = () => {
         // Always use the version from shareUtils.ts
         setAppVersion(APP_VERSION);
         
-        // If app_version isn't set in the DB or doesn't match current version, update it
-        if (!version || version !== APP_VERSION) {
-          await supabase
-            .from('site_configurations')
-            .upsert({ 
-              key: 'app_version', 
-              value: APP_VERSION,
-              description: 'Current application version'
-            });
-        }
+        // Update the app_version in the database if it doesn't match current version
+        await supabase
+          .from('site_configurations')
+          .upsert({ 
+            key: 'app_version', 
+            value: APP_VERSION,
+            description: 'Current application version'
+          });
+        
+        console.log(`App version set to ${APP_VERSION}`);
       } catch (error) {
         console.error('Erro ao carregar configurações do site:', error);
         // In case of error, use the current app version from shareUtils

@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
@@ -29,6 +30,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { SubscriptionData } from '@/types/subscriptionTypes';
 import { deleteSubscription, getAllSubscriptions, toggleVisibilityStatus } from '@/services/subscription-service';
 import { downloadSubscriptionAsTxt } from '@/utils/exportUtils';
@@ -280,7 +282,7 @@ const PendingSubscriptionList = () => {
           title: "Assinatura aprovada",
           description: "A assinatura foi aprovada, mas pode haver um problema ao enviar para o Telegram: " + 
                        (telegramResult.error || "Erro desconhecido"),
-          variant: "warning",
+          variant: "destructive", // Changed from "warning" to "destructive"
         });
       }
       
