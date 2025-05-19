@@ -4,6 +4,10 @@ import AdminLayout from '@/components/admin/AdminLayout';
 import PendingSubscriptionList from '@/components/admin/PendingSubscriptionList';
 import { Button } from '@/components/ui/button';
 
+/**
+ * Página para gerenciar assinaturas pendentes de aprovação
+ * @version 3.1.1
+ */
 const PendingSubscriptions = () => {
   const [refreshKey, setRefreshKey] = useState(0);
 

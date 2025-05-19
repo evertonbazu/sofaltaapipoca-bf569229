@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
@@ -40,6 +39,10 @@ import { downloadSubscriptionAsTxt } from '@/utils/exportUtils';
 import { supabase } from '@/integrations/supabase/client';
 import { sendToTelegramGroup, isAutoPostingEnabled } from '@/utils/shareUtils';
 
+/**
+ * Componente para visualizar e gerenciar assinaturas pendentes
+ * @version 3.1.1
+ */
 const PendingSubscriptionList = () => {
   const [pendingSubscriptions, setPendingSubscriptions] = useState<SubscriptionData[]>([]);
   const [loading, setLoading] = useState(true);
@@ -81,8 +84,16 @@ const PendingSubscriptionList = () => {
       // Log de todos os status_approval existentes
       const { data: statusCounts } = await supabase
         .from('pending_subscriptions')
-        .select('status_approval, count(*)', { count: 'exact' })
-        .group('status_approval');
+        .select('status_approval')
+        .then(({ data }) => {
+          // Contagem manual dos status
+          const counts: Record<string, number> = {};
+          data?.forEach(item => {
+            const status = item.status_approval || 'null';
+            counts[status] = (counts[status] || 0) + 1;
+          });
+          return { data: counts };
+        });
       
       console.log('Distribuição de status_approval:', statusCounts);
       
@@ -90,8 +101,7 @@ const PendingSubscriptionList = () => {
       const { data, error, count } = await supabase
         .from('pending_subscriptions')
         .select('*', { count: 'exact' })
-        .eq('status_approval', 'pending')
-        .order('submitted_at', { ascending: false });
+        .eq('status_approval', 'pending');
 
       console.log(`Consulta executada. Registros encontrados: ${count || 0}`);
 
@@ -130,7 +140,37 @@ const PendingSubscriptionList = () => {
               .eq('status_approval', 'pending')
               .order('submitted_at', { ascending: false });
               
-            data = updatedData;
+            if (updatedData) {
+              // Map the database column names to our frontend property names
+              const mappedData = updatedData.map((item: any) => ({
+                id: item.id,
+                title: item.title,
+                price: item.price,
+                paymentMethod: item.payment_method,
+                status: item.status,
+                access: item.access,
+                headerColor: item.header_color,
+                priceColor: item.price_color,
+                whatsappNumber: item.whatsapp_number,
+                telegramUsername: item.telegram_username,
+                icon: item.icon,
+                addedDate: item.added_date || formatDate(item.submitted_at),
+                submitted_at: item.submitted_at,
+                statusApproval: item.status_approval,
+                userId: item.user_id,
+                code: item.code,
+                pixKey: item.pix_key,
+                paymentProofImage: item.payment_proof_image,
+                isMemberSubmission: !!item.user_id,
+                rejectionReason: item.rejection_reason,
+                pixQrCode: item.pix_qr_code,
+                visible: item.visible
+              }));
+
+              setPendingSubscriptions(mappedData);
+              setLoading(false);
+              return; // Retornar aqui para evitar mapear novamente abaixo
+            }
           }
         }
       }
@@ -162,6 +202,20 @@ const PendingSubscriptionList = () => {
       })) : [];
 
       setPendingSubscriptions(mappedData);
+      
+      // Registrar log de diagnóstico para rastreamento
+      await supabase
+        .from('diagnostic_logs')
+        .insert({
+          operation: 'fetch_pending_subscriptions',
+          details: { 
+            count: data?.length || 0, 
+            total_count: totalCount || 0,
+            status_counts: statusCounts || {}
+          },
+          success: true
+        });
+        
     } catch (error) {
       console.error('Error fetching pending subscriptions:', error);
       toast({
@@ -169,6 +223,16 @@ const PendingSubscriptionList = () => {
         description: "Não foi possível carregar as assinaturas pendentes.",
         variant: "destructive",
       });
+      
+      // Registrar erro no log de diagnóstico
+      await supabase
+        .from('diagnostic_logs')
+        .insert({
+          operation: 'fetch_pending_subscriptions',
+          details: { error: 'Failed to fetch pending subscriptions' },
+          success: false,
+          error_details: { message: (error as Error).message, stack: (error as Error).stack }
+        });
     } finally {
       setLoading(false);
     }

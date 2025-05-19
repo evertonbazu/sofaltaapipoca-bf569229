@@ -42,6 +42,33 @@ export type Database = {
         }
         Relationships: []
       }
+      diagnostic_logs: {
+        Row: {
+          created_at: string | null
+          details: Json
+          error_details: Json | null
+          id: string
+          operation: string
+          success: boolean
+        }
+        Insert: {
+          created_at?: string | null
+          details?: Json
+          error_details?: Json | null
+          id?: string
+          operation: string
+          success?: boolean
+        }
+        Update: {
+          created_at?: string | null
+          details?: Json
+          error_details?: Json | null
+          id?: string
+          operation?: string
+          success?: boolean
+        }
+        Relationships: []
+      }
       error_logs: {
         Row: {
           created_at: string
