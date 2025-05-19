@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import SubscriptionList from '@/components/SubscriptionList';
@@ -10,6 +11,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { getSiteConfig } from '@/services/subscription-service';
 import { useAuth } from '@/contexts/AuthContext';
 import { APP_VERSION } from '@/utils/shareUtils';
+
 const Index: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [hasResults, setHasResults] = useState(true);
@@ -17,12 +19,15 @@ const Index: React.FC = () => {
   const [siteSubtitle, setSiteSubtitle] = useState("Assinaturas premium com preços exclusivos");
   const [appVersion, setAppVersion] = useState(APP_VERSION); // Use version directly from shareUtils
   const [contactWhatsapp, setContactWhatsapp] = useState("5513992077804");
+  
   const subscriptionRefs = useRef<{
     [key: string]: HTMLDivElement | null;
   }>({});
+  
   const {
     authState
   } = useAuth();
+  
   const isLoggedIn = !!authState.session;
 
   // Carregar configurações do site
@@ -33,19 +38,34 @@ const Index: React.FC = () => {
         const subtitle = await getSiteConfig('site_subtitle');
         const version = await getSiteConfig('app_version');
         const whatsapp = await getSiteConfig('contact_whatsapp');
+        
         if (title) setSiteTitle(title);
         if (subtitle) setSiteSubtitle(subtitle);
-        // If version is not set in the database, or doesn't match current app version, use the current app version
-        setAppVersion(version || APP_VERSION);
         if (whatsapp) setContactWhatsapp(whatsapp);
+        
+        // Always use the version from shareUtils.ts
+        setAppVersion(APP_VERSION);
+        
+        // If app_version isn't set in the DB or doesn't match current version, update it
+        if (!version || version !== APP_VERSION) {
+          await supabase
+            .from('site_configurations')
+            .upsert({ 
+              key: 'app_version', 
+              value: APP_VERSION,
+              description: 'Current application version'
+            });
+        }
       } catch (error) {
         console.error('Erro ao carregar configurações do site:', error);
         // In case of error, use the current app version from shareUtils
         setAppVersion(APP_VERSION);
       }
     };
+    
     loadSiteConfig();
   }, []);
+  
   const handleSearch = (term: string) => {
     setSearchTerm(term.toLowerCase());
     // Make sure we show all results when search is cleared
@@ -53,6 +73,7 @@ const Index: React.FC = () => {
       setHasResults(true);
     }
   };
+  
   return <div className="min-h-screen bg-gray-100">
       <NavBar />
       
@@ -97,4 +118,5 @@ const Index: React.FC = () => {
       </footer>
     </div>;
 };
+
 export default Index;

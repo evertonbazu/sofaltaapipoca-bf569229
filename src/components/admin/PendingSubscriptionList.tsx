@@ -1,11 +1,8 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   Pencil, 
   Trash2, 
-  Star, 
-  StarOff, 
   Search, 
   Info,
   ArrowUp,
@@ -13,7 +10,8 @@ import {
   FileText,
   Send,
   MessageSquare,
-  Eye
+  Eye,
+  Check
 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -21,7 +19,6 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { useToast } from "@/components/ui/use-toast";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
-import { Switch } from "@/components/ui/switch";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -33,9 +30,9 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { SubscriptionData } from '@/types/subscriptionTypes';
-import { deleteSubscription, getAllSubscriptions, toggleFeaturedStatus, toggleVisibilityStatus } from '@/services/subscription-service';
+import { deleteSubscription, getAllSubscriptions, toggleVisibilityStatus } from '@/services/subscription-service';
 import { downloadSubscriptionAsTxt } from '@/utils/exportUtils';
-import { getWhatsAppShareLink, getTelegramShareLink } from '@/utils/shareUtils';
+import { sendToTelegramGroup } from '@/utils/shareUtils';
 
 // Add formatDate function if it's not exported from exportUtils
 const formatDate = (dateString: string | undefined): string => {
@@ -264,51 +261,38 @@ const PendingSubscriptionList = () => {
     }
   };
 
-  // Alternar status de destaque
-  const handleToggleFeatured = async (id: string, currentStatus: boolean) => {
-    try {
-      await toggleFeaturedStatus(id, !currentStatus);
-      
-      toast({
-        title: currentStatus ? "Destaque removido" : "Assinatura destacada",
-        description: currentStatus 
-          ? "A assinatura não está mais em destaque." 
-          : "A assinatura foi colocada em destaque.",
-      });
-      
-      // Atualizar lista após alteração
-      fetchSubscriptions();
-    } catch (error) {
-      toast({
-        title: "Erro ao alterar destaque",
-        description: "Não foi possível alterar o status de destaque.",
-        variant: "destructive",
-      });
-      console.error('Erro ao alternar destaque:', error);
-    }
-  };
-
   // Alternar status de visibilidade (aprovar/rejeitar)
-  const handleToggleVisibility = async (id: string, currentStatus: boolean) => {
+  const handleApproveSubscription = async (id: string) => {
     try {
-      await toggleVisibilityStatus(id, !currentStatus);
+      // Primeiro, atualiza o status para visível (aprovado)
+      await toggleVisibilityStatus(id, true);
       
-      toast({
-        title: currentStatus ? "Assinatura rejeitada" : "Assinatura aprovada",
-        description: currentStatus 
-          ? "A assinatura não será exibida no site." 
-          : "A assinatura será exibida no site.",
-      });
+      // Em seguida, tentar enviar para o Telegram manualmente para garantir
+      const telegramResult = await sendToTelegramGroup(id);
+      
+      if (telegramResult.success) {
+        toast({
+          title: "Assinatura aprovada e enviada",
+          description: "A assinatura foi aprovada e enviada para o grupo do Telegram.",
+        });
+      } else {
+        toast({
+          title: "Assinatura aprovada",
+          description: "A assinatura foi aprovada, mas pode haver um problema ao enviar para o Telegram: " + 
+                       (telegramResult.error || "Erro desconhecido"),
+          variant: "warning",
+        });
+      }
       
       // Atualizar lista após alteração
       fetchSubscriptions();
     } catch (error) {
       toast({
-        title: "Erro ao alterar visibilidade",
-        description: "Não foi possível alterar o status de visibilidade.",
+        title: "Erro ao aprovar assinatura",
+        description: "Não foi possível aprovar a assinatura.",
         variant: "destructive",
       });
-      console.error('Erro ao alternar visibilidade:', error);
+      console.error('Erro ao aprovar assinatura:', error);
     }
   };
 
@@ -505,10 +489,10 @@ const PendingSubscriptionList = () => {
                       <Button
                         variant="outline"
                         size="sm"
-                        className="flex items-center gap-1"
-                        onClick={() => handleToggleVisibility(subscription.id!, subscription.visible ?? false)}
+                        className="flex items-center gap-1 bg-green-50 hover:bg-green-100 text-green-600 border-green-200"
+                        onClick={() => handleApproveSubscription(subscription.id!)}
                       >
-                        <Eye className="h-4 w-4" />
+                        <Check className="h-4 w-4" />
                         Aprovar
                       </Button>
                       

@@ -1,7 +1,8 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { SubscriptionData } from '@/types/subscriptionTypes';
 import { toast } from '@/components/ui/use-toast';
-import { sendToTelegramGroup } from '@/utils/shareUtils';
+import { sendToTelegramGroup, isAutoPostingEnabled } from '@/utils/shareUtils';
 
 // Função para mapear dados do banco de dados para o formato da aplicação
 function mapToSubscriptionData(data: any): SubscriptionData {
@@ -201,10 +202,12 @@ export async function addSubscription(subscription: SubscriptionData): Promise<S
     if (data.user_id && data.visible) {
       try {
         // Verificar se o envio automático está ativado
-        const autoTelegramEnabled = await isAutoTelegramEnabled();
+        const autoTelegramEnabled = await isAutoPostingEnabled();
+        console.log('Auto posting enabled:', autoTelegramEnabled);
         
         if (autoTelegramEnabled) {
           // Enviar assinatura para o grupo do Telegram
+          console.log('Sending new subscription to Telegram:', data.id);
           await sendToTelegramGroup(data.id);
         }
       } catch (sharingError) {
@@ -246,10 +249,12 @@ export async function updateSubscription(id: string, subscription: SubscriptionD
     if (wasInvisible && subscription.visible === true && isMemberSubmission) {
       try {
         // Verificar se o envio automático está ativado
-        const autoTelegramEnabled = await isAutoTelegramEnabled();
+        const autoTelegramEnabled = await isAutoPostingEnabled();
+        console.log('Auto posting enabled for update:', autoTelegramEnabled);
         
         if (autoTelegramEnabled) {
           // Enviar assinatura para o grupo do Telegram
+          console.log('Sending updated subscription to Telegram:', id);
           await sendToTelegramGroup(id);
         }
       } catch (sharingError) {
@@ -311,6 +316,7 @@ export async function toggleVisibilityStatus(id: string, visible: boolean): Prom
     const isMemberSubmission = oldData?.user_id !== null;
     const wasInvisible = oldData?.visible === false;
     
+    // Atualizar a visibilidade
     const { data, error } = await supabase
       .from('subscriptions')
       .update({ visible })
@@ -324,11 +330,14 @@ export async function toggleVisibilityStatus(id: string, visible: boolean): Prom
     if (visible === true && wasInvisible && isMemberSubmission) {
       try {
         // Verificar se o envio automático está ativado
-        const autoTelegramEnabled = await isAutoTelegramEnabled();
+        const autoTelegramEnabled = await isAutoPostingEnabled();
+        console.log('Auto posting enabled for visibility toggle:', autoTelegramEnabled);
         
         if (autoTelegramEnabled) {
           // Enviar assinatura para o grupo do Telegram
-          await sendToTelegramGroup(id);
+          console.log('Sending newly visible subscription to Telegram:', id);
+          const result = await sendToTelegramGroup(id);
+          console.log('Telegram send result:', result);
         }
       } catch (sharingError) {
         console.error('Erro ao compartilhar no Telegram:', sharingError);

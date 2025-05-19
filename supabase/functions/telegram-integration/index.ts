@@ -7,20 +7,21 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.31.0';
 import { corsHeaders } from '../_shared/cors.ts';
 
 /**
+ * Version 2.7.0
+ * - Fixed subscription sending functionality
+ * - Improved error handling and reporting
+ * - Enhanced configuration management
+ * 
  * Version 2.6.0
  * - Set default bot token and group ID
  * - Improved auto-posting logic and error handling
- * 
- * Version 2.2.0
- * - Improved group ID formatting
- * - Added better error handling and logging
  */
 
 const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? '';
 const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY') ?? '';
 const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
-// Defaults values
+// Default values
 const DEFAULT_BOT_TOKEN = '5921988686:AAHXpA6Wyre4BIGACaFLOqB6YrhTavIdbQQ';
 const DEFAULT_GROUP_ID = '1001484207364';
 
@@ -115,6 +116,7 @@ function formatChatId(chatId: string): string {
 async function sendTelegramMessage(botToken: string, chatId: string, text: string) {
   const formattedChatId = formatChatId(chatId);
   console.log(`Sending message to Telegram. Chat ID: ${formattedChatId}`);
+  console.log(`Message length: ${text.length} characters`);
   
   const apiUrl = `https://api.telegram.org/bot${botToken}/sendMessage`;
   const options = {
@@ -128,17 +130,18 @@ async function sendTelegramMessage(botToken: string, chatId: string, text: strin
   };
   
   try {
-    console.log(`Making request to Telegram API: ${apiUrl}`);
+    console.log(`Making request to Telegram API with bot token: ${botToken.substring(0, 5)}...`);
     const response = await fetch(apiUrl, options);
     const responseData = await response.json();
     
+    console.log('Telegram API response status:', response.status);
     console.log('Telegram API response:', JSON.stringify(responseData));
     
     if (!responseData.ok) {
       throw new Error(`Telegram API error: ${responseData.description}`);
     }
     
-    return { success: true };
+    return { success: true, data: responseData };
   } catch (error) {
     console.error('Error sending Telegram message:', error);
     throw error;
@@ -268,7 +271,7 @@ Deno.serve(async (req) => {
     await ensureDefaultConfigurations();
     
     const { action, botToken, groupId, subscriptionId } = await req.json();
-    console.log(`Received request with action: ${action}`);
+    console.log(`Received request with action: ${action}, subscriptionId: ${subscriptionId}`);
     
     // Teste de envio - usa os parâmetros fornecidos diretamente
     if (action === 'send-telegram-test') {
@@ -302,15 +305,15 @@ Deno.serve(async (req) => {
 ⏱️ Sent at: ${currentDate}`;
       
       try {
-        await sendTelegramMessage(tokenToUse, groupIdToUse, testMessage);
-        return new Response(JSON.stringify({ success: true }), {
+        const result = await sendTelegramMessage(tokenToUse, groupIdToUse, testMessage);
+        return new Response(JSON.stringify({ success: true, data: result }), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         });
       } catch (error) {
         console.error('Error in test message:', error);
         return new Response(JSON.stringify({ 
           success: false, 
-          error: `Falha ao enviar mensagem de teste: ${error.message}` 
+          error: `Falha ao enviar mensagem de teste: ${error instanceof Error ? error.message : String(error)}` 
         }), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
           status: 200 // Retorna 200 mesmo com erro para facilitar o tratamento no frontend
@@ -329,7 +332,7 @@ Deno.serve(async (req) => {
       // Obter a configuração do Telegram
       const config = await getTelegramConfig();
       console.log('Retrieved Telegram config:', {
-        botToken: '***',
+        botTokenPrefix: config.botToken.substring(0, 5) + '...',
         groupId: config.groupId,
         autoPost: config.autoPost
       });
@@ -342,21 +345,30 @@ Deno.serve(async (req) => {
         .maybeSingle();
       
       if (fetchError) {
+        console.error('Erro ao buscar assinatura:', fetchError);
         throw new Error(`Erro ao buscar assinatura: ${fetchError.message}`);
       }
       
       if (!subscription) {
+        console.log('Assinatura não encontrada, verificando em subscriptions...');
         throw new Error('Assinatura não encontrada');
       }
       
-      console.log('Found subscription:', { id: subscription.id, title: subscription.title });
+      console.log('Found subscription:', { 
+        id: subscription.id, 
+        title: subscription.title,
+        visible: subscription.visible,
+        user_id: subscription.user_id ? 'exists' : 'none' 
+      });
       
       // Formatar e enviar a mensagem
       const message = formatSubscriptionForTelegram(subscription);
-      await sendTelegramMessage(config.botToken, config.groupId, message);
-      console.log('Successfully sent subscription to Telegram');
+      console.log('Formatted message length:', message.length);
       
-      return new Response(JSON.stringify({ success: true }), {
+      const sendResult = await sendTelegramMessage(config.botToken, config.groupId, message);
+      console.log('Successfully sent subscription to Telegram, result:', sendResult);
+      
+      return new Response(JSON.stringify({ success: true, data: sendResult }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       });
     }
@@ -375,7 +387,7 @@ Deno.serve(async (req) => {
     console.error('Error in Telegram integration:', error);
     return new Response(JSON.stringify({ 
       success: false, 
-      error: `Erro na integração do Telegram: ${error.message}` 
+      error: `Erro na integração do Telegram: ${error instanceof Error ? error.message : String(error)}` 
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 500

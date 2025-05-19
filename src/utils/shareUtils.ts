@@ -3,23 +3,24 @@ import { SubscriptionData } from '@/types/subscriptionTypes';
 import { supabase } from '@/integrations/supabase/client';
 
 /**
- * Version 2.5.0
+ * Version 2.7.0
+ * - Improved Telegram integration reliability
+ * - Fixed auto-posting functionality issues
+ * - Added better configuration defaults
+ * 
+ * Version 2.6.0
  * - Added default auto-posting enabled
+ * - Set default bot token and group ID
  * - Updated version display mechanism
  * 
- * Version 2.4.0
+ * Version 2.5.0
  * - Fixed additional type handling issues
  * - Improved string-to-boolean conversion logic
  * - Better handling of configuration values with strict typing
- * 
- * Version 2.3.0
- * - Fixed type handling for auto-posting configuration
- * - Added more detailed logging for debugging
- * - Improved error reporting in the autoPostingEnabled function
  */
 
 // Export the current version as a constant for use throughout the app
-export const APP_VERSION = "2.6.0";
+export const APP_VERSION = "2.7.0";
 
 /**
  * Formats subscription data for sharing on messaging platforms
@@ -134,6 +135,10 @@ export const toBooleanSafe = (value: any): boolean => {
   return false;
 };
 
+// Default configuration values for Telegram
+export const DEFAULT_BOT_TOKEN = '5921988686:AAHXpA6Wyre4BIGACaFLOqB6YrhTavIdbQQ';
+export const DEFAULT_GROUP_ID = '1001484207364';
+
 /**
  * Verifica se a postagem automática no Telegram está ativada
  * Default: true (enabled by default)
@@ -159,11 +164,11 @@ export const isAutoPostingEnabled = async (): Promise<boolean> => {
       
       await supabase
         .from('site_configurations')
-        .insert({ key: 'telegram_bot_token', value: '5921988686:AAHXpA6Wyre4BIGACaFLOqB6YrhTavIdbQQ' });
+        .insert({ key: 'telegram_bot_token', value: DEFAULT_BOT_TOKEN });
       
       await supabase
         .from('site_configurations')
-        .insert({ key: 'telegram_group_id', value: '1001484207364' });
+        .insert({ key: 'telegram_group_id', value: DEFAULT_GROUP_ID });
       
       return true;
     }
