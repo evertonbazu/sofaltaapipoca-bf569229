@@ -2,7 +2,7 @@
 import { supabase } from '@/integrations/supabase/client';
 import { SubscriptionData } from '@/types/subscriptionTypes';
 import { toast } from '@/components/ui/use-toast';
-import { sendToTelegramGroup, isAutoPostingEnabled } from '@/utils/shareUtils';
+import { sendToTelegramGroup, deleteFromTelegramGroup, isAutoPostingEnabled } from '@/utils/shareUtils';
 
 // Função para mapear dados do banco de dados para o formato da aplicação
 function mapToSubscriptionData(data: any): SubscriptionData {
@@ -273,6 +273,16 @@ export async function updateSubscription(id: string, subscription: SubscriptionD
 // Excluir uma assinatura
 export async function deleteSubscription(id: string): Promise<void> {
   try {
+    // Primeiro tenta excluir a mensagem do Telegram se existir
+    try {
+      console.log('Tentando excluir mensagem do Telegram para assinatura:', id);
+      await deleteFromTelegramGroup(id);
+    } catch (telegramError) {
+      console.error('Erro ao excluir mensagem do Telegram (continuando):', telegramError);
+      // Continua mesmo se houver erro ao excluir do Telegram
+    }
+    
+    // Agora exclui a assinatura do banco de dados
     const { error } = await supabase
       .from('subscriptions')
       .delete()
@@ -342,6 +352,15 @@ export async function toggleVisibilityStatus(id: string, visible: boolean): Prom
       } catch (sharingError) {
         console.error('Erro ao compartilhar no Telegram:', sharingError);
         // Não interromper o fluxo se o compartilhamento falhar
+      }
+    } else if (visible === false) {
+      // Se está sendo tornado invisível, tenta excluir do Telegram
+      try {
+        console.log('Tentando excluir mensagem do Telegram ao tornar invisível:', id);
+        await deleteFromTelegramGroup(id);
+      } catch (telegramError) {
+        console.error('Erro ao excluir mensagem do Telegram (continuando):', telegramError);
+        // Continua mesmo se houver erro ao excluir do Telegram
       }
     }
     

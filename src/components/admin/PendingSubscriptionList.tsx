@@ -2,24 +2,27 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
-  Pencil, 
+  Check, 
+  X, 
   Trash2, 
-  Search, 
-  Info,
-  ArrowUp,
-  ArrowDown,
-  FileText,
-  Send,
-  MessageSquare,
-  Eye,
-  Check
+  Eye, 
+  EyeOff, 
+  Star, 
+  Clock, 
+  Download, 
+  Telegram
 } from 'lucide-react';
+import {
+  Table,
+  TableBody,
+  TableCaption,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useToast } from "@/components/ui/use-toast";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Badge } from "@/components/ui/badge";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -34,567 +37,437 @@ import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { SubscriptionData } from '@/types/subscriptionTypes';
 import { deleteSubscription, getAllSubscriptions, toggleVisibilityStatus } from '@/services/subscription-service';
 import { downloadSubscriptionAsTxt } from '@/utils/exportUtils';
-import { sendToTelegramGroup } from '@/utils/shareUtils';
-
-// Add formatDate function if it's not exported from exportUtils
-const formatDate = (dateString: string | undefined): string => {
-  if (!dateString) return '-';
-  
-  // Handle cases where the date is already formatted
-  if (dateString.includes('/')) return dateString;
-  
-  try {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('pt-BR');
-  } catch (e) {
-    console.error('Error formatting date:', e);
-    return dateString;
-  }
-};
-
-type SortField = 'title' | 'price' | 'telegramUsername' | 'whatsappNumber' | 'featured' | 'addedDate' | 'visible';
-type SortDirection = 'asc' | 'desc';
+import { supabase } from '@/integrations/supabase/client';
+import { sendToTelegramGroup, isAutoPostingEnabled } from '@/utils/shareUtils';
 
 const PendingSubscriptionList = () => {
-  const [subscriptions, setSubscriptions] = useState<SubscriptionData[]>([]);
-  const [filteredSubscriptions, setFilteredSubscriptions] = useState<SubscriptionData[]>([]);
-  const [isLoading, setIsLoading] = useState<boolean>(true);
-  const [searchTerm, setSearchTerm] = useState<string>('');
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState<boolean>(false);
-  const [subscriptionToDelete, setSubscriptionToDelete] = useState<string | null>(null);
-  const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
-  const [isMultiDeleteDialogOpen, setIsMultiDeleteDialogOpen] = useState<boolean>(false);
-  const [sortField, setSortField] = useState<SortField>('addedDate');
-  const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
+  const [pendingSubscriptions, setPendingSubscriptions] = useState<SubscriptionData[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [selectedSubscription, setSelectedSubscription] = useState<SubscriptionData | null>(null);
+  const [telegramPosting, setTelegramPosting] = useState<Record<string, boolean>>({});
   const { toast } = useToast();
   const navigate = useNavigate();
+  
+  const formatDate = (dateStr: string | null | undefined) => {
+    if (!dateStr) return 'N/A';
+    
+    try {
+      const date = new Date(dateStr);
+      return new Intl.DateTimeFormat('pt-BR', { 
+        day: '2-digit', 
+        month: '2-digit',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      }).format(date);
+    } catch (e) {
+      return dateStr;
+    }
+  };
 
-  // Buscar assinaturas quando o componente montar
+  const fetchPendingSubscriptions = async () => {
+    setLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('pending_subscriptions')
+        .select('*')
+        .order('submitted_at', { ascending: false });
+
+      if (error) {
+        throw error;
+      }
+
+      // Map the database column names to our frontend property names
+      const mappedData = data.map((item: any) => ({
+        id: item.id,
+        title: item.title,
+        price: item.price,
+        paymentMethod: item.payment_method,
+        status: item.status,
+        access: item.access,
+        headerColor: item.header_color,
+        priceColor: item.price_color,
+        whatsappNumber: item.whatsapp_number,
+        telegramUsername: item.telegram_username,
+        icon: item.icon,
+        addedDate: item.added_date || formatDate(item.submitted_at),
+        submittedAt: item.submitted_at,
+        statusApproval: item.status_approval,
+        userId: item.user_id,
+        code: item.code,
+        pixKey: item.pix_key,
+        paymentProofImage: item.payment_proof_image,
+        isMemberSubmission: !!item.user_id,
+        rejectionReason: item.rejection_reason,
+        piqQrCode: item.pix_qr_code,
+        visible: item.visible
+      }));
+
+      setPendingSubscriptions(mappedData);
+    } catch (error) {
+      console.error('Error fetching pending subscriptions:', error);
+      toast({
+        title: "Erro",
+        description: "Não foi possível carregar as assinaturas pendentes.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    fetchSubscriptions();
+    fetchPendingSubscriptions();
   }, []);
 
-  // Filtrar assinaturas com base no termo de busca
-  useEffect(() => {
-    if (searchTerm.trim() === '') {
-      setFilteredSubscriptions(subscriptions);
-    } else {
-      const lowercaseSearchTerm = searchTerm.toLowerCase();
-      const filtered = subscriptions.filter((subscription) => {
-        return (
-          subscription.title?.toLowerCase().includes(lowercaseSearchTerm) ||
-          subscription.price?.toLowerCase().includes(lowercaseSearchTerm) ||
-          subscription.telegramUsername?.toLowerCase().includes(lowercaseSearchTerm) ||
-          subscription.whatsappNumber?.toLowerCase().includes(lowercaseSearchTerm) ||
-          subscription.addedDate?.toLowerCase().includes(lowercaseSearchTerm)
-        );
-      });
-      setFilteredSubscriptions(filtered);
-    }
-  }, [searchTerm, subscriptions]);
-
-  // Ordenar assinaturas quando o campo ou direção de ordenação mudar
-  useEffect(() => {
-    if (!sortField) {
-      return;
-    }
-    
-    const sorted = [...filteredSubscriptions].sort((a, b) => {
-      let valueA: string | boolean = '';
-      let valueB: string | boolean = '';
+  const handleApproveSubscription = async (subscription: SubscriptionData) => {
+    try {
+      // Primeiro insere na tabela de assinaturas
+      const { data: newSubscription, error: insertError } = await supabase
+        .from('subscriptions')
+        .insert({
+          title: subscription.title,
+          price: subscription.price,
+          payment_method: subscription.paymentMethod,
+          status: subscription.status,
+          access: subscription.access,
+          header_color: subscription.headerColor || 'bg-blue-600',
+          price_color: subscription.priceColor || 'text-blue-600',
+          whatsapp_number: subscription.whatsappNumber,
+          telegram_username: subscription.telegramUsername,
+          icon: subscription.icon,
+          added_date: subscription.addedDate,
+          code: subscription.code,
+          pix_key: subscription.pixKey,
+          user_id: subscription.userId,
+          payment_proof_image: subscription.paymentProofImage,
+          visible: true
+        })
+        .select()
+        .single();
       
-      switch (sortField) {
-        case 'title':
-          valueA = a.title?.toLowerCase() || '';
-          valueB = b.title?.toLowerCase() || '';
-          break;
-        case 'price':
-          valueA = a.price?.toLowerCase() || '';
-          valueB = b.price?.toLowerCase() || '';
-          break;
-        case 'telegramUsername':
-          valueA = a.telegramUsername?.toLowerCase() || '';
-          valueB = b.telegramUsername?.toLowerCase() || '';
-          break;
-        case 'whatsappNumber':
-          valueA = a.whatsappNumber?.toLowerCase() || '';
-          valueB = b.whatsappNumber?.toLowerCase() || '';
-          break;
-        case 'featured':
-          valueA = a.featured || false;
-          valueB = b.featured || false;
-          break;
-        case 'visible':
-          valueA = a.visible || false;
-          valueB = b.visible || false;
-          break;
-        case 'addedDate':
-          // Para datas no formato DD/MM/YYYY, convertemos para YYYY/MM/DD para ordenação
-          if (a.addedDate && b.addedDate) {
-            const partsA = a.addedDate.split('/');
-            const partsB = b.addedDate.split('/');
-            if (partsA.length === 3 && partsB.length === 3) {
-              valueA = `${partsA[2]}/${partsA[1]}/${partsA[0]}`;
-              valueB = `${partsB[2]}/${partsB[1]}/${partsB[0]}`;
-            } else {
-              valueA = a.addedDate;
-              valueB = b.addedDate;
-            }
+      if (insertError) throw insertError;
+      
+      // Depois atualiza o status na tabela de pending_subscriptions
+      const { error: updateError } = await supabase
+        .from('pending_subscriptions')
+        .update({ 
+          status_approval: 'approved',
+          reviewed_at: new Date().toISOString()
+        })
+        .eq('id', subscription.id);
+      
+      if (updateError) throw updateError;
+      
+      toast({
+        title: "Assinatura aprovada",
+        description: "A assinatura foi aprovada e adicionada à lista de assinaturas.",
+      });
+      
+      // Enviar a assinatura aprovada para o Telegram
+      setTelegramPosting(prev => ({ ...prev, [subscription.id!]: true }));
+      
+      try {
+        // Verificar se o envio automático está ativado
+        const autoTelegramEnabled = await isAutoPostingEnabled();
+        
+        if (autoTelegramEnabled && newSubscription) {
+          // Enviar assinatura para o grupo do Telegram
+          console.log('Enviando assinatura aprovada para o Telegram:', newSubscription.id);
+          const telegramResult = await sendToTelegramGroup(newSubscription.id);
+          
+          if (telegramResult.success) {
+            toast({
+              title: "Assinatura enviada",
+              description: "A assinatura foi enviada para o grupo do Telegram.",
+            });
           } else {
-            valueA = a.addedDate || '';
-            valueB = b.addedDate || '';
+            toast({
+              title: "Assinatura aprovada",
+              description: "A assinatura foi aprovada, mas pode haver um problema ao enviar para o Telegram: " + 
+                         (telegramResult.error || "Erro desconhecido"),
+              variant: "destructive", // Changed from "warning" to "destructive"
+            });
           }
-          break;
-      }
-      
-      if (typeof valueA === 'boolean' && typeof valueB === 'boolean') {
-        return sortDirection === 'asc' ? 
-          Number(valueA) - Number(valueB) : 
-          Number(valueB) - Number(valueA);
-      }
-      
-      if (sortDirection === 'asc') {
-        return valueA < valueB ? -1 : valueA > valueB ? 1 : 0;
-      } else {
-        return valueA > valueB ? -1 : valueA < valueB ? 1 : 0;
-      }
-    });
-    
-    setFilteredSubscriptions(sorted);
-  }, [sortField, sortDirection]);
-
-  // Função para alterar a ordenação ao clicar em um cabeçalho da tabela
-  const handleSort = (field: SortField) => {
-    if (sortField === field) {
-      // Se já estamos ordenando por este campo, alternar a direção
-      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
-    } else {
-      // Caso contrário, definir o novo campo de ordenação e resetar para ascendente
-      setSortField(field);
-      setSortDirection('asc');
-    }
-  };
-
-  // Renderizar indicador de ordenação
-  const renderSortIndicator = (field: SortField) => {
-    if (sortField !== field) {
-      return null;
-    }
-    return sortDirection === 'asc' ? (
-      <ArrowUp className="h-4 w-4 inline ml-1" />
-    ) : (
-      <ArrowDown className="h-4 w-4 inline ml-1" />
-    );
-  };
-
-  // Função para buscar assinaturas
-  const fetchSubscriptions = async () => {
-    setIsLoading(true);
-    try {
-      const data = await getAllSubscriptions();
-      console.log('All subscriptions loaded:', data);
-      
-      // Filtramos para mostrar apenas as assinaturas NÃO aprovadas (visible = false)
-      const pendingSubscriptions = data.filter(subscription => subscription.visible === false);
-      console.log('Pending subscriptions filtered:', pendingSubscriptions);
-      
-      setSubscriptions(pendingSubscriptions);
-      setFilteredSubscriptions(pendingSubscriptions);
-      
-      // Forçar ordenação inicial por data (mais recentes primeiro)
-      setSortField('addedDate');
-      setSortDirection('desc');
-    } catch (error) {
-      toast({
-        title: "Erro ao carregar assinaturas pendentes",
-        description: "Não foi possível carregar a lista de assinaturas pendentes.",
-        variant: "destructive",
-      });
-      console.error('Erro ao buscar assinaturas pendentes:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  // Gerar link para Telegram
-  const getTelegramLink = (username: string) => {
-    if (!username) return '#';
-    // Remove @ if present at the beginning of the username
-    const cleanUsername = username.startsWith('@') ? username.substring(1) : username;
-    return `https://telegram.me/${cleanUsername}`;
-  };
-
-  // Gerar link para WhatsApp
-  const getWhatsappLink = (number: string) => {
-    if (!number) return '#';
-    return `https://wa.me/${number}`;
-  };
-
-  // Abrir diálogo de confirmação para excluir
-  const handleDeleteClick = (id: string) => {
-    setSubscriptionToDelete(id);
-    setDeleteDialogOpen(true);
-  };
-
-  // Excluir assinatura
-  const handleDeleteConfirm = async () => {
-    if (!subscriptionToDelete) return;
-    
-    try {
-      await deleteSubscription(subscriptionToDelete);
-      
-      toast({
-        title: "Assinatura excluída",
-        description: "A assinatura foi excluída com sucesso.",
-      });
-      
-      // Atualizar lista após exclusão
-      fetchSubscriptions();
-    } catch (error) {
-      toast({
-        title: "Erro ao excluir assinatura",
-        description: "Não foi possível excluir a assinatura.",
-        variant: "destructive",
-      });
-      console.error('Erro ao excluir assinatura:', error);
-    } finally {
-      setDeleteDialogOpen(false);
-      setSubscriptionToDelete(null);
-    }
-  };
-
-  // Alternar status de visibilidade (aprovar/rejeitar)
-  const handleApproveSubscription = async (id: string) => {
-    try {
-      // Primeiro, atualiza o status para visível (aprovado)
-      await toggleVisibilityStatus(id, true);
-      
-      // Em seguida, tentar enviar para o Telegram manualmente para garantir
-      const telegramResult = await sendToTelegramGroup(id);
-      
-      if (telegramResult.success) {
+        }
+      } catch (telegramError) {
+        console.error('Erro ao enviar para o Telegram:', telegramError);
         toast({
-          title: "Assinatura aprovada e enviada",
-          description: "A assinatura foi aprovada e enviada para o grupo do Telegram.",
+          title: "Erro no Telegram",
+          description: "A assinatura foi aprovada, mas ocorreu um erro ao enviar para o Telegram.",
+          variant: "destructive",
         });
-      } else {
-        toast({
-          title: "Assinatura aprovada",
-          description: "A assinatura foi aprovada, mas pode haver um problema ao enviar para o Telegram: " + 
-                       (telegramResult.error || "Erro desconhecido"),
-          variant: "destructive", // Changed from "warning" to "destructive"
-        });
+      } finally {
+        setTelegramPosting(prev => ({ ...prev, [subscription.id!]: false }));
       }
       
-      // Atualizar lista após alteração
-      fetchSubscriptions();
+      // Recarregar a lista
+      fetchPendingSubscriptions();
     } catch (error) {
+      console.error('Error approving subscription:', error);
       toast({
-        title: "Erro ao aprovar assinatura",
+        title: "Erro",
         description: "Não foi possível aprovar a assinatura.",
         variant: "destructive",
       });
-      console.error('Erro ao aprovar assinatura:', error);
     }
   };
 
-  // Gerenciar seleção de itens
-  const toggleItemSelection = (id: string) => {
-    const newSelectedItems = new Set(selectedItems);
-    if (newSelectedItems.has(id)) {
-      newSelectedItems.delete(id);
-    } else {
-      newSelectedItems.add(id);
-    }
-    setSelectedItems(newSelectedItems);
-  };
-
-  // Selecionar todos os itens
-  const selectAll = () => {
-    if (selectedItems.size === filteredSubscriptions.length) {
-      // Se todos já estão selecionados, desmarcar todos
-      setSelectedItems(new Set());
-    } else {
-      // Senão, selecionar todos
-      const allIds = filteredSubscriptions.map(sub => sub.id!);
-      setSelectedItems(new Set(allIds));
-    }
-  };
-
-  // Excluir múltiplos itens
-  const handleDeleteMultipleConfirm = async () => {
+  const handleRejectSubscription = async (subscription: SubscriptionData) => {
     try {
-      let successCount = 0;
-      let errorCount = 0;
-
-      // Converter o Set para um Array para poder usar o Promise.all
-      const deletePromises = Array.from(selectedItems).map(async (id) => {
-        try {
-          await deleteSubscription(id);
-          successCount++;
-        } catch (error) {
-          errorCount++;
-          console.error(`Erro ao excluir assinatura ${id}:`, error);
-        }
-      });
-
-      await Promise.all(deletePromises);
+      // Atualiza o status na tabela de pending_subscriptions
+      const { error: updateError } = await supabase
+        .from('pending_subscriptions')
+        .update({ 
+          status_approval: 'rejected',
+          reviewed_at: new Date().toISOString(),
+          // Poderia adicionar um campo para o motivo da rejeição
+        })
+        .eq('id', subscription.id);
+      
+      if (updateError) throw updateError;
       
       toast({
-        title: `${successCount} assinaturas excluídas`,
-        description: errorCount > 0 
-          ? `${errorCount} assinaturas não foram excluídas devido a erros.` 
-          : "Todas as assinaturas selecionadas foram excluídas com sucesso.",
-        variant: errorCount > 0 ? "destructive" : "default",
+        title: "Assinatura rejeitada",
+        description: "A assinatura foi marcada como rejeitada.",
       });
       
-      // Limpar seleção e atualizar lista
-      setSelectedItems(new Set());
-      fetchSubscriptions();
+      // Recarregar a lista
+      fetchPendingSubscriptions();
     } catch (error) {
+      console.error('Error rejecting subscription:', error);
       toast({
-        title: "Erro ao excluir assinaturas",
-        description: "Ocorreu um erro ao excluir as assinaturas selecionadas.",
+        title: "Erro",
+        description: "Não foi possível rejeitar a assinatura.",
         variant: "destructive",
       });
-      console.error('Erro ao excluir múltiplas assinaturas:', error);
-    } finally {
-      setIsMultiDeleteDialogOpen(false);
     }
   };
 
+  const handleDeleteClick = (subscription: SubscriptionData) => {
+    setSelectedSubscription(subscription);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!selectedSubscription?.id) return;
+    
+    try {
+      const { error } = await supabase
+        .from('pending_subscriptions')
+        .delete()
+        .eq('id', selectedSubscription.id);
+      
+      if (error) throw error;
+      
+      toast({
+        title: "Assinatura excluída",
+        description: "A assinatura pendente foi excluída com sucesso.",
+      });
+      
+      // Recarregar a lista
+      fetchPendingSubscriptions();
+    } catch (error) {
+      console.error('Error deleting subscription:', error);
+      toast({
+        title: "Erro",
+        description: "Não foi possível excluir a assinatura.",
+        variant: "destructive",
+      });
+    } finally {
+      setDeleteDialogOpen(false);
+      setSelectedSubscription(null);
+    }
+  };
+
+  const handleExportClick = (subscription: SubscriptionData) => {
+    downloadSubscriptionAsTxt(subscription);
+    toast({
+      title: "Assinatura exportada",
+      description: "A assinatura foi exportada como arquivo de texto.",
+    });
+  };
+
+  const getRowClass = (statusApproval: string | undefined) => {
+    switch(statusApproval) {
+      case 'approved': return 'bg-green-50';
+      case 'rejected': return 'bg-red-50';
+      default: return '';
+    }
+  };
+
+  if (loading) {
+    return <div className="flex justify-center items-center p-8">
+      <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full"></div>
+      <span className="ml-2">Carregando assinaturas pendentes...</span>
+    </div>;
+  }
+
+  if (pendingSubscriptions.length === 0) {
+    return <div className="bg-muted/20 p-6 rounded-lg text-center">
+      <h3 className="text-lg font-medium">Sem assinaturas pendentes</h3>
+      <p className="text-muted-foreground mt-2">Não há assinaturas pendentes de aprovação no momento.</p>
+    </div>;
+  }
+
   return (
-    <div className="space-y-4">
-      {/* Barra de pesquisa e ações em lote */}
-      <div className="flex flex-col md:flex-row gap-4">
-        <div className="flex items-center border rounded-md bg-white p-2 flex-1">
-          <Search className="h-5 w-5 text-gray-400 mr-2" />
-          <Input
-            type="text"
-            placeholder="Buscar assinaturas pendentes..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="border-0 focus-visible:ring-0 focus-visible:ring-transparent"
-          />
-        </div>
-        {selectedItems.size > 0 && (
-          <Button 
-            variant="destructive"
-            onClick={() => setIsMultiDeleteDialogOpen(true)}
-            className="whitespace-nowrap"
-          >
-            <Trash2 className="h-4 w-4 mr-2" />
-            Excluir {selectedItems.size} selecionados
-          </Button>
-        )}
-      </div>
+    <>
+      <Table>
+        <TableCaption>Lista de assinaturas pendentes de aprovação</TableCaption>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Título</TableHead>
+            <TableHead>Preço</TableHead>
+            <TableHead>Status</TableHead>
+            <TableHead>Enviada em</TableHead>
+            <TableHead>Status de aprovação</TableHead>
+            <TableHead>Ações</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {pendingSubscriptions.map((subscription) => (
+            <TableRow key={subscription.id} className={getRowClass(subscription.statusApproval)}>
+              <TableCell className="font-medium">{subscription.title}</TableCell>
+              <TableCell>{subscription.price}</TableCell>
+              <TableCell>{subscription.status}</TableCell>
+              <TableCell>{formatDate(subscription.submittedAt)}</TableCell>
+              <TableCell>
+                {subscription.statusApproval === 'pending' && <span className="flex items-center"><Clock className="w-4 h-4 mr-1 text-amber-500" /> Pendente</span>}
+                {subscription.statusApproval === 'approved' && <span className="flex items-center"><Check className="w-4 h-4 mr-1 text-green-500" /> Aprovada</span>}
+                {subscription.statusApproval === 'rejected' && <span className="flex items-center"><X className="w-4 h-4 mr-1 text-red-500" /> Rejeitada</span>}
+              </TableCell>
+              <TableCell>
+                <div className="flex space-x-1">
+                  {subscription.statusApproval === 'pending' && (
+                    <>
+                      <Button 
+                        variant="outline" 
+                        size="icon" 
+                        onClick={() => handleApproveSubscription(subscription)}
+                        title="Aprovar"
+                      >
+                        <Check className="h-4 w-4 text-green-500" />
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        size="icon" 
+                        onClick={() => handleRejectSubscription(subscription)}
+                        title="Rejeitar"
+                      >
+                        <X className="h-4 w-4 text-red-500" />
+                      </Button>
+                    </>
+                  )}
+                  {subscription.statusApproval === 'approved' && (
+                    <Button 
+                      variant="outline" 
+                      size="icon" 
+                      onClick={() => navigate(`/admin/subscriptions`)}
+                      title="Ver assinaturas aprovadas"
+                    >
+                      <Eye className="h-4 w-4" />
+                    </Button>
+                  )}
+                  <Button 
+                    variant="outline" 
+                    size="icon" 
+                    onClick={() => handleExportClick(subscription)}
+                    title="Exportar"
+                  >
+                    <Download className="h-4 w-4" />
+                  </Button>
+                  {telegramPosting[subscription.id!] ? (
+                    <Button 
+                      variant="outline" 
+                      size="icon" 
+                      disabled
+                      title="Enviando para o Telegram..."
+                    >
+                      <span className="animate-spin">⏳</span>
+                    </Button>
+                  ) : subscription.statusApproval === 'approved' && (
+                    <Button 
+                      variant="outline" 
+                      size="icon" 
+                      onClick={async () => {
+                        // Buscar o ID da assinatura aprovada
+                        const { data } = await supabase
+                          .from('subscriptions')
+                          .select('id')
+                          .eq('title', subscription.title)
+                          .maybeSingle();
+                          
+                        if (data?.id) {
+                          setTelegramPosting(prev => ({ ...prev, [subscription.id!]: true }));
+                          try {
+                            const result = await sendToTelegramGroup(data.id);
+                            if (result.success) {
+                              toast({
+                                title: "Enviado com sucesso",
+                                description: "A assinatura foi enviada para o grupo do Telegram.",
+                              });
+                            } else {
+                              toast({
+                                title: "Erro ao enviar",
+                                description: result.error || "Erro desconhecido ao enviar para o Telegram.",
+                                variant: "destructive",
+                              });
+                            }
+                          } catch (error) {
+                            toast({
+                              title: "Erro",
+                              description: "Não foi possível enviar para o Telegram.",
+                              variant: "destructive",
+                            });
+                          } finally {
+                            setTelegramPosting(prev => ({ ...prev, [subscription.id!]: false }));
+                          }
+                        } else {
+                          toast({
+                            title: "Erro",
+                            description: "Não foi possível encontrar a assinatura aprovada.",
+                            variant: "destructive",
+                          });
+                        }
+                      }}
+                      title="Enviar para o Telegram"
+                    >
+                      <Telegram className="h-4 w-4 text-blue-500" />
+                    </Button>
+                  )}
+                  <Button 
+                    variant="outline" 
+                    size="icon" 
+                    onClick={() => handleDeleteClick(subscription)}
+                    title="Excluir"
+                  >
+                    <Trash2 className="h-4 w-4 text-red-500" />
+                  </Button>
+                </div>
+              </TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
 
-      {isLoading ? (
-        <div className="text-center py-8">Carregando assinaturas pendentes...</div>
-      ) : filteredSubscriptions.length > 0 ? (
-        <div className="bg-white rounded-md shadow overflow-x-auto">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="w-12">
-                  <div className="flex items-center justify-center">
-                    <Checkbox
-                      checked={selectedItems.size === filteredSubscriptions.length && filteredSubscriptions.length > 0}
-                      onCheckedChange={selectAll}
-                    />
-                  </div>
-                </TableHead>
-                <TableHead 
-                  className="cursor-pointer"
-                  onClick={() => handleSort('title')}
-                >
-                  Título {renderSortIndicator('title')}
-                </TableHead>
-                <TableHead 
-                  className="cursor-pointer"
-                  onClick={() => handleSort('price')}
-                >
-                  Preço {renderSortIndicator('price')}
-                </TableHead>
-                <TableHead 
-                  className="hidden md:table-cell cursor-pointer"
-                  onClick={() => handleSort('telegramUsername')}
-                >
-                  Telegram {renderSortIndicator('telegramUsername')}
-                </TableHead>
-                <TableHead 
-                  className="hidden md:table-cell cursor-pointer"
-                  onClick={() => handleSort('whatsappNumber')}
-                >
-                  WhatsApp {renderSortIndicator('whatsappNumber')}
-                </TableHead>
-                <TableHead 
-                  className="hidden md:table-cell cursor-pointer"
-                  onClick={() => handleSort('addedDate')}
-                >
-                  Adicionado em {renderSortIndicator('addedDate')}
-                </TableHead>
-                <TableHead>Ações</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredSubscriptions.map((subscription) => (
-                <TableRow key={subscription.id}>
-                  <TableCell>
-                    <div className="flex items-center justify-center">
-                      <Checkbox
-                        checked={selectedItems.has(subscription.id!)}
-                        onCheckedChange={() => toggleItemSelection(subscription.id!)}
-                      />
-                    </div>
-                  </TableCell>
-                  <TableCell className="font-medium">
-                    <div className="flex items-center">
-                      {subscription.title}
-                      {subscription.isMemberSubmission && (
-                        <Badge variant="secondary" className="ml-2 text-xs">
-                          Membro
-                        </Badge>
-                      )}
-                    </div>
-                  </TableCell>
-                  <TableCell>{subscription.price}</TableCell>
-                  <TableCell className="hidden md:table-cell">
-                    {subscription.telegramUsername ? (
-                      <a 
-                        href={getTelegramLink(subscription.telegramUsername)} 
-                        target="_blank" 
-                        rel="noopener noreferrer"
-                        className="text-blue-600 hover:underline flex items-center"
-                      >
-                        <Send className="h-3 w-3 mr-1" />
-                        {subscription.telegramUsername}
-                      </a>
-                    ) : '-'}
-                  </TableCell>
-                  <TableCell className="hidden md:table-cell">
-                    {subscription.whatsappNumber ? (
-                      <a 
-                        href={getWhatsappLink(subscription.whatsappNumber)} 
-                        target="_blank" 
-                        rel="noopener noreferrer"
-                        className="text-green-600 hover:underline flex items-center"
-                      >
-                        <MessageSquare className="h-3 w-3 mr-1" />
-                        {subscription.whatsappNumber}
-                      </a>
-                    ) : '-'}
-                  </TableCell>
-                  <TableCell className="hidden md:table-cell">{subscription.addedDate || '-'}</TableCell>
-                  <TableCell>
-                    <div className="flex flex-wrap gap-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="flex items-center gap-1 bg-green-50 hover:bg-green-100 text-green-600 border-green-200"
-                        onClick={() => handleApproveSubscription(subscription.id!)}
-                      >
-                        <Check className="h-4 w-4" />
-                        Aprovar
-                      </Button>
-                      
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => navigate(`/admin/subscriptions/edit/${subscription.id}`)}
-                      >
-                        <Pencil className="h-4 w-4 mr-1" />
-                        Editar
-                      </Button>
-                      
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => downloadSubscriptionAsTxt(subscription)}
-                      >
-                        <FileText className="h-4 w-4 mr-1" />
-                        TXT
-                      </Button>
-                      
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="text-red-500 hover:text-red-700"
-                        onClick={() => handleDeleteClick(subscription.id!)}
-                      >
-                        <Trash2 className="h-4 w-4 mr-1" />
-                        Excluir
-                      </Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
-      ) : (
-        <div className="bg-white rounded-md shadow p-8 text-center">
-          <Info className="h-12 w-12 mx-auto text-gray-400 mb-2" />
-          <h3 className="text-lg font-medium">Nenhuma assinatura pendente encontrada</h3>
-          <p className="text-gray-500 mt-1">
-            {searchTerm 
-              ? "Não foram encontradas assinaturas pendentes com esse termo de busca." 
-              : "Não há assinaturas pendentes de aprovação no momento."}
-          </p>
-          {searchTerm && (
-            <Button 
-              variant="link" 
-              onClick={() => setSearchTerm('')}
-              className="mt-2"
-            >
-              Limpar busca
-            </Button>
-          )}
-        </div>
-      )}
-
-      {/* Diálogo de confirmação para exclusão única */}
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Você tem certeza?</AlertDialogTitle>
+            <AlertDialogTitle>Confirmar exclusão</AlertDialogTitle>
             <AlertDialogDescription>
-              Esta ação não pode ser desfeita. A assinatura será permanentemente excluída.
+              Tem certeza que deseja excluir a assinatura pendente "{selectedSubscription?.title}"? Esta ação não pode ser desfeita.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction 
-              onClick={handleDeleteConfirm}
-              className="bg-red-500 hover:bg-red-600"
-            >
+            <AlertDialogAction onClick={handleDeleteConfirm} className="bg-red-600 hover:bg-red-700">
               Excluir
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-
-      {/* Diálogo de confirmação para exclusão múltipla */}
-      <AlertDialog open={isMultiDeleteDialogOpen} onOpenChange={setIsMultiDeleteDialogOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Excluir {selectedItems.size} assinaturas?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Esta ação não pode ser desfeita. As assinaturas selecionadas serão permanentemente excluídas.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction 
-              onClick={handleDeleteMultipleConfirm}
-              className="bg-red-500 hover:bg-red-600"
-            >
-              Excluir {selectedItems.size} assinaturas
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-    </div>
+    </>
   );
 };
 

@@ -3,6 +3,11 @@ import { SubscriptionData } from '@/types/subscriptionTypes';
 import { supabase } from '@/integrations/supabase/client';
 
 /**
+ * Version 2.8.0
+ * - Adicionado suporte para botões inline no Telegram
+ * - Implementada funcionalidade para excluir mensagens do Telegram
+ * - Melhoradas as integrações de postagem automática
+ * 
  * Version 2.7.0
  * - Improved Telegram integration reliability
  * - Fixed auto-posting functionality issues
@@ -12,15 +17,10 @@ import { supabase } from '@/integrations/supabase/client';
  * - Added default auto-posting enabled
  * - Set default bot token and group ID
  * - Updated version display mechanism
- * 
- * Version 2.5.0
- * - Fixed additional type handling issues
- * - Improved string-to-boolean conversion logic
- * - Better handling of configuration values with strict typing
  */
 
 // Export the current version as a constant for use throughout the app
-export const APP_VERSION = "2.7.0";
+export const APP_VERSION = "2.8.0";
 
 /**
  * Formats subscription data for sharing on messaging platforms
@@ -82,9 +82,9 @@ export const getTelegramShareLink = (subscription: SubscriptionData): string => 
 /**
  * Sends a subscription to the Telegram group configured in settings
  */
-export const sendToTelegramGroup = async (subscriptionId: string): Promise<{success: boolean, error?: string}> => {
+export const sendToTelegramGroup = async (subscriptionId: string): Promise<{success: boolean, error?: string, messageId?: number}> => {
   try {
-    console.log('Sending subscription to Telegram group:', subscriptionId);
+    console.log('Enviando assinatura ao grupo do Telegram:', subscriptionId);
     
     const { data, error } = await supabase.functions.invoke('telegram-integration', {
       body: {
@@ -103,8 +103,14 @@ export const sendToTelegramGroup = async (subscriptionId: string): Promise<{succ
       throw new Error(data?.error || 'Falha ao enviar para o grupo do Telegram');
     }
     
-    console.log('Successfully sent subscription to Telegram group');
-    return { success: true };
+    console.log('Assinatura enviada com sucesso para o grupo do Telegram', data);
+    
+    // Armazenar o ID da mensagem para referência futura
+    if (data.messageId) {
+      await storeMessageId(subscriptionId, data.messageId);
+    }
+    
+    return { success: true, messageId: data.messageId };
   } catch (error) {
     console.error('Erro enviando para o Telegram:', error);
     return { 
@@ -113,6 +119,95 @@ export const sendToTelegramGroup = async (subscriptionId: string): Promise<{succ
     };
   }
 };
+
+/**
+ * Exclui uma mensagem do grupo do Telegram
+ */
+export const deleteFromTelegramGroup = async (subscriptionId: string): Promise<{success: boolean, error?: string}> => {
+  try {
+    // Primeiro, obtemos o ID da mensagem do Telegram associada a esta assinatura
+    const { data: messageData } = await supabase
+      .from('telegram_messages')
+      .select('message_id')
+      .eq('subscription_id', subscriptionId)
+      .maybeSingle();
+    
+    if (!messageData?.message_id) {
+      console.log('Nenhum ID de mensagem encontrado para esta assinatura. Nada a excluir do Telegram.');
+      return { success: true };
+    }
+    
+    console.log('Excluindo mensagem do grupo do Telegram:', messageData.message_id);
+    
+    const { data, error } = await supabase.functions.invoke('telegram-integration', {
+      body: {
+        action: 'delete-message',
+        messageId: messageData.message_id
+      }
+    });
+    
+    if (error) {
+      console.error('Erro na função edge do Telegram:', error);
+      throw new Error(error.message || 'Falha ao excluir mensagem do grupo do Telegram');
+    }
+    
+    if (!data?.success) {
+      console.error('Erro ao excluir mensagem do Telegram:', data?.error);
+      throw new Error(data?.error || 'Falha ao excluir mensagem do grupo do Telegram');
+    }
+    
+    console.log('Mensagem excluída com sucesso do grupo do Telegram');
+    
+    // Remover o registro do ID da mensagem do banco de dados
+    await supabase
+      .from('telegram_messages')
+      .delete()
+      .eq('subscription_id', subscriptionId);
+    
+    return { success: true };
+  } catch (error) {
+    console.error('Erro ao excluir do Telegram:', error);
+    return { 
+      success: false, 
+      error: error instanceof Error ? error.message : 'Erro desconhecido ao excluir do Telegram'
+    };
+  }
+};
+
+/**
+ * Armazena o ID da mensagem do Telegram para referência futura
+ */
+async function storeMessageId(subscriptionId: string, messageId: number) {
+  try {
+    // Verificar se já existe um registro para esta assinatura
+    const { data: existingRecord } = await supabase
+      .from('telegram_messages')
+      .select('id')
+      .eq('subscription_id', subscriptionId)
+      .maybeSingle();
+    
+    if (existingRecord) {
+      // Atualizar o registro existente
+      await supabase
+        .from('telegram_messages')
+        .update({ message_id: messageId })
+        .eq('subscription_id', subscriptionId);
+    } else {
+      // Criar um novo registro
+      await supabase
+        .from('telegram_messages')
+        .insert({
+          subscription_id: subscriptionId,
+          message_id: messageId,
+          sent_at: new Date().toISOString()
+        });
+    }
+    
+    console.log('ID da mensagem do Telegram armazenado com sucesso');
+  } catch (error) {
+    console.error('Erro ao armazenar ID da mensagem do Telegram:', error);
+  }
+}
 
 /**
  * Helper function to convert any value to a proper boolean

@@ -7,14 +7,15 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.31.0';
 import { corsHeaders } from '../_shared/cors.ts';
 
 /**
+ * Version 2.8.0
+ * - Adicionado suporte para botões inline no Telegram
+ * - Implementada funcionalidade para excluir mensagens
+ * - Melhorado o formato de mensagens enviadas
+ * 
  * Version 2.7.0
  * - Fixed subscription sending functionality
  * - Improved error handling and reporting
  * - Enhanced configuration management
- * 
- * Version 2.6.0
- * - Set default bot token and group ID
- * - Improved auto-posting logic and error handling
  */
 
 const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? '';
@@ -30,10 +31,10 @@ function formatSubscriptionForTelegram(subscription: any) {
   let content = '';
   
   // Title with icon
-  content += `${subscription.icon || '🖥'} ${subscription.title}\n`;
+  content += `${subscription.icon || '🖥'} <b>${subscription.title}</b>\n`;
   
   // Price
-  content += `🏦 ${subscription.price}\n`;
+  content += `🏦 <b>${subscription.price}</b>\n`;
   
   // Payment method (always include)
   content += `🤝🏼 ${subscription.payment_method}\n`;
@@ -43,15 +44,6 @@ function formatSubscriptionForTelegram(subscription: any) {
   
   // Access method
   content += `🔐 ${subscription.access}\n`;
-  
-  // Contact methods
-  if (subscription.telegram_username) {
-    content += `📩 ${subscription.telegram_username}\n`;
-  }
-  
-  if (subscription.whatsapp_number) {
-    content += `📱 https://wa.me/${subscription.whatsapp_number}\n`;
-  }
   
   // Date added
   if (subscription.added_date) {
@@ -112,21 +104,57 @@ function formatChatId(chatId: string): string {
   return formattedChatId;
 }
 
+// Função para criar os botões inline do Telegram
+function createInlineButtons(subscription: any) {
+  const buttons = [];
+  
+  // Botão para Telegram
+  if (subscription.telegram_username) {
+    const username = subscription.telegram_username.startsWith('@') 
+      ? subscription.telegram_username.substring(1) 
+      : subscription.telegram_username;
+      
+    buttons.push([{
+      text: "Contato por Telegram",
+      url: `https://t.me/${username}`
+    }]);
+  }
+  
+  // Botão para WhatsApp
+  if (subscription.whatsapp_number) {
+    buttons.push([{
+      text: "Contato por WhatsApp",
+      url: `https://wa.me/${subscription.whatsapp_number}`
+    }]);
+  }
+  
+  return buttons.length > 0 ? buttons : null;
+}
+
 // Função auxiliar para enviar mensagem para o Telegram
-async function sendTelegramMessage(botToken: string, chatId: string, text: string) {
+async function sendTelegramMessage(botToken: string, chatId: string, text: string, buttons: any = null) {
   const formattedChatId = formatChatId(chatId);
   console.log(`Sending message to Telegram. Chat ID: ${formattedChatId}`);
   console.log(`Message length: ${text.length} characters`);
   
   const apiUrl = `https://api.telegram.org/bot${botToken}/sendMessage`;
+  const body: any = {
+    chat_id: formattedChatId,
+    text: text,
+    parse_mode: 'HTML'
+  };
+  
+  // Adicionar botões inline se existirem
+  if (buttons) {
+    body.reply_markup = {
+      inline_keyboard: buttons
+    };
+  }
+  
   const options = {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      chat_id: formattedChatId,
-      text: text,
-      parse_mode: 'HTML'
-    })
+    body: JSON.stringify(body)
   };
   
   try {
@@ -144,6 +172,40 @@ async function sendTelegramMessage(botToken: string, chatId: string, text: strin
     return { success: true, data: responseData };
   } catch (error) {
     console.error('Error sending Telegram message:', error);
+    throw error;
+  }
+}
+
+// Função para excluir mensagem do Telegram
+async function deleteTelegramMessage(botToken: string, chatId: string, messageId: number) {
+  const formattedChatId = formatChatId(chatId);
+  console.log(`Deleting message from Telegram. Chat ID: ${formattedChatId}, Message ID: ${messageId}`);
+  
+  const apiUrl = `https://api.telegram.org/bot${botToken}/deleteMessage`;
+  const options = {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      chat_id: formattedChatId,
+      message_id: messageId
+    })
+  };
+  
+  try {
+    console.log(`Making request to Telegram API with bot token: ${botToken.substring(0, 5)}...`);
+    const response = await fetch(apiUrl, options);
+    const responseData = await response.json();
+    
+    console.log('Telegram API response status:', response.status);
+    console.log('Telegram API response:', JSON.stringify(responseData));
+    
+    if (!responseData.ok) {
+      throw new Error(`Telegram API error: ${responseData.description}`);
+    }
+    
+    return { success: true, data: responseData };
+  } catch (error) {
+    console.error('Error deleting Telegram message:', error);
     throw error;
   }
 }
@@ -270,8 +332,8 @@ Deno.serve(async (req) => {
     // Garantir que as configurações padrão existem
     await ensureDefaultConfigurations();
     
-    const { action, botToken, groupId, subscriptionId } = await req.json();
-    console.log(`Received request with action: ${action}, subscriptionId: ${subscriptionId}`);
+    const { action, botToken, groupId, subscriptionId, messageId } = await req.json();
+    console.log(`Received request with action: ${action}, subscriptionId: ${subscriptionId}, messageId: ${messageId}`);
     
     // Teste de envio - usa os parâmetros fornecidos diretamente
     if (action === 'send-telegram-test') {
@@ -298,14 +360,22 @@ Deno.serve(async (req) => {
         second: '2-digit'
       });
       
-      const testMessage = `🧪 Test message from SóFaltaAPipoca integration
+      const testMessage = `🧪 Mensagem de teste da integração SóFaltaAPipoca
 
-✅ Your Telegram integration is working correctly!
+✅ Sua integração com o Telegram está funcionando corretamente!
 
-⏱️ Sent at: ${currentDate}`;
+⏱️ Enviado em: ${currentDate}`;
       
       try {
-        const result = await sendTelegramMessage(tokenToUse, groupIdToUse, testMessage);
+        // Criar botões de teste
+        const testButtons = [
+          [{
+            text: "Visite o site",
+            url: "https://sofaltaapipoca.com.br"
+          }]
+        ];
+        
+        const result = await sendTelegramMessage(tokenToUse, groupIdToUse, testMessage, testButtons);
         return new Response(JSON.stringify({ success: true, data: result }), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         });
@@ -317,6 +387,40 @@ Deno.serve(async (req) => {
         }), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
           status: 200 // Retorna 200 mesmo com erro para facilitar o tratamento no frontend
+        });
+      }
+    }
+    
+    // Excluir mensagem específica do Telegram
+    if (action === 'delete-message') {
+      console.log('Processing delete-message action for Message ID:', messageId);
+      
+      if (!messageId) {
+        throw new Error('ID da mensagem não fornecido');
+      }
+      
+      // Obter a configuração do Telegram
+      const config = await getTelegramConfig();
+      console.log('Retrieved Telegram config for deletion:', {
+        botTokenPrefix: config.botToken.substring(0, 5) + '...',
+        groupId: config.groupId
+      });
+      
+      try {
+        const result = await deleteTelegramMessage(config.botToken, config.groupId, messageId);
+        console.log('Successfully deleted message from Telegram:', result);
+        
+        return new Response(JSON.stringify({ success: true, data: result }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      } catch (error) {
+        console.error('Error deleting message:', error);
+        return new Response(JSON.stringify({ 
+          success: false, 
+          error: `Falha ao excluir mensagem: ${error instanceof Error ? error.message : String(error)}` 
+        }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 200
         });
       }
     }
@@ -361,16 +465,42 @@ Deno.serve(async (req) => {
         user_id: subscription.user_id ? 'exists' : 'none' 
       });
       
-      // Formatar e enviar a mensagem
-      const message = formatSubscriptionForTelegram(subscription);
-      console.log('Formatted message length:', message.length);
+      // Formatar o texto e criar botões
+      const messageText = formatSubscriptionForTelegram(subscription);
+      const inlineButtons = createInlineButtons(subscription);
+      console.log('Formatted message length:', messageText.length);
+      console.log('Created inline buttons:', inlineButtons ? 'Yes' : 'No');
       
-      const sendResult = await sendTelegramMessage(config.botToken, config.groupId, message);
-      console.log('Successfully sent subscription to Telegram, result:', sendResult);
-      
-      return new Response(JSON.stringify({ success: true, data: sendResult }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      });
+      // Enviar a mensagem com botões
+      try {
+        const sendResult = await sendTelegramMessage(
+          config.botToken, 
+          config.groupId, 
+          messageText, 
+          inlineButtons
+        );
+        console.log('Successfully sent subscription to Telegram, result:', sendResult);
+        
+        // Extrair o ID da mensagem para armazenamento
+        const messageId = sendResult.data?.result?.message_id;
+        
+        return new Response(JSON.stringify({ 
+          success: true, 
+          data: sendResult, 
+          messageId: messageId 
+        }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      } catch (sendError) {
+        console.error('Error sending to Telegram:', sendError);
+        return new Response(JSON.stringify({ 
+          success: false, 
+          error: `Erro ao enviar para o Telegram: ${sendError instanceof Error ? sendError.message : String(sendError)}` 
+        }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 200
+        });
+      }
     }
     
     // Ação não reconhecida
