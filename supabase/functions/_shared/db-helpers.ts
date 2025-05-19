@@ -1,7 +1,7 @@
 
 /**
  * Funções auxiliares para operações no banco de dados
- * Version 1.0.1
+ * Version 1.0.2
  * 
  * Este arquivo contém funções auxiliares para operações no banco de dados
  * que são utilizadas pelos Edge Functions.
@@ -189,5 +189,32 @@ export async function createTelegramMessagesTable(): Promise<boolean> {
   } catch (error) {
     console.error('Erro ao criar tabela telegram_messages:', error);
     return false;
+  }
+}
+
+/**
+ * Registra um log de diagnóstico
+ */
+export async function logDiagnostic(
+  operation: string, 
+  details: Record<string, any>,
+  success: boolean,
+  errorDetails?: any
+): Promise<void> {
+  try {
+    const { error } = await supabase
+      .from('diagnostic_logs')
+      .insert({
+        operation,
+        details,
+        success,
+        error_details: errorDetails
+      });
+      
+    if (error) {
+      console.error('Erro ao salvar log de diagnóstico:', error);
+    }
+  } catch (error) {
+    console.error('Erro ao registrar diagnóstico:', error);
   }
 }

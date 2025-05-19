@@ -71,22 +71,72 @@ const PendingSubscriptionList = () => {
     try {
       console.log('Buscando assinaturas pendentes...');
       
-      // Importante: Asseguramos que apenas assinaturas com status_approval = 'pending' sejam retornadas
-      const { data, error } = await supabase
+      // Verificar e registrar o estado atual da tabela
+      const { count: totalCount } = await supabase
         .from('pending_subscriptions')
-        .select('*')
+        .select('*', { count: 'exact', head: true });
+      
+      console.log(`Total de registros na tabela pending_subscriptions: ${totalCount || 0}`);
+      
+      // Log de todos os status_approval existentes
+      const { data: statusCounts } = await supabase
+        .from('pending_subscriptions')
+        .select('status_approval, count(*)', { count: 'exact' })
+        .group('status_approval');
+      
+      console.log('Distribuição de status_approval:', statusCounts);
+      
+      // Busca principal com log detalhado
+      const { data, error, count } = await supabase
+        .from('pending_subscriptions')
+        .select('*', { count: 'exact' })
         .eq('status_approval', 'pending')
         .order('submitted_at', { ascending: false });
+
+      console.log(`Consulta executada. Registros encontrados: ${count || 0}`);
 
       if (error) {
         console.error('Erro ao buscar assinaturas pendentes:', error);
         throw error;
       }
 
-      console.log('Assinaturas pendentes encontradas:', data?.length || 0);
+      console.log(`Assinaturas pendentes encontradas: ${data?.length || 0}`);
+      
+      if (data && data.length === 0) {
+        // Verificar se existem registros com status_approval nulo ou vazio
+        const { data: nullData, count: nullCount } = await supabase
+          .from('pending_subscriptions')
+          .select('*', { count: 'exact' })
+          .is('status_approval', null);
+          
+        console.log(`Registros com status_approval nulo: ${nullCount || 0}`);
+        
+        // Atualizar registros com status_approval nulo para 'pending'
+        if (nullData && nullData.length > 0) {
+          const { error: updateError } = await supabase
+            .from('pending_subscriptions')
+            .update({ status_approval: 'pending' })
+            .is('status_approval', null);
+            
+          if (updateError) {
+            console.error('Erro ao atualizar registros com status_approval nulo:', updateError);
+          } else {
+            console.log(`${nullData.length} registros com status_approval nulo atualizados para 'pending'`);
+            
+            // Buscar novamente após a atualização
+            const { data: updatedData } = await supabase
+              .from('pending_subscriptions')
+              .select('*')
+              .eq('status_approval', 'pending')
+              .order('submitted_at', { ascending: false });
+              
+            data = updatedData;
+          }
+        }
+      }
 
       // Map the database column names to our frontend property names
-      const mappedData = data.map((item: any) => ({
+      const mappedData = data ? data.map((item: any) => ({
         id: item.id,
         title: item.title,
         price: item.price,
@@ -109,7 +159,7 @@ const PendingSubscriptionList = () => {
         rejectionReason: item.rejection_reason,
         pixQrCode: item.pix_qr_code,
         visible: item.visible
-      }));
+      })) : [];
 
       setPendingSubscriptions(mappedData);
     } catch (error) {
@@ -315,11 +365,33 @@ const PendingSubscriptionList = () => {
     return <div className="bg-muted/20 p-6 rounded-lg text-center">
       <h3 className="text-lg font-medium">Sem assinaturas pendentes</h3>
       <p className="text-muted-foreground mt-2">Não há assinaturas pendentes de aprovação no momento.</p>
+      <Button 
+        className="mt-4" 
+        variant="outline" 
+        onClick={fetchPendingSubscriptions}
+      >
+        Atualizar lista
+      </Button>
     </div>;
   }
 
   return (
     <>
+      <div className="mb-4 flex justify-between items-center">
+        <div>
+          <Button 
+            variant="outline" 
+            onClick={fetchPendingSubscriptions}
+            className="mb-2"
+          >
+            Atualizar lista
+          </Button>
+          <p className="text-sm text-muted-foreground">
+            Encontradas {pendingSubscriptions.length} assinaturas pendentes
+          </p>
+        </div>
+      </div>
+      
       <Table>
         <TableCaption>Lista de assinaturas pendentes de aprovação</TableCaption>
         <TableHeader>
