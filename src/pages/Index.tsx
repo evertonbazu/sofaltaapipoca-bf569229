@@ -77,9 +77,7 @@ const Index: React.FC = () => {
             </a>
             
             {isLoggedIn && <Link to="/profile" className="flex-initial">
-                <button className="w-full bg-indigo-700 hover:bg-indigo-800 text-white py-2 px-4 rounded-md flex items-center justify-center">
-                  <User className="h-4 w-4" />
-                </button>
+                
               </Link>}
           </div>
         </div>
