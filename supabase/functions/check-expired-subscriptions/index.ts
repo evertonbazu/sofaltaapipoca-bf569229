@@ -1,7 +1,7 @@
 
 /**
  * Edge Function para verificar e mover assinaturas expiradas
- * Version 1.0.0
+ * Version 1.0.1
  */
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";

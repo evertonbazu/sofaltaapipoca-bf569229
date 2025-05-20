@@ -1,17 +1,27 @@
 
 import { supabase } from '@/integrations/supabase/client';
 import { ExpiredSubscriptionData, PendingSubscriptionData } from '@/types/subscriptionTypes';
-import { format } from 'date-fns';
+import { format, parseISO, isValid } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
 /**
  * Busca todas as assinaturas expiradas do usuário
+ * Versão 3.1.3 - Melhorado tratamento de erros e validação de datas
  */
 export const getExpiredSubscriptions = async (): Promise<ExpiredSubscriptionData[]> => {
   try {
+    // Obter usuário logado
+    const { data: { user } } = await supabase.auth.getUser();
+    
+    if (!user) {
+      console.warn('Tentativa de buscar assinaturas expiradas sem usuário logado');
+      return [];
+    }
+    
     const { data, error } = await supabase
       .from('expired_subscriptions')
       .select('*')
+      .eq('user_id', user.id)
       .order('expired_at', { ascending: false });
       
     if (error) {
@@ -49,7 +59,28 @@ export const getExpiredSubscriptions = async (): Promise<ExpiredSubscriptionData
 };
 
 /**
+ * Formata uma data para o formato de exibição
+ * Versão 3.1.3 - Adicionada validação de data
+ */
+const formatSafeDate = (date: Date | string | null): string => {
+  if (!date) return format(new Date(), 'dd/MM/yyyy', { locale: ptBR });
+  
+  try {
+    const dateObj = typeof date === 'string' ? parseISO(date) : date;
+    if (!isValid(dateObj)) {
+      console.warn(`Data inválida detectada, usando data atual: ${date}`);
+      return format(new Date(), 'dd/MM/yyyy', { locale: ptBR });
+    }
+    return format(dateObj, 'dd/MM/yyyy', { locale: ptBR });
+  } catch (error) {
+    console.error(`Erro ao formatar data (${date}):`, error);
+    return format(new Date(), 'dd/MM/yyyy', { locale: ptBR });
+  }
+};
+
+/**
  * Reenviar uma assinatura expirada para aprovação
+ * Versão 3.1.3 - Melhorado tratamento de erros e validação de datas
  */
 export const resubmitExpiredSubscription = async (expiredSubscription: ExpiredSubscriptionData): Promise<string> => {
   try {
@@ -65,13 +96,20 @@ export const resubmitExpiredSubscription = async (expiredSubscription: ExpiredSu
       whatsappNumber: expiredSubscription.whatsappNumber,
       telegramUsername: expiredSubscription.telegramUsername,
       icon: expiredSubscription.icon,
-      addedDate: format(new Date(), 'dd/MM/yyyy', { locale: ptBR }),
+      addedDate: formatSafeDate(new Date()),
       code: expiredSubscription.code,
       pixKey: expiredSubscription.pixKey,
       statusApproval: 'pending',
       paymentProofImage: expiredSubscription.paymentProofImage,
       pixQrCode: expiredSubscription.pixQrCode
     };
+    
+    // Obter usuário logado
+    const { data: { user } } = await supabase.auth.getUser();
+    
+    if (!user) {
+      throw new Error('Usuário não está autenticado');
+    }
     
     // Inserir na tabela de assinaturas pendentes
     const { data, error } = await supabase
@@ -93,6 +131,7 @@ export const resubmitExpiredSubscription = async (expiredSubscription: ExpiredSu
         status_approval: pendingSubscription.statusApproval,
         payment_proof_image: pendingSubscription.paymentProofImage,
         pix_qr_code: pendingSubscription.pixQrCode,
+        user_id: user.id,
         visible: true,
         submitted_at: new Date().toISOString()
       }])
