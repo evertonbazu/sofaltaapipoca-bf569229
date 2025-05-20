@@ -1,10 +1,8 @@
-
 import React from 'react';
-import { Tv, Youtube, Apple, Monitor, Banknote, HandHelping, Key, Pin, Edit, Star, Clock, AlertCircle } from 'lucide-react';
+import { Tv, Youtube, Apple, Monitor, Banknote, HandHelping, Key, Pin, Edit, Star } from 'lucide-react';
 import { Badge } from "@/components/ui/badge";
 import { Link } from 'react-router-dom';
-import { supabase, formatDateBR, isExpirationImminent } from '@/integrations/supabase/client';
-
+import { supabase } from '@/integrations/supabase/client';
 interface SubscriptionCardProps {
   id?: string;
   title: string;
@@ -24,10 +22,7 @@ interface SubscriptionCardProps {
   isMemberSubmission?: boolean;
   featured?: boolean;
   isAdminSubmission?: boolean;
-  expirationDate?: string | Date;
-  daysRemaining?: number;
 }
-
 const SubscriptionCard = ({
   id,
   title,
@@ -43,12 +38,10 @@ const SubscriptionCard = ({
   icon = 'monitor',
   isSearchResult = false,
   addedDate,
-  version = '3.1.3',
+  version = '2.1.1',
   isMemberSubmission = false,
   featured = false,
-  isAdminSubmission = false,
-  expirationDate,
-  daysRemaining = 0
+  isAdminSubmission = false
 }: SubscriptionCardProps) => {
   // State to track if current user is admin
   const [isAdmin, setIsAdmin] = React.useState(false);
@@ -108,11 +101,7 @@ const SubscriptionCard = ({
 
   // Determine the price color class based on the priceColor prop
   const priceColorClass = priceColor || 'text-blue-600';
-  
-  // Verificar se a assinatura está prestes a expirar
-  const isExpiringSoon = isExpirationImminent(daysRemaining);
-  
-  return <div className={`card h-full bg-white rounded-xl overflow-hidden shadow-lg ${isSearchResult ? 'search-highlight' : ''} ${isExpiringSoon ? 'border-orange-400 border-2' : ''}`}>
+  return <div className={`card h-full bg-white rounded-xl overflow-hidden shadow-lg ${isSearchResult ? 'search-highlight' : ''}`}>
       <div className={`${bgColorClass} p-4 flex items-center justify-center h-20 relative`}>
         <h2 className="text-xl font-bold text-white flex items-center text-center uppercase">
           🖥 {title}
@@ -168,29 +157,9 @@ const SubscriptionCard = ({
         
         {addedDate && <div className="py-2 border-t border-gray-200 mt-2 text-left">
             <p className="text-gray-700 text-sm uppercase flex items-center">
-              <span className="mr-1">📅</span> Adicionado em: {formatDateBR(addedDate)}
+              <span className="mr-1">📅</span> Adicionado em: {addedDate}
             </p>
           </div>}
-        
-        {/* Mostrar contagem regressiva de dias quando houver uma data de expiração */}
-        {typeof daysRemaining === 'number' && daysRemaining >= 0 && (
-          <div className={`flex items-center mt-1 ${daysRemaining <= 3 ? 'text-red-500' : 'text-blue-600'}`}>
-            <Clock className="mr-2 h-4 w-4" />
-            <span className="font-medium">
-              {daysRemaining > 0 
-                ? `Expira em ${daysRemaining} dia${daysRemaining !== 1 ? 's' : ''}` 
-                : 'Expira hoje!'}
-            </span>
-          </div>
-        )}
-        
-        {/* Alerta de expiração iminente */}
-        {isExpiringSoon && (
-          <div className="flex items-center mt-1 text-orange-500">
-            <AlertCircle className="mr-2 h-4 w-4" />
-            <span className="text-sm">Esta assinatura expirará em breve</span>
-          </div>
-        )}
         
         <div className="pt-3 space-y-2">
           {telegramUsername && <a href={getTelegramLink()} target="_blank" rel="noopener noreferrer" className="contact-btn w-full bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-lg font-medium flex items-center justify-center cursor-pointer uppercase">
@@ -203,5 +172,4 @@ const SubscriptionCard = ({
       </div>
     </div>;
 };
-
 export default SubscriptionCard;
