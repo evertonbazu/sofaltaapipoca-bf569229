@@ -1,7 +1,7 @@
 
 /**
  * Funções auxiliares para operações no banco de dados
- * Version 3.1.1
+ * Version 3.1.2
  * 
  * Este arquivo contém funções auxiliares para operações no banco de dados
  * que são utilizadas pelos Edge Functions.
@@ -188,6 +188,100 @@ export async function createTelegramMessagesTable(): Promise<boolean> {
     return true;
   } catch (error) {
     console.error('Erro ao criar tabela telegram_messages:', error);
+    return false;
+  }
+}
+
+/**
+ * Verifica e move assinaturas expiradas
+ */
+export async function checkAndMoveExpiredSubscriptions(): Promise<boolean> {
+  try {
+    await logDiagnostic('check_expired_subscriptions', { run_at: new Date().toISOString() }, true);
+    
+    // Buscar assinaturas expiradas (mais de 15 dias)
+    const { data: expiredSubs, error } = await supabase
+      .from('subscriptions')
+      .select('*')
+      .lt('expiration_date', new Date().toISOString());
+      
+    if (error) {
+      await logDiagnostic('check_expired_subscriptions', { error_message: error.message }, false, error);
+      console.error('Erro ao buscar assinaturas expiradas:', error);
+      return false;
+    }
+    
+    console.log(`Encontradas ${expiredSubs?.length || 0} assinaturas expiradas`);
+    
+    if (!expiredSubs || expiredSubs.length === 0) {
+      return true;
+    }
+    
+    // Mover cada assinatura expirada para a tabela de expiradas
+    for (const sub of expiredSubs) {
+      // Inserir na tabela de expiradas
+      const { error: insertError } = await supabase
+        .from('expired_subscriptions')
+        .insert({
+          user_id: sub.user_id,
+          original_subscription_id: sub.id,
+          title: sub.title,
+          price: sub.price,
+          payment_method: sub.payment_method,
+          status: sub.status,
+          access: sub.access,
+          header_color: sub.header_color,
+          price_color: sub.price_color,
+          whatsapp_number: sub.whatsapp_number,
+          telegram_username: sub.telegram_username,
+          icon: sub.icon,
+          added_date: sub.added_date,
+          code: sub.code,
+          pix_key: sub.pix_key,
+          pix_qr_code: sub.pix_qr_code,
+          payment_proof_image: sub.payment_proof_image,
+          expiry_reason: 'Assinatura expirou após 15 dias'
+        });
+        
+      if (insertError) {
+        console.error(`Erro ao inserir assinatura expirada ID ${sub.id}:`, insertError);
+        await logDiagnostic(
+          'move_expired_subscription', 
+          { subscription_id: sub.id, error_message: insertError.message }, 
+          false, 
+          insertError
+        );
+        continue;
+      }
+      
+      // Excluir da tabela original
+      const { error: deleteError } = await supabase
+        .from('subscriptions')
+        .delete()
+        .eq('id', sub.id);
+        
+      if (deleteError) {
+        console.error(`Erro ao excluir assinatura expirada ID ${sub.id}:`, deleteError);
+        await logDiagnostic(
+          'delete_expired_subscription', 
+          { subscription_id: sub.id, error_message: deleteError.message }, 
+          false, 
+          deleteError
+        );
+      } else {
+        console.log(`Assinatura ID ${sub.id} movida para expiradas e excluída com sucesso`);
+        await logDiagnostic(
+          'subscription_expired', 
+          { subscription_id: sub.id, user_id: sub.user_id, title: sub.title }, 
+          true
+        );
+      }
+    }
+    
+    return true;
+  } catch (error) {
+    console.error('Erro ao verificar assinaturas expiradas:', error);
+    await logDiagnostic('check_expired_subscriptions', { error_message: String(error) }, false, error);
     return false;
   }
 }

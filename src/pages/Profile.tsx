@@ -7,15 +7,18 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/components/ui/use-toast";
-import { Loader2, User, Edit, Trash2 } from 'lucide-react';
+import { Loader2, User, Edit, Trash2, Clock, AlertCircle, Send } from 'lucide-react';
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { supabase } from '@/integrations/supabase/client';
-import { SubscriptionData } from '@/types/subscriptionTypes';
+import { supabase, formatDateBR, calculateDaysRemaining, isExpirationImminent } from '@/integrations/supabase/client';
+import { SubscriptionData, ExpiredSubscriptionData } from '@/types/subscriptionTypes';
 import { deleteSubscription } from '@/services/subscription-service';
+import { getExpiredSubscriptions, resubmitExpiredSubscription } from '@/services/expired-subscription-service';
 import NavBar from '@/components/NavBar';
 import { useAuth } from '@/contexts/AuthContext';
+import { format } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 
 // Schema para o formulário de perfil
 const profileFormSchema = z.object({
@@ -42,6 +45,7 @@ const Profile = () => {
   const [user, setUser] = useState<any>(null);
   const [userProfile, setUserProfile] = useState<any>(null);
   const [userSubscriptions, setUserSubscriptions] = useState<SubscriptionData[]>([]);
+  const [expiredSubscriptions, setExpiredSubscriptions] = useState<ExpiredSubscriptionData[]>([]);
   const [actionInProgress, setActionInProgress] = useState<string | null>(null);
   const { signOut, authState } = useAuth();
   const [redirected, setRedirected] = useState(false);
@@ -107,7 +111,47 @@ const Profile = () => {
         if (subscriptionsError) {
           console.error('Erro ao buscar assinaturas do usuário:', subscriptionsError);
         } else {
-          setUserSubscriptions(subscriptions || []);
+          // Processar as assinaturas e calcular dias restantes
+          const processedSubs = (subscriptions || []).map(sub => {
+            const daysRemaining = sub.expiration_date 
+              ? calculateDaysRemaining(sub.expiration_date)
+              : 15;
+              
+            return {
+              id: sub.id,
+              title: sub.title,
+              price: sub.price,
+              paymentMethod: sub.payment_method,
+              status: sub.status,
+              access: sub.access,
+              headerColor: sub.header_color,
+              priceColor: sub.price_color,
+              whatsappNumber: sub.whatsapp_number,
+              telegramUsername: sub.telegram_username,
+              icon: sub.icon,
+              addedDate: sub.added_date,
+              code: sub.code,
+              userId: sub.user_id,
+              pixKey: sub.pix_key,
+              expirationDate: sub.expiration_date,
+              daysRemaining
+            };
+          });
+          
+          setUserSubscriptions(processedSubs);
+        }
+        
+        // Buscar assinaturas expiradas
+        try {
+          const expiredSubs = await getExpiredSubscriptions();
+          setExpiredSubscriptions(expiredSubs);
+        } catch (error) {
+          console.error('Erro ao buscar assinaturas expiradas:', error);
+          toast({
+            title: "Erro",
+            description: "Não foi possível buscar as assinaturas expiradas.",
+            variant: "destructive",
+          });
         }
       } catch (error) {
         console.error('Erro ao verificar usuário:', error);
@@ -123,7 +167,7 @@ const Profile = () => {
     if (!redirected) {
       checkUser();
     }
-  }, [navigate, authState, redirected]);
+  }, [navigate, authState, redirected, toast, profileForm]);
   
   // Função para atualizar o perfil
   const onUpdateProfile = async (data: ProfileFormValues) => {
@@ -214,6 +258,33 @@ const Profile = () => {
       setActionInProgress(null);
     }
   };
+
+  // Função para reenviar uma assinatura expirada
+  const handleResubmitExpiredSubscription = async (subscription: ExpiredSubscriptionData) => {
+    try {
+      setActionInProgress(subscription.id || '');
+      
+      await resubmitExpiredSubscription(subscription);
+      
+      toast({
+        title: "Assinatura reenviada",
+        description: "Sua assinatura foi reenviada para aprovação com sucesso.",
+      });
+      
+      // Atualizar a lista de assinaturas expiradas
+      setExpiredSubscriptions(prev => prev.filter(item => item.id !== subscription.id));
+      
+    } catch (error) {
+      console.error('Erro ao reenviar assinatura:', error);
+      toast({
+        title: "Erro",
+        description: "Não foi possível reenviar sua assinatura.",
+        variant: "destructive",
+      });
+    } finally {
+      setActionInProgress(null);
+    }
+  };
   
   // Função para fazer logout
   const handleLogout = async () => {
@@ -256,9 +327,10 @@ const Profile = () => {
         </h1>
         
         <Tabs defaultValue="profile">
-          <TabsList className="grid w-full grid-cols-2 mb-8">
+          <TabsList className="grid w-full grid-cols-3 mb-8">
             <TabsTrigger value="profile">Meus Dados</TabsTrigger>
             <TabsTrigger value="subscriptions">Minhas Assinaturas</TabsTrigger>
+            <TabsTrigger value="expired">Assinaturas Expiradas</TabsTrigger>
           </TabsList>
           
           {/* Aba de Perfil */}
@@ -401,8 +473,12 @@ const Profile = () => {
               </Card>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {userSubscriptions.map((subscription) => (
-                  <Card key={subscription.id}>
+                {userSubscriptions.map((subscription) => {
+                  const daysRemaining = subscription.daysRemaining || 0;
+                  const isExpiringSoon = isExpirationImminent(daysRemaining);
+                  
+                  return (
+                  <Card key={subscription.id} className={`${isExpiringSoon ? 'border-orange-400 border-2' : ''}`}>
                     <CardHeader>
                       <CardTitle>{subscription.title}</CardTitle>
                       <CardDescription>
@@ -413,8 +489,26 @@ const Profile = () => {
                       <div className="space-y-2">
                         <p><strong>Envio:</strong> {subscription.access}</p>
                         <p><strong>Status:</strong> {subscription.status}</p>
-                        <p><strong>Adicionado em:</strong> {subscription.addedDate}</p>
+                        <p><strong>Adicionado em:</strong> {subscription.addedDate ? formatDateBR(new Date(subscription.addedDate)) : ''}</p>
                         <p><strong>Código:</strong> {subscription.code}</p>
+                        
+                        {subscription.expirationDate && (
+                          <div className={`flex items-center mt-3 ${daysRemaining <= 3 ? 'text-red-500' : 'text-blue-600'}`}>
+                            <Clock className="mr-2 h-4 w-4" />
+                            <span className="font-medium">
+                              {daysRemaining > 0 
+                                ? `Expira em ${daysRemaining} dia${daysRemaining !== 1 ? 's' : ''}` 
+                                : 'Expirou hoje!'}
+                            </span>
+                          </div>
+                        )}
+                        
+                        {isExpiringSoon && (
+                          <div className="flex items-center mt-1 text-orange-500">
+                            <AlertCircle className="mr-2 h-4 w-4" />
+                            <span className="text-sm">Esta assinatura expirará em breve</span>
+                          </div>
+                        )}
                       </div>
                     </CardContent>
                     <CardFooter>
@@ -430,6 +524,65 @@ const Profile = () => {
                           <>
                             <Trash2 className="mr-2 h-4 w-4" />
                             Excluir Assinatura
+                          </>
+                        )}
+                      </Button>
+                    </CardFooter>
+                  </Card>
+                )})}
+              </div>
+            )}
+          </TabsContent>
+          
+          {/* Aba de Assinaturas Expiradas */}
+          <TabsContent value="expired">
+            <h2 className="text-xl font-medium mb-4">Assinaturas Expiradas</h2>
+            
+            {expiredSubscriptions.length === 0 ? (
+              <Card>
+                <CardContent className="p-8 text-center">
+                  <p className="text-gray-500">Você não possui assinaturas expiradas.</p>
+                  <Button 
+                    className="mt-4"
+                    onClick={() => navigate('/')}
+                  >
+                    Voltar para a página inicial
+                  </Button>
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {expiredSubscriptions.map((subscription) => (
+                  <Card key={subscription.id}>
+                    <CardHeader>
+                      <CardTitle>{subscription.title}</CardTitle>
+                      <CardDescription>
+                        {subscription.price} - {subscription.paymentMethod}
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-2">
+                        <p><strong>Envio:</strong> {subscription.access}</p>
+                        <p><strong>Status:</strong> {subscription.status}</p>
+                        <p><strong>Adicionado em:</strong> {subscription.addedDate ? formatDateBR(new Date(subscription.addedDate)) : ''}</p>
+                        <p><strong>Expirado em:</strong> {formatDateBR(new Date(subscription.expiredAt))}</p>
+                        <p><strong>Motivo:</strong> {subscription.expiryReason}</p>
+                        <p><strong>Código:</strong> {subscription.code}</p>
+                      </div>
+                    </CardContent>
+                    <CardFooter>
+                      <Button 
+                        variant="default" 
+                        className="w-full"
+                        disabled={!!actionInProgress}
+                        onClick={() => handleResubmitExpiredSubscription(subscription)}
+                      >
+                        {actionInProgress === subscription.id ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <>
+                            <Send className="mr-2 h-4 w-4" />
+                            Enviar Novamente
                           </>
                         )}
                       </Button>
