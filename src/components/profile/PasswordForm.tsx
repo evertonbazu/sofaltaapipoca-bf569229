@@ -5,11 +5,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@/components/ui/input";
 import { Loader2 } from 'lucide-react';
 import { UseFormReturn } from 'react-hook-form';
-
-interface PasswordFormValues {
-  password: string;
-  confirmPassword: string;
-}
+import { PasswordFormValues } from '@/pages/Profile';
 
 interface PasswordFormComponentProps {
   form: UseFormReturn<PasswordFormValues>;

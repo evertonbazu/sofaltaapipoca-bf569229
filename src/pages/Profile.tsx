@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -36,8 +37,8 @@ const passwordFormSchema = z.object({
 });
 
 // Definindo os tipos corretos para os formulários
-type ProfileFormValues = z.infer<typeof profileFormSchema>;
-type PasswordFormValues = z.infer<typeof passwordFormSchema>;
+export type ProfileFormValues = z.infer<typeof profileFormSchema>;
+export type PasswordFormValues = z.infer<typeof passwordFormSchema>;
 
 const Profile = () => {
   const navigate = useNavigate();

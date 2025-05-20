@@ -5,11 +5,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@/components/ui/input";
 import { Loader2 } from 'lucide-react';
 import { UseFormReturn } from 'react-hook-form';
-
-interface ProfileFormValues {
-  email: string;
-  username: string;
-}
+import { ProfileFormValues } from '@/pages/Profile';
 
 interface ProfileInfoFormProps {
   form: UseFormReturn<ProfileFormValues>;
