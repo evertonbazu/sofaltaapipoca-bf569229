@@ -2,6 +2,9 @@ import { SubscriptionData } from '@/types/subscriptionTypes';
 import { supabase } from '@/integrations/supabase/client';
 
 /**
+ * Version 3.0.0
+ * - Corrigido problema de envio de assinaturas aprovadas para o Telegram
+ * 
  * Version 2.9.0
  * - Corrigido problema de envio duplicado para o Telegram
  * - Adicionada verificação para evitar envios repetidos
@@ -23,7 +26,7 @@ import { supabase } from '@/integrations/supabase/client';
  */
 
 // Export the current version as a constant for use throughout the app
-export const APP_VERSION = "2.9.0";
+export const APP_VERSION = "3.0.0";
 
 /**
  * Formats subscription data for sharing on messaging platforms

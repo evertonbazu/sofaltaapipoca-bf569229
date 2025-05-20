@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
@@ -41,7 +42,7 @@ import { sendToTelegramGroup, isAutoPostingEnabled } from '@/utils/shareUtils';
 
 /**
  * Componente para visualizar e gerenciar assinaturas pendentes
- * @version 3.1.1
+ * @version 3.1.7
  */
 const PendingSubscriptionList = () => {
   const [pendingSubscriptions, setPendingSubscriptions] = useState<SubscriptionData[]>([]);
@@ -244,6 +245,8 @@ const PendingSubscriptionList = () => {
 
   const handleApproveSubscription = async (subscription: SubscriptionData) => {
     try {
+      console.log('Iniciando processo de aprovação da assinatura:', subscription.id);
+      
       // Primeiro insere na tabela de assinaturas
       const { data: newSubscription, error: insertError } = await supabase
         .from('subscriptions')
@@ -268,7 +271,12 @@ const PendingSubscriptionList = () => {
         .select()
         .single();
       
-      if (insertError) throw insertError;
+      if (insertError) {
+        console.error('Erro ao inserir assinatura:', insertError);
+        throw insertError;
+      }
+      
+      console.log('Assinatura inserida com sucesso:', newSubscription?.id);
       
       // Depois atualiza o status na tabela de pending_subscriptions
       const { error: updateError } = await supabase
@@ -279,7 +287,10 @@ const PendingSubscriptionList = () => {
         })
         .eq('id', subscription.id);
       
-      if (updateError) throw updateError;
+      if (updateError) {
+        console.error('Erro ao atualizar status da assinatura pendente:', updateError);
+        throw updateError;
+      }
       
       toast({
         title: "Assinatura aprovada",
@@ -287,40 +298,49 @@ const PendingSubscriptionList = () => {
       });
       
       // Enviar a assinatura aprovada para o Telegram
-      setTelegramPosting(prev => ({ ...prev, [subscription.id!]: true }));
-      
-      try {
-        // Verificar se o envio automático está ativado
-        const autoTelegramEnabled = await isAutoPostingEnabled();
+      if (newSubscription) {
+        setTelegramPosting(prev => ({ ...prev, [subscription.id!]: true }));
         
-        if (autoTelegramEnabled && newSubscription) {
-          // Enviar assinatura para o grupo do Telegram
-          console.log('Enviando assinatura aprovada para o Telegram:', newSubscription.id);
-          const telegramResult = await sendToTelegramGroup(newSubscription.id);
+        try {
+          // Verificar se o envio automático está ativado
+          const autoTelegramEnabled = await isAutoPostingEnabled();
+          console.log('Auto posting enabled para aprovação:', autoTelegramEnabled);
           
-          if (telegramResult.success) {
-            toast({
-              title: "Assinatura enviada",
-              description: "A assinatura foi enviada para o grupo do Telegram.",
-            });
+          if (autoTelegramEnabled) {
+            // Enviar assinatura para o grupo do Telegram
+            console.log('Enviando assinatura aprovada para o Telegram:', newSubscription.id);
+            const telegramResult = await sendToTelegramGroup(newSubscription.id);
+            
+            console.log('Resultado do envio para o Telegram:', telegramResult);
+            
+            if (telegramResult.success) {
+              toast({
+                title: "Assinatura enviada",
+                description: "A assinatura foi enviada para o grupo do Telegram.",
+              });
+            } else {
+              toast({
+                title: "Problema no envio",
+                description: "A assinatura foi aprovada, mas houve um problema ao enviar para o Telegram: " + 
+                          (telegramResult.error || "Erro desconhecido"),
+                variant: "destructive",
+              });
+            }
           } else {
-            toast({
-              title: "Assinatura aprovada",
-              description: "A assinatura foi aprovada, mas pode haver um problema ao enviar para o Telegram: " + 
-                         (telegramResult.error || "Erro desconhecido"),
-              variant: "destructive", // Changed from "warning" to "destructive"
-            });
+            console.log('Envio automático para o Telegram está desativado');
           }
+        } catch (telegramError) {
+          console.error('Erro ao enviar para o Telegram:', telegramError);
+          toast({
+            title: "Erro no Telegram",
+            description: "A assinatura foi aprovada, mas ocorreu um erro ao enviar para o Telegram.",
+            variant: "destructive",
+          });
+        } finally {
+          setTelegramPosting(prev => ({ ...prev, [subscription.id!]: false }));
         }
-      } catch (telegramError) {
-        console.error('Erro ao enviar para o Telegram:', telegramError);
-        toast({
-          title: "Erro no Telegram",
-          description: "A assinatura foi aprovada, mas ocorreu um erro ao enviar para o Telegram.",
-          variant: "destructive",
-        });
-      } finally {
-        setTelegramPosting(prev => ({ ...prev, [subscription.id!]: false }));
+      } else {
+        console.error('Assinatura aprovada, mas não foi possível obter o ID da nova assinatura');
       }
       
       // Recarregar a lista

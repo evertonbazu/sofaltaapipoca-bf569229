@@ -4,6 +4,12 @@ import { SubscriptionData } from '@/types/subscriptionTypes';
 import { toast } from '@/components/ui/use-toast';
 import { sendToTelegramGroup, deleteFromTelegramGroup, isAutoPostingEnabled } from '@/utils/shareUtils';
 
+/**
+ * Version 3.0.0
+ * - Corrigido problema de envio de assinaturas aprovadas para o Telegram
+ * - Melhorado o fluxo de aprovação e envio automático
+ */
+
 // Função para mapear dados do banco de dados para o formato da aplicação
 function mapToSubscriptionData(data: any): SubscriptionData {
   return {
@@ -190,25 +196,35 @@ export async function addSubscription(subscription: SubscriptionData): Promise<S
     const newSubscription = { ...subscription, code };
     const mappedData = mapToDbFormat(newSubscription);
     
+    console.log('Adicionando nova assinatura:', mappedData);
+    
     const { data, error } = await supabase
       .from('subscriptions')
       .insert(mappedData)
       .select()
       .single();
     
-    if (error) throw error;
+    if (error) {
+      console.error('Erro ao adicionar assinatura:', error);
+      throw error;
+    }
+    
+    console.log('Assinatura adicionada com sucesso:', data.id);
     
     // Se for uma submissão de membro e estiver visível, enviar para o Telegram
     if (data.user_id && data.visible) {
       try {
         // Verificar se o envio automático está ativado
         const autoTelegramEnabled = await isAutoPostingEnabled();
-        console.log('Auto posting enabled:', autoTelegramEnabled);
+        console.log('Auto posting enabled para nova assinatura:', autoTelegramEnabled);
         
         if (autoTelegramEnabled) {
           // Enviar assinatura para o grupo do Telegram
-          console.log('Sending new subscription to Telegram:', data.id);
-          await sendToTelegramGroup(data.id);
+          console.log('Enviando nova assinatura para o Telegram:', data.id);
+          const result = await sendToTelegramGroup(data.id);
+          console.log('Resultado do envio para o Telegram:', result);
+        } else {
+          console.log('Envio automático para o Telegram está desativado');
         }
       } catch (sharingError) {
         console.error('Erro ao compartilhar no Telegram:', sharingError);
@@ -236,6 +252,8 @@ export async function updateSubscription(id: string, subscription: SubscriptionD
     const wasInvisible = oldData?.visible === false;
     const isMemberSubmission = oldData?.user_id !== null;
     
+    console.log('Atualizando assinatura:', id, 'Estado anterior:', { wasInvisible, isMemberSubmission });
+    
     const { data, error } = await supabase
       .from('subscriptions')
       .update(mapToDbFormat(subscription))
@@ -243,19 +261,27 @@ export async function updateSubscription(id: string, subscription: SubscriptionD
       .select()
       .single();
     
-    if (error) throw error;
+    if (error) {
+      console.error('Erro ao atualizar assinatura:', error);
+      throw error;
+    }
+    
+    console.log('Assinatura atualizada com sucesso:', data.id);
     
     // Se era invisível antes e agora está visível e é uma submissão de membro
     if (wasInvisible && subscription.visible === true && isMemberSubmission) {
       try {
         // Verificar se o envio automático está ativado
         const autoTelegramEnabled = await isAutoPostingEnabled();
-        console.log('Auto posting enabled for update:', autoTelegramEnabled);
+        console.log('Auto posting enabled para atualização:', autoTelegramEnabled);
         
         if (autoTelegramEnabled) {
           // Enviar assinatura para o grupo do Telegram
-          console.log('Sending updated subscription to Telegram:', id);
-          await sendToTelegramGroup(id);
+          console.log('Enviando assinatura atualizada para o Telegram:', id);
+          const result = await sendToTelegramGroup(id);
+          console.log('Resultado do envio para o Telegram:', result);
+        } else {
+          console.log('Envio automático para o Telegram está desativado');
         }
       } catch (sharingError) {
         console.error('Erro ao compartilhar no Telegram:', sharingError);
@@ -326,6 +352,8 @@ export async function toggleVisibilityStatus(id: string, visible: boolean): Prom
     const isMemberSubmission = oldData?.user_id !== null;
     const wasInvisible = oldData?.visible === false;
     
+    console.log('Alterando visibilidade:', id, 'Estado anterior:', { wasInvisible, isMemberSubmission });
+    
     // Atualizar a visibilidade
     const { data, error } = await supabase
       .from('subscriptions')
@@ -334,20 +362,27 @@ export async function toggleVisibilityStatus(id: string, visible: boolean): Prom
       .select()
       .single();
     
-    if (error) throw error;
+    if (error) {
+      console.error('Erro ao alternar status de visibilidade:', error);
+      throw error;
+    }
+    
+    console.log('Status de visibilidade atualizado:', data.id, 'Novo valor:', visible);
     
     // Se está sendo tornado visível e é uma submissão de membro
     if (visible === true && wasInvisible && isMemberSubmission) {
       try {
         // Verificar se o envio automático está ativado
         const autoTelegramEnabled = await isAutoPostingEnabled();
-        console.log('Auto posting enabled for visibility toggle:', autoTelegramEnabled);
+        console.log('Auto posting enabled para alteração de visibilidade:', autoTelegramEnabled);
         
         if (autoTelegramEnabled) {
           // Enviar assinatura para o grupo do Telegram
-          console.log('Sending newly visible subscription to Telegram:', id);
+          console.log('Enviando assinatura agora visível para o Telegram:', id);
           const result = await sendToTelegramGroup(id);
-          console.log('Telegram send result:', result);
+          console.log('Resultado do envio para o Telegram:', result);
+        } else {
+          console.log('Envio automático para o Telegram está desativado');
         }
       } catch (sharingError) {
         console.error('Erro ao compartilhar no Telegram:', sharingError);
@@ -357,7 +392,8 @@ export async function toggleVisibilityStatus(id: string, visible: boolean): Prom
       // Se está sendo tornado invisível, tenta excluir do Telegram
       try {
         console.log('Tentando excluir mensagem do Telegram ao tornar invisível:', id);
-        await deleteFromTelegramGroup(id);
+        const result = await deleteFromTelegramGroup(id);
+        console.log('Resultado da exclusão do Telegram:', result);
       } catch (telegramError) {
         console.error('Erro ao excluir mensagem do Telegram (continuando):', telegramError);
         // Continua mesmo se houver erro ao excluir do Telegram

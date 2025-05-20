@@ -1,3 +1,4 @@
+
 // Follow this setup guide to integrate the Deno language server with your editor:
 // https://deno.land/manual/getting_started/setup_your_environment
 // This enables autocomplete, go to definition, etc.
@@ -6,6 +7,11 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.31.0';
 import { corsHeaders } from '../_shared/cors.ts';
 
 /**
+ * Version 3.0.0
+ * - Corrigido problema de envio de assinaturas aprovadas para o Telegram
+ * - Melhorada depuração e relatórios de erros
+ * - Adicionada verificação mais detalhada para assinaturas
+ * 
  * Version 2.9.0
  * - Corrigido problema de envio duplicado para o Telegram
  * - Adicionada criação automática da tabela telegram_messages se não existir
@@ -31,6 +37,17 @@ const DEFAULT_GROUP_ID = '1001484207364';
 
 // Função para formatar o conteúdo de uma assinatura para o Telegram
 function formatSubscriptionForTelegram(subscription: any) {
+  if (!subscription) {
+    console.error('Erro: Tentativa de formatar uma assinatura nula ou indefinida');
+    return 'Erro: Dados da assinatura indisponíveis';
+  }
+  
+  console.log('Formatando assinatura para o Telegram:', {
+    id: subscription.id,
+    title: subscription.title,
+    price: subscription.price
+  });
+  
   let content = '';
   
   // Title with icon
@@ -173,6 +190,7 @@ async function sendTelegramMessage(botToken: string, chatId: string, text: strin
   const formattedChatId = formatChatId(chatId);
   console.log(`Sending message to Telegram. Chat ID: ${formattedChatId}`);
   console.log(`Message length: ${text.length} characters`);
+  console.log(`Message content: ${text}`);
   
   const apiUrl = `https://api.telegram.org/bot${botToken}/sendMessage`;
   const body: any = {
@@ -512,15 +530,31 @@ Deno.serve(async (req) => {
       }
       
       if (!subscription) {
-        console.log('Assinatura não encontrada, verificando em subscriptions...');
-        throw new Error('Assinatura não encontrada');
+        console.log('Assinatura não encontrada com o ID fornecido, verificando mais detalhes...');
+        
+        // Log detalhado da tabela subscriptions
+        const { data: allSubs, error: allSubsError } = await supabase
+          .from('subscriptions')
+          .select('id')
+          .limit(5);
+          
+        if (allSubsError) {
+          console.error('Erro ao verificar exemplos de assinaturas:', allSubsError);
+        } else {
+          console.log('Exemplos de IDs de assinaturas na tabela:', allSubs?.map(s => s.id));
+        }
+        
+        throw new Error(`Assinatura não encontrada com ID: ${subscriptionId}`);
       }
       
       console.log('Found subscription:', { 
         id: subscription.id, 
         title: subscription.title,
         visible: subscription.visible,
-        user_id: subscription.user_id ? 'exists' : 'none' 
+        user_id: subscription.user_id ? 'exists' : 'none',
+        payment_method: subscription.payment_method,
+        access: subscription.access,
+        status: subscription.status
       });
       
       // Formatar o texto e criar botões
@@ -541,6 +575,23 @@ Deno.serve(async (req) => {
         
         // Extrair o ID da mensagem para armazenamento
         const messageId = sendResult.data?.result?.message_id;
+        
+        if (messageId) {
+          // Armazenar o ID da mensagem na tabela telegram_messages
+          const { error: storeError } = await supabase
+            .from('telegram_messages')
+            .insert({
+              subscription_id: subscriptionId,
+              message_id: messageId,
+              sent_at: new Date().toISOString()
+            });
+            
+          if (storeError) {
+            console.error('Erro ao armazenar ID da mensagem:', storeError);
+          } else {
+            console.log('ID da mensagem armazenado com sucesso:', messageId);
+          }
+        }
         
         return new Response(JSON.stringify({ 
           success: true, 
