@@ -1,8 +1,10 @@
+
 import React from 'react';
-import { Tv, Youtube, Apple, Monitor, Banknote, HandHelping, Key, Pin, Edit, Star } from 'lucide-react';
+import { Tv, Youtube, Apple, Monitor, Banknote, HandHelping, Key, Pin, Edit, Star, Clock, AlertCircle } from 'lucide-react';
 import { Badge } from "@/components/ui/badge";
 import { Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
+
 interface SubscriptionCardProps {
   id?: string;
   title: string;
@@ -22,7 +24,10 @@ interface SubscriptionCardProps {
   isMemberSubmission?: boolean;
   featured?: boolean;
   isAdminSubmission?: boolean;
+  expirationDate?: string | Date;
+  daysRemaining?: number;
 }
+
 const SubscriptionCard = ({
   id,
   title,
@@ -38,10 +43,12 @@ const SubscriptionCard = ({
   icon = 'monitor',
   isSearchResult = false,
   addedDate,
-  version = '2.1.1',
+  version = '3.1.5', // Versão atualizada
   isMemberSubmission = false,
   featured = false,
-  isAdminSubmission = false
+  isAdminSubmission = false,
+  expirationDate,
+  daysRemaining
 }: SubscriptionCardProps) => {
   // State to track if current user is admin
   const [isAdmin, setIsAdmin] = React.useState(false);
@@ -101,7 +108,12 @@ const SubscriptionCard = ({
 
   // Determine the price color class based on the priceColor prop
   const priceColorClass = priceColor || 'text-blue-600';
-  return <div className={`card h-full bg-white rounded-xl overflow-hidden shadow-lg ${isSearchResult ? 'search-highlight' : ''}`}>
+  
+  // Check if subscription is expiring soon (3 days or less)
+  const isExpiringSoon = daysRemaining !== undefined && daysRemaining >= 0 && daysRemaining <= 3;
+  
+  return (
+    <div className={`card h-full bg-white rounded-xl overflow-hidden shadow-lg ${isSearchResult ? 'search-highlight' : ''} ${isExpiringSoon ? 'border-orange-400 border-2' : ''}`}>
       <div className={`${bgColorClass} p-4 flex items-center justify-center h-20 relative`}>
         <h2 className="text-xl font-bold text-white flex items-center text-center uppercase">
           🖥 {title}
@@ -161,6 +173,27 @@ const SubscriptionCard = ({
             </p>
           </div>}
         
+        {/* Exibir informações de expiração se disponíveis */}
+        {expirationDate && daysRemaining !== undefined && (
+          <div className="py-2 border-t border-gray-200 mt-2 text-left">
+            <div className={`flex items-center ${daysRemaining <= 3 ? 'text-red-500' : 'text-blue-600'}`}>
+              <Clock className="mr-2 h-4 w-4" />
+              <span className="font-medium">
+                {daysRemaining > 0 
+                  ? `Expira em ${daysRemaining} dia${daysRemaining !== 1 ? 's' : ''}` 
+                  : 'Expirou hoje!'}
+              </span>
+            </div>
+            
+            {isExpiringSoon && (
+              <div className="flex items-center mt-1 text-orange-500">
+                <AlertCircle className="mr-2 h-4 w-4" />
+                <span className="text-sm">Esta assinatura expirará em breve</span>
+              </div>
+            )}
+          </div>
+        )}
+        
         <div className="pt-3 space-y-2">
           {telegramUsername && <a href={getTelegramLink()} target="_blank" rel="noopener noreferrer" className="contact-btn w-full bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-lg font-medium flex items-center justify-center cursor-pointer uppercase">
               <span className="mr-2">📩</span> Contato por Telegram
@@ -170,6 +203,8 @@ const SubscriptionCard = ({
             </a>}
         </div>
       </div>
-    </div>;
+    </div>
+  );
 };
+
 export default SubscriptionCard;
