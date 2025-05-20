@@ -20,6 +20,8 @@ interface SubscriptionItemProps {
   isMemberSubmission?: boolean;
   featured?: boolean;
   isAdminSubmission?: boolean;
+  expirationDate?: string | Date;
+  daysRemaining?: number;
 }
 
 const SubscriptionItem: React.FC<SubscriptionItemProps> = ({
@@ -39,7 +41,9 @@ const SubscriptionItem: React.FC<SubscriptionItemProps> = ({
   isSearchResult = false,
   isMemberSubmission = false,
   featured = false,
-  isAdminSubmission = false
+  isAdminSubmission = false,
+  expirationDate,
+  daysRemaining
 }) => {
   console.log(`Rendering subscription: ${title}, isMemberSubmission: ${isMemberSubmission}, featured: ${featured}, isAdminSubmission: ${isAdminSubmission}`);
 
@@ -64,6 +68,8 @@ const SubscriptionItem: React.FC<SubscriptionItemProps> = ({
           isMemberSubmission={isMemberSubmission}
           featured={featured}
           isAdminSubmission={isAdminSubmission}
+          expirationDate={expirationDate}
+          daysRemaining={daysRemaining}
         />
       </div>
     );
@@ -88,6 +94,8 @@ const SubscriptionItem: React.FC<SubscriptionItemProps> = ({
       isMemberSubmission={isMemberSubmission}
       featured={featured}
       isAdminSubmission={isAdminSubmission}
+      expirationDate={expirationDate}
+      daysRemaining={daysRemaining}
     />
   );
 };

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
@@ -258,7 +257,7 @@ const Profile = () => {
       setActionInProgress(null);
     }
   };
-
+  
   // Função para reenviar uma assinatura expirada
   const handleResubmitExpiredSubscription = async (subscription: ExpiredSubscriptionData) => {
     try {
@@ -330,7 +329,7 @@ const Profile = () => {
           <TabsList className="grid w-full grid-cols-3 mb-8">
             <TabsTrigger value="profile">Meus Dados</TabsTrigger>
             <TabsTrigger value="subscriptions">Minhas Assinaturas</TabsTrigger>
-            <TabsTrigger value="expired">Assinaturas Expiradas</TabsTrigger>
+            <TabsTrigger value="expired">Assinaturas Expiradas/Excluídas</TabsTrigger>
           </TabsList>
           
           {/* Aba de Perfil */}
@@ -534,14 +533,14 @@ const Profile = () => {
             )}
           </TabsContent>
           
-          {/* Aba de Assinaturas Expiradas */}
+          {/* Aba de Assinaturas Expiradas/Excluídas */}
           <TabsContent value="expired">
-            <h2 className="text-xl font-medium mb-4">Assinaturas Expiradas</h2>
+            <h2 className="text-xl font-medium mb-4">Assinaturas Expiradas/Excluídas</h2>
             
             {expiredSubscriptions.length === 0 ? (
               <Card>
                 <CardContent className="p-8 text-center">
-                  <p className="text-gray-500">Você não possui assinaturas expiradas.</p>
+                  <p className="text-gray-500">Você não possui assinaturas expiradas ou excluídas.</p>
                   <Button 
                     className="mt-4"
                     onClick={() => navigate('/')}

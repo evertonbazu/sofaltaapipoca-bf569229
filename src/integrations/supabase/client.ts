@@ -14,7 +14,12 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey);
  */
 export const formatDateBR = (date: Date | string | null): string => {
   if (!date) return '';
-  return format(new Date(date), 'dd/MM/yyyy', { locale: ptBR });
+  try {
+    return format(new Date(date), 'dd/MM/yyyy', { locale: ptBR });
+  } catch (error) {
+    console.error('Erro ao formatar data:', error);
+    return '';
+  }
 };
 
 /**
@@ -22,8 +27,13 @@ export const formatDateBR = (date: Date | string | null): string => {
  */
 export const calculateDaysRemaining = (expirationDate: Date | string | null): number => {
   if (!expirationDate) return 0;
-  const today = new Date();
-  return differenceInDays(new Date(expirationDate), today);
+  try {
+    const today = new Date();
+    return differenceInDays(new Date(expirationDate), today);
+  } catch (error) {
+    console.error('Erro ao calcular dias restantes:', error);
+    return 0;
+  }
 };
 
 /**
