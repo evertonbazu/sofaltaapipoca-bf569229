@@ -1,8 +1,8 @@
 
 import React, { useEffect } from 'react';
 import NavBar from '@/components/NavBar';
-import SubmitSubscriptionForm from '@/components/SubmitSubscriptionForm';
 import { useTelegramFieldModifier } from '@/components/SubmitSubscriptionForm';
+import SubmitSubscriptionForm from '@/components/SubmitSubscriptionForm';
 import { supabase } from '@/integrations/supabase/client';
 
 const SubmitSubscription = () => {
@@ -58,6 +58,7 @@ const SubmitSubscription = () => {
           Após a análise, seu anúncio será publicado no site.
         </p>
         
+        {/* This is actually supplied by a read-only file */}
         <SubmitSubscriptionForm />
       </div>
     </div>

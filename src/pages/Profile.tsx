@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -36,6 +35,7 @@ const passwordFormSchema = z.object({
   path: ["confirmPassword"],
 });
 
+// Definindo os tipos corretos para os formulários
 type ProfileFormValues = z.infer<typeof profileFormSchema>;
 type PasswordFormValues = z.infer<typeof passwordFormSchema>;
 
@@ -51,22 +51,24 @@ const Profile = () => {
   const { signOut, authState } = useAuth();
   const [redirected, setRedirected] = useState(false);
 
-  // Formulário de perfil
+  // Formulário de perfil - definindo corretamente o tipo
   const profileForm = useForm<ProfileFormValues>({
     resolver: zodResolver(profileFormSchema),
     defaultValues: {
       email: "",
       username: "",
     },
+    mode: "onSubmit"
   });
 
-  // Formulário de senha
+  // Formulário de senha - definindo corretamente o tipo
   const passwordForm = useForm<PasswordFormValues>({
     resolver: zodResolver(passwordFormSchema),
     defaultValues: {
       password: "",
       confirmPassword: "",
     },
+    mode: "onSubmit"
   });
 
   // Verificar se o usuário está logado e buscar dados
