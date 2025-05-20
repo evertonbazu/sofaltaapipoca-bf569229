@@ -1,12 +1,8 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
-import { useToast } from "@/components/ui/use-toast";
-import { Loader2, User, Edit, Trash2, Clock, AlertCircle, Send } from 'lucide-react';
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -16,8 +12,14 @@ import { deleteSubscription } from '@/services/subscription-service';
 import { getExpiredSubscriptions, resubmitExpiredSubscription } from '@/services/expired-subscription-service';
 import NavBar from '@/components/NavBar';
 import { useAuth } from '@/contexts/AuthContext';
-import { format } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
+import { Loader2, User } from 'lucide-react';
+import { useToast } from "@/components/ui/use-toast";
+
+// Import the refactored components
+import ProfileInfoForm from '@/components/profile/ProfileInfoForm';
+import PasswordFormComponent from '@/components/profile/PasswordForm';
+import SubscriptionsList from '@/components/profile/SubscriptionsList';
+import ExpiredSubscriptionsList from '@/components/profile/ExpiredSubscriptionsList';
 
 // Schema para o formulário de perfil
 const profileFormSchema = z.object({
@@ -246,6 +248,10 @@ const Profile = () => {
       // Atualizar a lista de assinaturas
       setUserSubscriptions(prev => prev.filter(item => item.id !== id));
       
+      // Recarregar assinaturas expiradas para obter a recém-excluída
+      const expiredSubs = await getExpiredSubscriptions();
+      setExpiredSubscriptions(expiredSubs);
+      
     } catch (error) {
       console.error('Erro ao excluir assinatura:', error);
       toast({
@@ -342,52 +348,11 @@ const Profile = () => {
                   <CardDescription>Atualize suas informações de perfil</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <Form {...profileForm}>
-                    <form onSubmit={profileForm.handleSubmit(onUpdateProfile)} className="space-y-4">
-                      <FormField
-                        control={profileForm.control}
-                        name="email"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>E-mail</FormLabel>
-                            <FormControl>
-                              <Input disabled {...field} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      
-                      <FormField
-                        control={profileForm.control}
-                        name="username"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Nome de Usuário</FormLabel>
-                            <FormControl>
-                              <Input placeholder="Seu nome de usuário" {...field} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      
-                      <Button 
-                        type="submit" 
-                        className="w-full"
-                        disabled={actionInProgress === 'profile'}
-                      >
-                        {actionInProgress === 'profile' ? (
-                          <>
-                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                            Atualizando...
-                          </>
-                        ) : (
-                          'Salvar alterações'
-                        )}
-                      </Button>
-                    </form>
-                  </Form>
+                  <ProfileInfoForm
+                    form={profileForm}
+                    onSubmit={onUpdateProfile}
+                    isSubmitting={actionInProgress === 'profile'}
+                  />
                 </CardContent>
               </Card>
               
@@ -398,58 +363,13 @@ const Profile = () => {
                   <CardDescription>Defina uma nova senha para sua conta</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <Form {...passwordForm}>
-                    <form onSubmit={passwordForm.handleSubmit(onUpdatePassword)} className="space-y-4">
-                      <FormField
-                        control={passwordForm.control}
-                        name="password"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Nova Senha</FormLabel>
-                            <FormControl>
-                              <Input type="password" placeholder="******" {...field} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      
-                      <FormField
-                        control={passwordForm.control}
-                        name="confirmPassword"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Confirme a Nova Senha</FormLabel>
-                            <FormControl>
-                              <Input type="password" placeholder="******" {...field} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      
-                      <Button 
-                        type="submit" 
-                        className="w-full"
-                        disabled={actionInProgress === 'password'}
-                      >
-                        {actionInProgress === 'password' ? (
-                          <>
-                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                            Atualizando...
-                          </>
-                        ) : (
-                          'Alterar senha'
-                        )}
-                      </Button>
-                    </form>
-                  </Form>
+                  <PasswordFormComponent
+                    form={passwordForm}
+                    onSubmit={onUpdatePassword}
+                    isSubmitting={actionInProgress === 'password'}
+                    onLogout={handleLogout}
+                  />
                 </CardContent>
-                <CardFooter>
-                  <Button variant="outline" className="w-full" onClick={handleLogout}>
-                    Sair da conta
-                  </Button>
-                </CardFooter>
               </Card>
             </div>
           </TabsContent>
@@ -457,139 +377,21 @@ const Profile = () => {
           {/* Aba de Assinaturas */}
           <TabsContent value="subscriptions">
             <h2 className="text-xl font-medium mb-4">Minhas Assinaturas</h2>
-            
-            {userSubscriptions.length === 0 ? (
-              <Card>
-                <CardContent className="p-8 text-center">
-                  <p className="text-gray-500">Você ainda não possui assinaturas aprovadas.</p>
-                  <Button 
-                    className="mt-4"
-                    onClick={() => navigate('/')}
-                  >
-                    Voltar para a página inicial
-                  </Button>
-                </CardContent>
-              </Card>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {userSubscriptions.map((subscription) => {
-                  const daysRemaining = subscription.daysRemaining || 0;
-                  const isExpiringSoon = isExpirationImminent(daysRemaining);
-                  
-                  return (
-                  <Card key={subscription.id} className={`${isExpiringSoon ? 'border-orange-400 border-2' : ''}`}>
-                    <CardHeader>
-                      <CardTitle>{subscription.title}</CardTitle>
-                      <CardDescription>
-                        {subscription.price} - {subscription.paymentMethod}
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="space-y-2">
-                        <p><strong>Envio:</strong> {subscription.access}</p>
-                        <p><strong>Status:</strong> {subscription.status}</p>
-                        <p><strong>Adicionado em:</strong> {subscription.addedDate ? formatDateBR(new Date(subscription.addedDate)) : ''}</p>
-                        <p><strong>Código:</strong> {subscription.code}</p>
-                        
-                        {subscription.expirationDate && (
-                          <div className={`flex items-center mt-3 ${daysRemaining <= 3 ? 'text-red-500' : 'text-blue-600'}`}>
-                            <Clock className="mr-2 h-4 w-4" />
-                            <span className="font-medium">
-                              {daysRemaining > 0 
-                                ? `Expira em ${daysRemaining} dia${daysRemaining !== 1 ? 's' : ''}` 
-                                : 'Expirou hoje!'}
-                            </span>
-                          </div>
-                        )}
-                        
-                        {isExpiringSoon && (
-                          <div className="flex items-center mt-1 text-orange-500">
-                            <AlertCircle className="mr-2 h-4 w-4" />
-                            <span className="text-sm">Esta assinatura expirará em breve</span>
-                          </div>
-                        )}
-                      </div>
-                    </CardContent>
-                    <CardFooter>
-                      <Button 
-                        variant="destructive" 
-                        className="w-full"
-                        disabled={!!actionInProgress}
-                        onClick={() => handleDeleteSubscription(subscription.id || '')}
-                      >
-                        {actionInProgress === subscription.id ? (
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                        ) : (
-                          <>
-                            <Trash2 className="mr-2 h-4 w-4" />
-                            Excluir Assinatura
-                          </>
-                        )}
-                      </Button>
-                    </CardFooter>
-                  </Card>
-                )})}
-              </div>
-            )}
+            <SubscriptionsList 
+              subscriptions={userSubscriptions}
+              onDelete={handleDeleteSubscription}
+              actionInProgress={actionInProgress}
+            />
           </TabsContent>
           
           {/* Aba de Assinaturas Expiradas/Excluídas */}
           <TabsContent value="expired">
             <h2 className="text-xl font-medium mb-4">Assinaturas Expiradas/Excluídas</h2>
-            
-            {expiredSubscriptions.length === 0 ? (
-              <Card>
-                <CardContent className="p-8 text-center">
-                  <p className="text-gray-500">Você não possui assinaturas expiradas ou excluídas.</p>
-                  <Button 
-                    className="mt-4"
-                    onClick={() => navigate('/')}
-                  >
-                    Voltar para a página inicial
-                  </Button>
-                </CardContent>
-              </Card>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {expiredSubscriptions.map((subscription) => (
-                  <Card key={subscription.id}>
-                    <CardHeader>
-                      <CardTitle>{subscription.title}</CardTitle>
-                      <CardDescription>
-                        {subscription.price} - {subscription.paymentMethod}
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="space-y-2">
-                        <p><strong>Envio:</strong> {subscription.access}</p>
-                        <p><strong>Status:</strong> {subscription.status}</p>
-                        <p><strong>Adicionado em:</strong> {subscription.addedDate ? formatDateBR(new Date(subscription.addedDate)) : ''}</p>
-                        <p><strong>Expirado em:</strong> {formatDateBR(new Date(subscription.expiredAt))}</p>
-                        <p><strong>Motivo:</strong> {subscription.expiryReason}</p>
-                        <p><strong>Código:</strong> {subscription.code}</p>
-                      </div>
-                    </CardContent>
-                    <CardFooter>
-                      <Button 
-                        variant="default" 
-                        className="w-full"
-                        disabled={!!actionInProgress}
-                        onClick={() => handleResubmitExpiredSubscription(subscription)}
-                      >
-                        {actionInProgress === subscription.id ? (
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                        ) : (
-                          <>
-                            <Send className="mr-2 h-4 w-4" />
-                            Enviar Novamente
-                          </>
-                        )}
-                      </Button>
-                    </CardFooter>
-                  </Card>
-                ))}
-              </div>
-            )}
+            <ExpiredSubscriptionsList 
+              subscriptions={expiredSubscriptions}
+              onResubmit={handleResubmitExpiredSubscription}
+              actionInProgress={actionInProgress}
+            />
           </TabsContent>
         </Tabs>
       </div>

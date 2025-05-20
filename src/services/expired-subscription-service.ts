@@ -5,13 +5,20 @@ import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
 /**
- * Busca todas as assinaturas expiradas do usuário
+ * Busca todas as assinaturas expiradas do usuário atual
  */
 export const getExpiredSubscriptions = async (): Promise<ExpiredSubscriptionData[]> => {
   try {
+    const { data: userId } = await supabase.auth.getUser();
+    
+    if (!userId.user?.id) {
+      throw new Error('Usuário não autenticado');
+    }
+    
     const { data, error } = await supabase
       .from('expired_subscriptions')
       .select('*')
+      .eq('user_id', userId.user.id)
       .order('expired_at', { ascending: false });
       
     if (error) {

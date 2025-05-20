@@ -43,7 +43,7 @@ const SubscriptionCard = ({
   icon = 'monitor',
   isSearchResult = false,
   addedDate,
-  version = '3.1.5', // Versão atualizada
+  version = '3.1.6', // Versão atualizada
   isMemberSubmission = false,
   featured = false,
   isAdminSubmission = false,
@@ -157,7 +157,7 @@ const SubscriptionCard = ({
             <span className="mr-1">🏦</span> Valor: {price}
           </p>
           <p className="text-gray-900 font-medium uppercase flex items-center">
-            <span className="mr-1">🫱🏼‍🫲🏼</span> Forma de Pagamento: {paymentMethod}
+            <span className="mr-1">🫱🏼‍🫲🏼</span> PAGAMENTO: {paymentMethod}
           </p>
           <p className="text-gray-900 font-medium uppercase flex items-center">
             <span className="mr-1">📌</span> Status: {status}
