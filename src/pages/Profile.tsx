@@ -1,25 +1,21 @@
 
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import { useToast } from "@/components/ui/use-toast";
+import { Loader2, User, Edit, Trash2 } from 'lucide-react';
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { supabase, formatDateBR, calculateDaysRemaining, isExpirationImminent } from '@/integrations/supabase/client';
-import { SubscriptionData, ExpiredSubscriptionData } from '@/types/subscriptionTypes';
+import { supabase } from '@/integrations/supabase/client';
+import { SubscriptionData } from '@/types/subscriptionTypes';
 import { deleteSubscription } from '@/services/subscription-service';
-import { getExpiredSubscriptions, resubmitExpiredSubscription } from '@/services/expired-subscription-service';
 import NavBar from '@/components/NavBar';
 import { useAuth } from '@/contexts/AuthContext';
-import { Loader2, User } from 'lucide-react';
-import { useToast } from "@/components/ui/use-toast";
-
-// Import the refactored components
-import ProfileInfoForm from '@/components/profile/ProfileInfoForm';
-import PasswordFormComponent from '@/components/profile/PasswordForm';
-import SubscriptionsList from '@/components/profile/SubscriptionsList';
-import ExpiredSubscriptionsList from '@/components/profile/ExpiredSubscriptionsList';
 
 // Schema para o formulário de perfil
 const profileFormSchema = z.object({
@@ -36,9 +32,8 @@ const passwordFormSchema = z.object({
   path: ["confirmPassword"],
 });
 
-// Definindo os tipos corretos para os formulários
-export type ProfileFormValues = z.infer<typeof profileFormSchema>;
-export type PasswordFormValues = z.infer<typeof passwordFormSchema>;
+type ProfileFormValues = z.infer<typeof profileFormSchema>;
+type PasswordFormValues = z.infer<typeof passwordFormSchema>;
 
 const Profile = () => {
   const navigate = useNavigate();
@@ -47,29 +42,26 @@ const Profile = () => {
   const [user, setUser] = useState<any>(null);
   const [userProfile, setUserProfile] = useState<any>(null);
   const [userSubscriptions, setUserSubscriptions] = useState<SubscriptionData[]>([]);
-  const [expiredSubscriptions, setExpiredSubscriptions] = useState<ExpiredSubscriptionData[]>([]);
   const [actionInProgress, setActionInProgress] = useState<string | null>(null);
   const { signOut, authState } = useAuth();
   const [redirected, setRedirected] = useState(false);
 
-  // Formulário de perfil - definindo corretamente o tipo
+  // Formulário de perfil
   const profileForm = useForm<ProfileFormValues>({
     resolver: zodResolver(profileFormSchema),
     defaultValues: {
       email: "",
       username: "",
     },
-    mode: "onSubmit"
   });
 
-  // Formulário de senha - definindo corretamente o tipo
+  // Formulário de senha
   const passwordForm = useForm<PasswordFormValues>({
     resolver: zodResolver(passwordFormSchema),
     defaultValues: {
       password: "",
       confirmPassword: "",
     },
-    mode: "onSubmit"
   });
 
   // Verificar se o usuário está logado e buscar dados
@@ -115,47 +107,7 @@ const Profile = () => {
         if (subscriptionsError) {
           console.error('Erro ao buscar assinaturas do usuário:', subscriptionsError);
         } else {
-          // Processar as assinaturas e calcular dias restantes
-          const processedSubs = (subscriptions || []).map(sub => {
-            const daysRemaining = sub.expiration_date 
-              ? calculateDaysRemaining(sub.expiration_date)
-              : 15;
-              
-            return {
-              id: sub.id,
-              title: sub.title,
-              price: sub.price,
-              paymentMethod: sub.payment_method,
-              status: sub.status,
-              access: sub.access,
-              headerColor: sub.header_color,
-              priceColor: sub.price_color,
-              whatsappNumber: sub.whatsapp_number,
-              telegramUsername: sub.telegram_username,
-              icon: sub.icon,
-              addedDate: sub.added_date,
-              code: sub.code,
-              userId: sub.user_id,
-              pixKey: sub.pix_key,
-              expirationDate: sub.expiration_date,
-              daysRemaining
-            };
-          });
-          
-          setUserSubscriptions(processedSubs);
-        }
-        
-        // Buscar assinaturas expiradas
-        try {
-          const expiredSubs = await getExpiredSubscriptions();
-          setExpiredSubscriptions(expiredSubs);
-        } catch (error) {
-          console.error('Erro ao buscar assinaturas expiradas:', error);
-          toast({
-            title: "Erro",
-            description: "Não foi possível buscar as assinaturas expiradas.",
-            variant: "destructive",
-          });
+          setUserSubscriptions(subscriptions || []);
         }
       } catch (error) {
         console.error('Erro ao verificar usuário:', error);
@@ -171,7 +123,7 @@ const Profile = () => {
     if (!redirected) {
       checkUser();
     }
-  }, [navigate, authState, redirected, toast, profileForm]);
+  }, [navigate, authState, redirected]);
   
   // Função para atualizar o perfil
   const onUpdateProfile = async (data: ProfileFormValues) => {
@@ -251,42 +203,11 @@ const Profile = () => {
       // Atualizar a lista de assinaturas
       setUserSubscriptions(prev => prev.filter(item => item.id !== id));
       
-      // Recarregar assinaturas expiradas para obter a recém-excluída
-      const expiredSubs = await getExpiredSubscriptions();
-      setExpiredSubscriptions(expiredSubs);
-      
     } catch (error) {
       console.error('Erro ao excluir assinatura:', error);
       toast({
         title: "Erro",
         description: "Não foi possível excluir sua assinatura.",
-        variant: "destructive",
-      });
-    } finally {
-      setActionInProgress(null);
-    }
-  };
-  
-  // Função para reenviar uma assinatura expirada
-  const handleResubmitExpiredSubscription = async (subscription: ExpiredSubscriptionData) => {
-    try {
-      setActionInProgress(subscription.id || '');
-      
-      await resubmitExpiredSubscription(subscription);
-      
-      toast({
-        title: "Assinatura reenviada",
-        description: "Sua assinatura foi reenviada para aprovação com sucesso.",
-      });
-      
-      // Atualizar a lista de assinaturas expiradas
-      setExpiredSubscriptions(prev => prev.filter(item => item.id !== subscription.id));
-      
-    } catch (error) {
-      console.error('Erro ao reenviar assinatura:', error);
-      toast({
-        title: "Erro",
-        description: "Não foi possível reenviar sua assinatura.",
         variant: "destructive",
       });
     } finally {
@@ -335,10 +256,9 @@ const Profile = () => {
         </h1>
         
         <Tabs defaultValue="profile">
-          <TabsList className="grid w-full grid-cols-3 mb-8">
+          <TabsList className="grid w-full grid-cols-2 mb-8">
             <TabsTrigger value="profile">Meus Dados</TabsTrigger>
             <TabsTrigger value="subscriptions">Minhas Assinaturas</TabsTrigger>
-            <TabsTrigger value="expired">Assinaturas Expiradas/Excluídas</TabsTrigger>
           </TabsList>
           
           {/* Aba de Perfil */}
@@ -351,11 +271,52 @@ const Profile = () => {
                   <CardDescription>Atualize suas informações de perfil</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <ProfileInfoForm
-                    form={profileForm}
-                    onSubmit={onUpdateProfile}
-                    isSubmitting={actionInProgress === 'profile'}
-                  />
+                  <Form {...profileForm}>
+                    <form onSubmit={profileForm.handleSubmit(onUpdateProfile)} className="space-y-4">
+                      <FormField
+                        control={profileForm.control}
+                        name="email"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>E-mail</FormLabel>
+                            <FormControl>
+                              <Input disabled {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      
+                      <FormField
+                        control={profileForm.control}
+                        name="username"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Nome de Usuário</FormLabel>
+                            <FormControl>
+                              <Input placeholder="Seu nome de usuário" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      
+                      <Button 
+                        type="submit" 
+                        className="w-full"
+                        disabled={actionInProgress === 'profile'}
+                      >
+                        {actionInProgress === 'profile' ? (
+                          <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            Atualizando...
+                          </>
+                        ) : (
+                          'Salvar alterações'
+                        )}
+                      </Button>
+                    </form>
+                  </Form>
                 </CardContent>
               </Card>
               
@@ -366,13 +327,58 @@ const Profile = () => {
                   <CardDescription>Defina uma nova senha para sua conta</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <PasswordFormComponent
-                    form={passwordForm}
-                    onSubmit={onUpdatePassword}
-                    isSubmitting={actionInProgress === 'password'}
-                    onLogout={handleLogout}
-                  />
+                  <Form {...passwordForm}>
+                    <form onSubmit={passwordForm.handleSubmit(onUpdatePassword)} className="space-y-4">
+                      <FormField
+                        control={passwordForm.control}
+                        name="password"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Nova Senha</FormLabel>
+                            <FormControl>
+                              <Input type="password" placeholder="******" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      
+                      <FormField
+                        control={passwordForm.control}
+                        name="confirmPassword"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Confirme a Nova Senha</FormLabel>
+                            <FormControl>
+                              <Input type="password" placeholder="******" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      
+                      <Button 
+                        type="submit" 
+                        className="w-full"
+                        disabled={actionInProgress === 'password'}
+                      >
+                        {actionInProgress === 'password' ? (
+                          <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            Atualizando...
+                          </>
+                        ) : (
+                          'Alterar senha'
+                        )}
+                      </Button>
+                    </form>
+                  </Form>
                 </CardContent>
+                <CardFooter>
+                  <Button variant="outline" className="w-full" onClick={handleLogout}>
+                    Sair da conta
+                  </Button>
+                </CardFooter>
               </Card>
             </div>
           </TabsContent>
@@ -380,21 +386,58 @@ const Profile = () => {
           {/* Aba de Assinaturas */}
           <TabsContent value="subscriptions">
             <h2 className="text-xl font-medium mb-4">Minhas Assinaturas</h2>
-            <SubscriptionsList 
-              subscriptions={userSubscriptions}
-              onDelete={handleDeleteSubscription}
-              actionInProgress={actionInProgress}
-            />
-          </TabsContent>
-          
-          {/* Aba de Assinaturas Expiradas/Excluídas */}
-          <TabsContent value="expired">
-            <h2 className="text-xl font-medium mb-4">Assinaturas Expiradas/Excluídas</h2>
-            <ExpiredSubscriptionsList 
-              subscriptions={expiredSubscriptions}
-              onResubmit={handleResubmitExpiredSubscription}
-              actionInProgress={actionInProgress}
-            />
+            
+            {userSubscriptions.length === 0 ? (
+              <Card>
+                <CardContent className="p-8 text-center">
+                  <p className="text-gray-500">Você ainda não possui assinaturas aprovadas.</p>
+                  <Button 
+                    className="mt-4"
+                    onClick={() => navigate('/')}
+                  >
+                    Voltar para a página inicial
+                  </Button>
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {userSubscriptions.map((subscription) => (
+                  <Card key={subscription.id}>
+                    <CardHeader>
+                      <CardTitle>{subscription.title}</CardTitle>
+                      <CardDescription>
+                        {subscription.price} - {subscription.paymentMethod}
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-2">
+                        <p><strong>Envio:</strong> {subscription.access}</p>
+                        <p><strong>Status:</strong> {subscription.status}</p>
+                        <p><strong>Adicionado em:</strong> {subscription.addedDate}</p>
+                        <p><strong>Código:</strong> {subscription.code}</p>
+                      </div>
+                    </CardContent>
+                    <CardFooter>
+                      <Button 
+                        variant="destructive" 
+                        className="w-full"
+                        disabled={!!actionInProgress}
+                        onClick={() => handleDeleteSubscription(subscription.id || '')}
+                      >
+                        {actionInProgress === subscription.id ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <>
+                            <Trash2 className="mr-2 h-4 w-4" />
+                            Excluir Assinatura
+                          </>
+                        )}
+                      </Button>
+                    </CardFooter>
+                  </Card>
+                ))}
+              </div>
+            )}
           </TabsContent>
         </Tabs>
       </div>

@@ -102,78 +102,6 @@ export type Database = {
         }
         Relationships: []
       }
-      expired_subscriptions: {
-        Row: {
-          access: string
-          added_date: string | null
-          code: string
-          created_at: string | null
-          expired_at: string | null
-          expiry_reason: string
-          header_color: string
-          icon: string | null
-          id: string
-          original_subscription_id: string | null
-          payment_method: string
-          payment_proof_image: string | null
-          pix_key: string | null
-          pix_qr_code: string | null
-          price: string
-          price_color: string
-          status: string
-          telegram_username: string
-          title: string
-          user_id: string
-          whatsapp_number: string
-        }
-        Insert: {
-          access: string
-          added_date?: string | null
-          code: string
-          created_at?: string | null
-          expired_at?: string | null
-          expiry_reason: string
-          header_color: string
-          icon?: string | null
-          id?: string
-          original_subscription_id?: string | null
-          payment_method: string
-          payment_proof_image?: string | null
-          pix_key?: string | null
-          pix_qr_code?: string | null
-          price: string
-          price_color: string
-          status: string
-          telegram_username: string
-          title: string
-          user_id: string
-          whatsapp_number: string
-        }
-        Update: {
-          access?: string
-          added_date?: string | null
-          code?: string
-          created_at?: string | null
-          expired_at?: string | null
-          expiry_reason?: string
-          header_color?: string
-          icon?: string | null
-          id?: string
-          original_subscription_id?: string | null
-          payment_method?: string
-          payment_proof_image?: string | null
-          pix_key?: string | null
-          pix_qr_code?: string | null
-          price?: string
-          price_color?: string
-          status?: string
-          telegram_username?: string
-          title?: string
-          user_id?: string
-          whatsapp_number?: string
-        }
-        Relationships: []
-      }
       form_options: {
         Row: {
           active: boolean | null
@@ -375,7 +303,6 @@ export type Database = {
           added_date: string | null
           code: string
           created_at: string | null
-          expiration_date: string | null
           featured: boolean | null
           header_color: string
           icon: string | null
@@ -399,7 +326,6 @@ export type Database = {
           added_date?: string | null
           code: string
           created_at?: string | null
-          expiration_date?: string | null
           featured?: boolean | null
           header_color: string
           icon?: string | null
@@ -423,7 +349,6 @@ export type Database = {
           added_date?: string | null
           code?: string
           created_at?: string | null
-          expiration_date?: string | null
           featured?: boolean | null
           header_color?: string
           icon?: string | null

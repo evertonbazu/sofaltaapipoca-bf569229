@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { SubscriptionData } from '@/types/subscriptionTypes';
 import { toast } from '@/components/ui/use-toast';
@@ -272,51 +273,7 @@ export async function updateSubscription(id: string, subscription: SubscriptionD
 // Excluir uma assinatura
 export async function deleteSubscription(id: string): Promise<void> {
   try {
-    // Primeiro obter os dados da assinatura para copiar para a tabela de expiradas
-    const { data: subscriptionData, error: fetchError } = await supabase
-      .from('subscriptions')
-      .select('*')
-      .eq('id', id)
-      .single();
-      
-    if (fetchError) {
-      console.error('Erro ao buscar dados da assinatura:', fetchError);
-      throw fetchError;
-    }
-    
-    if (subscriptionData) {
-      // Adicionar à tabela de assinaturas expiradas
-      const { error: insertError } = await supabase
-        .from('expired_subscriptions')
-        .insert([{
-          original_subscription_id: id,
-          title: subscriptionData.title,
-          price: subscriptionData.price,
-          payment_method: subscriptionData.payment_method,
-          status: subscriptionData.status,
-          access: subscriptionData.access,
-          header_color: subscriptionData.header_color,
-          price_color: subscriptionData.price_color,
-          whatsapp_number: subscriptionData.whatsapp_number,
-          telegram_username: subscriptionData.telegram_username,
-          icon: subscriptionData.icon,
-          added_date: subscriptionData.added_date,
-          code: subscriptionData.code,
-          pix_key: subscriptionData.pix_key,
-          pix_qr_code: subscriptionData.pix_qr_code,
-          payment_proof_image: subscriptionData.payment_proof_image,
-          user_id: subscriptionData.user_id,
-          expiry_reason: 'Excluída pelo usuário',
-          expired_at: new Date().toISOString()
-        }]);
-        
-      if (insertError) {
-        console.error('Erro ao adicionar à tabela de expiradas:', insertError);
-        // Não impede a continuação da exclusão
-      }
-    }
-    
-    // Tenta excluir a mensagem do Telegram se existir
+    // Primeiro tenta excluir a mensagem do Telegram se existir
     try {
       console.log('Tentando excluir mensagem do Telegram para assinatura:', id);
       await deleteFromTelegramGroup(id);
