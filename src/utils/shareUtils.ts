@@ -2,6 +2,10 @@ import { SubscriptionData } from '@/types/subscriptionTypes';
 import { supabase } from '@/integrations/supabase/client';
 
 /**
+ * Version 3.0.3
+ * - Corrigido definitivamente o problema de ícones no WhatsApp
+ * - Usados ícones simples compatíveis com WhatsApp
+ * 
  * Version 3.0.2
  * - Corrigido problema de codificação de ícones Unicode no WhatsApp
  * - Melhorada a codificação URL para preservar caracteres especiais
@@ -34,24 +38,24 @@ import { supabase } from '@/integrations/supabase/client';
  */
 
 // Export the current version as a constant for use throughout the app
-export const APP_VERSION = "3.0.2";
+export const APP_VERSION = "3.0.3";
 
 /**
  * Formats subscription data for sharing on messaging platforms
  */
 export const formatSubscriptionForSharing = (subscription: SubscriptionData): string => {
-  // Format the subscription data according to the specified template with proper Unicode icons
+  // Format the subscription data according to the specified template with simple icons
   let content = '';
   
-  // Title with icon (using proper Unicode)
-  content += `🖥 ${subscription.title}\n`;
+  // Title with icon (using simple text icon)
+  content += `💻 ${subscription.title}\n`;
   
   // Price
-  content += `🏦 ${subscription.price}\n`;
+  content += `💰 ${subscription.price}\n`;
   
   // Payment method (added)
   if (subscription.paymentMethod) {
-    content += `🤝🏼 ${subscription.paymentMethod}\n`;
+    content += `🤝 ${subscription.paymentMethod}\n`;
   }
   
   // Status
