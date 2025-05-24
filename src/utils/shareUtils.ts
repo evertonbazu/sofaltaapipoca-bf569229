@@ -1,7 +1,12 @@
+
 import { SubscriptionData } from '@/types/subscriptionTypes';
 import { supabase } from '@/integrations/supabase/client';
 
 /**
+ * Version 3.0.4
+ * - Corrigido problema de ícones usando emojis básicos compatíveis com WhatsApp
+ * - Testados emojis que funcionam em todas as versões do WhatsApp
+ * 
  * Version 3.0.3
  * - Corrigido definitivamente o problema de ícones no WhatsApp
  * - Usados ícones simples compatíveis com WhatsApp
@@ -38,42 +43,42 @@ import { supabase } from '@/integrations/supabase/client';
  */
 
 // Export the current version as a constant for use throughout the app
-export const APP_VERSION = "3.0.3";
+export const APP_VERSION = "3.0.4";
 
 /**
  * Formats subscription data for sharing on messaging platforms
  */
 export const formatSubscriptionForSharing = (subscription: SubscriptionData): string => {
-  // Format the subscription data according to the specified template with simple icons
+  // Format the subscription data using basic emojis that work in all WhatsApp versions
   let content = '';
   
-  // Title with icon (using simple text icon)
-  content += `💻 ${subscription.title}\n`;
+  // Title with computer emoji
+  content += `🖥️ ${subscription.title}\n`;
   
-  // Price
-  content += `💰 ${subscription.price}\n`;
+  // Price with money emoji
+  content += `🏦 ${subscription.price}\n`;
   
-  // Payment method (added)
+  // Payment method with handshake emoji
   if (subscription.paymentMethod) {
-    content += `🤝 ${subscription.paymentMethod}\n`;
+    content += `🤝🏼 ${subscription.paymentMethod}\n`;
   }
   
-  // Status
-  content += `📌 ${subscription.status}\n`;
+  // Status with pin emoji
+  content += `📌${subscription.status}\n`;
   
-  // Access method
+  // Access method with key emoji
   content += `🔐 ${subscription.access}\n`;
   
   // Contact methods
   if (subscription.telegramUsername) {
-    content += `📩 ${subscription.telegramUsername}\n`;
+    content += `📩${subscription.telegramUsername}\n`;
   }
   
   if (subscription.whatsappNumber) {
     content += `📱 https://wa.me/${subscription.whatsappNumber}\n`;
   }
   
-  // Date added
+  // Date added with calendar emoji
   if (subscription.addedDate) {
     content += `\n📅 Adicionado em: ${subscription.addedDate}`;
   }
