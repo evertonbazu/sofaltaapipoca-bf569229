@@ -3,6 +3,10 @@ import { SubscriptionData } from '@/types/subscriptionTypes';
 import { supabase } from '@/integrations/supabase/client';
 
 /**
+ * Version 3.0.6
+ * - Adicionados emojis simples e compatíveis com WhatsApp
+ * - Testado com emojis que funcionam corretamente na codificação URL
+ * 
  * Version 3.0.5
  * - Removidos emojis para evitar problemas de codificação no WhatsApp
  * - Usado apenas texto simples que funciona em todas as plataformas
@@ -47,44 +51,44 @@ import { supabase } from '@/integrations/supabase/client';
  */
 
 // Export the current version as a constant for use throughout the app
-export const APP_VERSION = "3.0.5";
+export const APP_VERSION = "3.0.6";
 
 /**
  * Formats subscription data for sharing on messaging platforms
  */
 export const formatSubscriptionForSharing = (subscription: SubscriptionData): string => {
-  // Format the subscription data using only text to avoid encoding issues
+  // Format the subscription data using simple emojis that work well in WhatsApp
   let content = '';
   
   // Title
-  content += `TITULO: ${subscription.title}\n`;
+  content += `📺 ${subscription.title}\n`;
   
   // Price
-  content += `PRECO: ${subscription.price}\n`;
+  content += `💰 ${subscription.price}\n`;
   
   // Payment method
   if (subscription.paymentMethod) {
-    content += `PAGAMENTO: ${subscription.paymentMethod}\n`;
+    content += `💳 ${subscription.paymentMethod}\n`;
   }
   
   // Status
-  content += `STATUS: ${subscription.status}\n`;
+  content += `✅ ${subscription.status}\n`;
   
   // Access method
-  content += `ENVIO: ${subscription.access}\n`;
+  content += `🔑 ${subscription.access}\n`;
   
   // Contact methods
   if (subscription.telegramUsername) {
-    content += `TELEGRAM: ${subscription.telegramUsername}\n`;
+    content += `📧 ${subscription.telegramUsername}\n`;
   }
   
   if (subscription.whatsappNumber) {
-    content += `WHATSAPP: https://wa.me/${subscription.whatsappNumber}\n`;
+    content += `📱 https://wa.me/${subscription.whatsappNumber}\n`;
   }
   
   // Date added
   if (subscription.addedDate) {
-    content += `\nADICIONADO EM: ${subscription.addedDate}`;
+    content += `\n📅 Adicionado em: ${subscription.addedDate}`;
   }
   
   return content;
