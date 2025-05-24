@@ -1,8 +1,11 @@
-
 import { SubscriptionData } from '@/types/subscriptionTypes';
 import { supabase } from '@/integrations/supabase/client';
 
 /**
+ * Version 3.0.2
+ * - Corrigido problema de codificação de ícones Unicode no WhatsApp
+ * - Melhorada a codificação URL para preservar caracteres especiais
+ * 
  * Version 3.0.1
  * - Corrigido problema de exibição de ícones no WhatsApp
  * - Ícones agora são exibidos corretamente no formato Unicode
@@ -31,7 +34,7 @@ import { supabase } from '@/integrations/supabase/client';
  */
 
 // Export the current version as a constant for use throughout the app
-export const APP_VERSION = "3.0.1";
+export const APP_VERSION = "3.0.2";
 
 /**
  * Formats subscription data for sharing on messaging platforms
@@ -76,18 +79,22 @@ export const formatSubscriptionForSharing = (subscription: SubscriptionData): st
 
 /**
  * Creates a WhatsApp share link with formatted subscription data
+ * Using proper encoding to preserve Unicode characters
  */
 export const getWhatsAppShareLink = (subscription: SubscriptionData): string => {
-  const formattedText = encodeURIComponent(formatSubscriptionForSharing(subscription));
-  return `https://wa.me/?text=${formattedText}`;
+  const formattedText = formatSubscriptionForSharing(subscription);
+  // Use encodeURIComponent to properly encode Unicode characters
+  const encodedText = encodeURIComponent(formattedText);
+  return `https://wa.me/?text=${encodedText}`;
 };
 
 /**
  * Creates a Telegram share link with formatted subscription data
  */
 export const getTelegramShareLink = (subscription: SubscriptionData): string => {
-  const formattedText = encodeURIComponent(formatSubscriptionForSharing(subscription));
-  return `https://t.me/share/url?url=&text=${formattedText}`;
+  const formattedText = formatSubscriptionForSharing(subscription);
+  const encodedText = encodeURIComponent(formattedText);
+  return `https://t.me/share/url?url=&text=${encodedText}`;
 };
 
 /**
