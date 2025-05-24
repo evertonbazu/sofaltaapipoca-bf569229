@@ -1,7 +1,12 @@
+
 import { SubscriptionData } from '@/types/subscriptionTypes';
 import { supabase } from '@/integrations/supabase/client';
 
 /**
+ * Version 3.0.1
+ * - Corrigido problema de exibição de ícones no WhatsApp
+ * - Ícones agora são exibidos corretamente no formato Unicode
+ * 
  * Version 3.0.0
  * - Corrigido problema de envio de assinaturas aprovadas para o Telegram
  * 
@@ -26,17 +31,17 @@ import { supabase } from '@/integrations/supabase/client';
  */
 
 // Export the current version as a constant for use throughout the app
-export const APP_VERSION = "3.0.0";
+export const APP_VERSION = "3.0.1";
 
 /**
  * Formats subscription data for sharing on messaging platforms
  */
 export const formatSubscriptionForSharing = (subscription: SubscriptionData): string => {
-  // Format the subscription data according to the specified template
+  // Format the subscription data according to the specified template with proper Unicode icons
   let content = '';
   
-  // Title with icon
-  content += `${subscription.icon || '🖥'} ${subscription.title}\n`;
+  // Title with icon (using proper Unicode)
+  content += `🖥 ${subscription.title}\n`;
   
   // Price
   content += `🏦 ${subscription.price}\n`;

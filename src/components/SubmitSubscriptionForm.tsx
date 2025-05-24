@@ -15,8 +15,9 @@ import { supabase } from '@/integrations/supabase/client';
 import { SubscriptionData } from '@/types/subscriptionTypes';
 import { getAllCategories } from '@/services/subscription-service';
 
-// Lista de títulos predefinidos
+// Lista de títulos predefinidos com "Personalizado" no topo
 const PREDEFINED_TITLES = [
+  "Personalizado",
   "AMAZON PRIME VIDEO",
   "APPLE ONE (200GB)",
   "APPLE ONE (2TB)",
@@ -42,7 +43,6 @@ const PREDEFINED_TITLES = [
   "PARAMOUNT PREMIUM",
   "SPOTIFY",
   "YOUTUBE PREMIUM",
-  "OUTRO",
 ];
 
 // Schema para validação do formulário
@@ -149,7 +149,7 @@ const SubmitSubscriptionForm = () => {
     setSelectedTitle(value);
     form.setValue("title", value);
     
-    if (value !== "OUTRO") {
+    if (value !== "Personalizado") {
       form.setValue("customTitle", "");
     }
   };
@@ -279,7 +279,7 @@ const SubmitSubscriptionForm = () => {
               />
               
               {/* Título personalizado */}
-              {selectedTitle === "OUTRO" && (
+              {selectedTitle === "Personalizado" && (
                 <FormField
                   control={form.control}
                   name="customTitle"
