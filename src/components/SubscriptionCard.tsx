@@ -38,7 +38,7 @@ const SubscriptionCard = ({
   icon = 'monitor',
   isSearchResult = false,
   addedDate,
-  version = '2.1.2',
+  version = '2.1.1',
   isMemberSubmission = false,
   featured = false,
   isAdminSubmission = false
@@ -101,7 +101,6 @@ const SubscriptionCard = ({
 
   // Determine the price color class based on the priceColor prop
   const priceColorClass = priceColor || 'text-blue-600';
-  
   return <div className={`card h-full bg-white rounded-xl overflow-hidden shadow-lg ${isSearchResult ? 'search-highlight' : ''}`}>
       <div className={`${bgColorClass} p-4 flex items-center justify-center h-20 relative`}>
         <h2 className="text-xl font-bold text-white flex items-center text-center uppercase">
@@ -113,11 +112,21 @@ const SubscriptionCard = ({
             <span className="text-yellow-300 text-xl">⭐</span>
           </div>}
         
+        {/* Badge para submissões de membros */}
+        {isMemberSubmission && <div className="absolute top-2 right-2">
+            
+          </div>}
+        
         {/* Badge para submissões de administradores */}
         {isAdminSubmission && <div className="absolute top-2 right-2">
             <Badge variant="secondary" className="text-xs bg-purple-600 text-white">Admin</Badge>
           </div>}
 
+        {/* Se for destaque e submissão de membro, ajustar a posição da badge de membro */}
+        {featured && isMemberSubmission && <div className="absolute top-8 right-2">
+            
+          </div>}
+        
         {/* Se for destaque e submissão de admin, ajustar a posição da badge de admin */}
         {featured && isAdminSubmission && <div className="absolute top-8 right-2">
             <Badge variant="secondary" className="text-xs bg-purple-600 text-white">Admin</Badge>
@@ -136,7 +145,7 @@ const SubscriptionCard = ({
             <span className="mr-1">🏦</span> Valor: {price}
           </p>
           <p className="text-gray-900 font-medium uppercase flex items-center">
-            <span className="mr-1">🫱🏼‍🫲🏼</span> Pagamento: {paymentMethod}
+            <span className="mr-1">🫱🏼‍🫲🏼</span> Forma de Pagamento: {paymentMethod}
           </p>
           <p className="text-gray-900 font-medium uppercase flex items-center">
             <span className="mr-1">📌</span> Status: {status}
@@ -163,5 +172,4 @@ const SubscriptionCard = ({
       </div>
     </div>;
 };
-
 export default SubscriptionCard;
