@@ -101,6 +101,7 @@ const SubscriptionCard = ({
 
   // Determine the price color class based on the priceColor prop
   const priceColorClass = priceColor || 'text-blue-600';
+  
   return <div className={`card h-full bg-white rounded-xl overflow-hidden shadow-lg ${isSearchResult ? 'search-highlight' : ''}`}>
       <div className={`${bgColorClass} p-4 flex items-center justify-center h-20 relative`}>
         <h2 className="text-xl font-bold text-white flex items-center text-center uppercase">
@@ -114,7 +115,7 @@ const SubscriptionCard = ({
         
         {/* Badge para submissões de membros */}
         {isMemberSubmission && <div className="absolute top-2 right-2">
-            
+            <Badge variant="secondary" className="text-xs bg-green-600 text-white">Membro</Badge>
           </div>}
         
         {/* Badge para submissões de administradores */}
@@ -124,7 +125,7 @@ const SubscriptionCard = ({
 
         {/* Se for destaque e submissão de membro, ajustar a posição da badge de membro */}
         {featured && isMemberSubmission && <div className="absolute top-8 right-2">
-            
+            <Badge variant="secondary" className="text-xs bg-green-600 text-white">Membro</Badge>
           </div>}
         
         {/* Se for destaque e submissão de admin, ajustar a posição da badge de admin */}
@@ -145,7 +146,7 @@ const SubscriptionCard = ({
             <span className="mr-1">🏦</span> Valor: {price}
           </p>
           <p className="text-gray-900 font-medium uppercase flex items-center">
-            <span className="mr-1">🫱🏼‍🫲🏼</span> Forma de Pagamento: {paymentMethod}
+            <span className="mr-1">🫱🏼‍🫲🏼</span> Pagamento: {paymentMethod}
           </p>
           <p className="text-gray-900 font-medium uppercase flex items-center">
             <span className="mr-1">📌</span> Status: {status}
