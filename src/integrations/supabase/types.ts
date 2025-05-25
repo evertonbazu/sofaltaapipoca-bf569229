@@ -245,6 +245,7 @@ export type Database = {
           access: string
           added_date: string | null
           code: string
+          custom_title: string | null
           header_color: string
           icon: string | null
           id: string
@@ -269,6 +270,7 @@ export type Database = {
           access: string
           added_date?: string | null
           code: string
+          custom_title?: string | null
           header_color: string
           icon?: string | null
           id?: string
@@ -293,6 +295,7 @@ export type Database = {
           access?: string
           added_date?: string | null
           code?: string
+          custom_title?: string | null
           header_color?: string
           icon?: string | null
           id?: string
@@ -375,6 +378,7 @@ export type Database = {
           added_date: string | null
           code: string
           created_at: string | null
+          custom_title: string | null
           expiration_date: string | null
           featured: boolean | null
           header_color: string
@@ -399,6 +403,7 @@ export type Database = {
           added_date?: string | null
           code: string
           created_at?: string | null
+          custom_title?: string | null
           expiration_date?: string | null
           featured?: boolean | null
           header_color: string
@@ -423,6 +428,7 @@ export type Database = {
           added_date?: string | null
           code?: string
           created_at?: string | null
+          custom_title?: string | null
           expiration_date?: string | null
           featured?: boolean | null
           header_color?: string

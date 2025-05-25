@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -46,7 +45,6 @@ const PREDEFINED_TITLES = [
 ];
 
 // Schema para validação do formulário
-// Telegram é opcional, todos os outros campos são obrigatórios
 const formSchema = z.object({
   title: z.string().min(1, { message: "O título é obrigatório" }),
   customTitle: z.string().min(1, { message: "O título personalizado é obrigatório" }).optional().or(z.literal("")),
@@ -177,14 +175,14 @@ const SubmitSubscriptionForm = () => {
     setIsLoading(true);
     
     try {
+      // Processar título personalizado
+      const finalTitle = data.title === "Personalizado" ? data.customTitle : data.title;
+      
       // Processar método de pagamento personalizado
       const finalPaymentMethod = data.paymentMethod === "OUTRA FORMA" ? data.customPaymentMethod : data.paymentMethod;
       
       // Processar tipo de acesso personalizado
       const finalAccess = data.access === "OUTRO" ? data.customAccess : data.access;
-      
-      // Processar título personalizado
-      const finalTitle = data.title === "OUTRO" ? data.customTitle : data.title;
       
       // Gerar código único
       const { data: code, error: codeError } = await supabase.rpc('generate_subscription_code');
@@ -198,6 +196,7 @@ const SubmitSubscriptionForm = () => {
         .from('subscriptions')
         .insert({
           title: titleWithAsterisk,
+          custom_title: data.title === "Personalizado" ? data.customTitle : null, // Salvar título personalizado
           price: data.price,
           payment_method: finalPaymentMethod,
           status: data.status,

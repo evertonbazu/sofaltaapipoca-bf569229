@@ -2,6 +2,7 @@
 export interface SubscriptionData {
   id?: string;
   title: string;
+  customTitle?: string; // Novo campo para título personalizado
   price: string;
   paymentMethod: string;
   status: string;
@@ -22,7 +23,7 @@ export interface SubscriptionData {
   // Fields needed for handling previous pending subscriptions
   statusApproval?: string;
   rejectionReason?: string;
-  submitted_at?: string; // Adicionada esta propriedade
+  submitted_at?: string;
   reviewed_at?: string;
   paymentProofImage?: string;
   pixQrCode?: string;

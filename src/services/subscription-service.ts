@@ -1,11 +1,11 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { SubscriptionData } from '@/types/subscriptionTypes';
 import { toast } from '@/components/ui/use-toast';
 import { sendToTelegramGroup, deleteFromTelegramGroup, isAutoPostingEnabled } from '@/utils/shareUtils';
 
 /**
- * Version 3.0.0
+ * Version 3.1.0
+ * - Adicionado suporte ao campo custom_title
  * - Corrigido problema de envio de assinaturas aprovadas para o Telegram
  * - Melhorado o fluxo de aprovação e envio automático
  */
@@ -15,6 +15,7 @@ function mapToSubscriptionData(data: any): SubscriptionData {
   return {
     id: data.id,
     title: data.title,
+    customTitle: data.custom_title,
     price: data.price,
     paymentMethod: data.payment_method,
     status: data.status,
@@ -38,6 +39,7 @@ function mapToSubscriptionData(data: any): SubscriptionData {
 function mapToDbFormat(subscription: SubscriptionData) {
   return {
     title: subscription.title,
+    custom_title: subscription.customTitle,
     price: subscription.price,
     payment_method: subscription.paymentMethod,
     status: subscription.status,
@@ -57,7 +59,6 @@ function mapToDbFormat(subscription: SubscriptionData) {
   };
 }
 
-// Obter configuração do site pelo chave
 export async function getSiteConfig(key: string): Promise<string | null> {
   try {
     const { data, error } = await supabase
@@ -78,13 +79,11 @@ export async function getSiteConfig(key: string): Promise<string | null> {
   }
 }
 
-// Verificar se o envio automático para o Telegram está ativado
 async function isAutoTelegramEnabled(): Promise<boolean> {
   const autoPostSetting = await getSiteConfig('auto_post_to_telegram');
   return autoPostSetting === 'true';
 }
 
-// Obter todas as assinaturas sem filtros ou restrições
 export async function getAllSubscriptions(): Promise<SubscriptionData[]> {
   try {
     console.log('Requesting ALL subscriptions from database...');
@@ -115,7 +114,6 @@ export async function getAllSubscriptions(): Promise<SubscriptionData[]> {
   }
 }
 
-// Obter assinaturas em destaque
 export async function getFeaturedSubscriptions(): Promise<SubscriptionData[]> {
   try {
     const { data, error } = await supabase
@@ -131,7 +129,6 @@ export async function getFeaturedSubscriptions(): Promise<SubscriptionData[]> {
   }
 }
 
-// Obter assinaturas regulares (não em destaque)
 export async function getRegularSubscriptions(): Promise<SubscriptionData[]> {
   try {
     const { data, error } = await supabase
@@ -147,7 +144,6 @@ export async function getRegularSubscriptions(): Promise<SubscriptionData[]> {
   }
 }
 
-// Obter assinaturas de membros (criadas por usuários)
 export async function getMemberSubscriptions(): Promise<SubscriptionData[]> {
   try {
     const { data, error } = await supabase
@@ -165,7 +161,6 @@ export async function getMemberSubscriptions(): Promise<SubscriptionData[]> {
   }
 }
 
-// Obter todas as categorias disponíveis
 export async function getAllCategories(): Promise<string[]> {
   try {
     const { data, error } = await supabase
@@ -178,14 +173,12 @@ export async function getAllCategories(): Promise<string[]> {
     return data.map(item => item.value);
   } catch (error: any) {
     console.error('Erro ao obter categorias:', error);
-    return ['Streaming', 'Música', 'Educação', 'YouTube', 'Produtividade']; // Categorias padrão
+    return ['Streaming', 'Música', 'Educação', 'YouTube', 'Produtividade'];
   }
 }
 
-// Adicionar uma nova assinatura
 export async function addSubscription(subscription: SubscriptionData): Promise<SubscriptionData> {
   try {
-    // Gerar código se não fornecido
     let code = subscription.code;
     if (!code) {
       const { data: genCode, error: codeError } = await supabase.rpc('generate_subscription_code');
@@ -211,15 +204,12 @@ export async function addSubscription(subscription: SubscriptionData): Promise<S
     
     console.log('Assinatura adicionada com sucesso:', data.id);
     
-    // Se for uma submissão de membro e estiver visível, enviar para o Telegram
     if (data.user_id && data.visible) {
       try {
-        // Verificar se o envio automático está ativado
         const autoTelegramEnabled = await isAutoPostingEnabled();
         console.log('Auto posting enabled para nova assinatura:', autoTelegramEnabled);
         
         if (autoTelegramEnabled) {
-          // Enviar assinatura para o grupo do Telegram
           console.log('Enviando nova assinatura para o Telegram:', data.id);
           const result = await sendToTelegramGroup(data.id);
           console.log('Resultado do envio para o Telegram:', result);
@@ -228,7 +218,6 @@ export async function addSubscription(subscription: SubscriptionData): Promise<S
         }
       } catch (sharingError) {
         console.error('Erro ao compartilhar no Telegram:', sharingError);
-        // Não interromper o fluxo se o compartilhamento falhar
       }
     }
     
@@ -239,10 +228,8 @@ export async function addSubscription(subscription: SubscriptionData): Promise<S
   }
 }
 
-// Atualizar uma assinatura existente
 export async function updateSubscription(id: string, subscription: SubscriptionData): Promise<SubscriptionData> {
   try {
-    // Verificar se a assinatura estava invisível antes
     const { data: oldData } = await supabase
       .from('subscriptions')
       .select('visible, user_id')
@@ -268,15 +255,12 @@ export async function updateSubscription(id: string, subscription: SubscriptionD
     
     console.log('Assinatura atualizada com sucesso:', data.id);
     
-    // Se era invisível antes e agora está visível e é uma submissão de membro
     if (wasInvisible && subscription.visible === true && isMemberSubmission) {
       try {
-        // Verificar se o envio automático está ativado
         const autoTelegramEnabled = await isAutoPostingEnabled();
         console.log('Auto posting enabled para atualização:', autoTelegramEnabled);
         
         if (autoTelegramEnabled) {
-          // Enviar assinatura para o grupo do Telegram
           console.log('Enviando assinatura atualizada para o Telegram:', id);
           const result = await sendToTelegramGroup(id);
           console.log('Resultado do envio para o Telegram:', result);
@@ -285,7 +269,6 @@ export async function updateSubscription(id: string, subscription: SubscriptionD
         }
       } catch (sharingError) {
         console.error('Erro ao compartilhar no Telegram:', sharingError);
-        // Não interromper o fluxo se o compartilhamento falhar
       }
     }
     
@@ -296,19 +279,15 @@ export async function updateSubscription(id: string, subscription: SubscriptionD
   }
 }
 
-// Excluir uma assinatura
 export async function deleteSubscription(id: string): Promise<void> {
   try {
-    // Primeiro tenta excluir a mensagem do Telegram se existir
     try {
       console.log('Tentando excluir mensagem do Telegram para assinatura:', id);
       await deleteFromTelegramGroup(id);
     } catch (telegramError) {
       console.error('Erro ao excluir mensagem do Telegram (continuando):', telegramError);
-      // Continua mesmo se houver erro ao excluir do Telegram
     }
     
-    // Agora exclui a assinatura do banco de dados
     const { error } = await supabase
       .from('subscriptions')
       .delete()
@@ -321,7 +300,6 @@ export async function deleteSubscription(id: string): Promise<void> {
   }
 }
 
-// Alternar o status de destaque de uma assinatura
 export async function toggleFeaturedStatus(id: string, featured: boolean): Promise<SubscriptionData> {
   try {
     const { data, error } = await supabase
@@ -339,10 +317,8 @@ export async function toggleFeaturedStatus(id: string, featured: boolean): Promi
   }
 }
 
-// Alternar o status de visibilidade de uma assinatura
 export async function toggleVisibilityStatus(id: string, visible: boolean): Promise<SubscriptionData> {
   try {
-    // Verificar se é uma submissão de membro
     const { data: oldData } = await supabase
       .from('subscriptions')
       .select('user_id, visible')
@@ -354,7 +330,6 @@ export async function toggleVisibilityStatus(id: string, visible: boolean): Prom
     
     console.log('Alterando visibilidade:', id, 'Estado anterior:', { wasInvisible, isMemberSubmission });
     
-    // Atualizar a visibilidade
     const { data, error } = await supabase
       .from('subscriptions')
       .update({ visible })
@@ -369,15 +344,12 @@ export async function toggleVisibilityStatus(id: string, visible: boolean): Prom
     
     console.log('Status de visibilidade atualizado:', data.id, 'Novo valor:', visible);
     
-    // Se está sendo tornado visível e é uma submissão de membro
     if (visible === true && wasInvisible && isMemberSubmission) {
       try {
-        // Verificar se o envio automático está ativado
         const autoTelegramEnabled = await isAutoPostingEnabled();
         console.log('Auto posting enabled para alteração de visibilidade:', autoTelegramEnabled);
         
         if (autoTelegramEnabled) {
-          // Enviar assinatura para o grupo do Telegram
           console.log('Enviando assinatura agora visível para o Telegram:', id);
           const result = await sendToTelegramGroup(id);
           console.log('Resultado do envio para o Telegram:', result);
@@ -386,17 +358,14 @@ export async function toggleVisibilityStatus(id: string, visible: boolean): Prom
         }
       } catch (sharingError) {
         console.error('Erro ao compartilhar no Telegram:', sharingError);
-        // Não interromper o fluxo se o compartilhamento falhar
       }
     } else if (visible === false) {
-      // Se está sendo tornado invisível, tenta excluir do Telegram
       try {
         console.log('Tentando excluir mensagem do Telegram ao tornar invisível:', id);
         const result = await deleteFromTelegramGroup(id);
         console.log('Resultado da exclusão do Telegram:', result);
       } catch (telegramError) {
         console.error('Erro ao excluir mensagem do Telegram (continuando):', telegramError);
-        // Continua mesmo se houver erro ao excluir do Telegram
       }
     }
     
@@ -407,7 +376,6 @@ export async function toggleVisibilityStatus(id: string, visible: boolean): Prom
   }
 }
 
-// Atualizar configuração do site
 export async function updateSiteConfig(key: string, value: string): Promise<boolean> {
   try {
     const { error } = await supabase
@@ -423,7 +391,6 @@ export async function updateSiteConfig(key: string, value: string): Promise<bool
   }
 }
 
-// Funções para o gerenciamento de botões do cabeçalho
 export async function getHeaderButtons(): Promise<any[]> {
   try {
     const { data, error } = await supabase
@@ -441,7 +408,6 @@ export async function getHeaderButtons(): Promise<any[]> {
 
 export async function addHeaderButton(buttonData: any): Promise<any> {
   try {
-    // Ensure buttonData has all required fields
     const dataToInsert = {
       title: buttonData.title,
       icon: buttonData.icon,
@@ -466,7 +432,6 @@ export async function addHeaderButton(buttonData: any): Promise<any> {
 
 export async function updateHeaderButton(id: string, buttonData: any): Promise<any> {
   try {
-    // Only include defined fields to avoid null values overwriting existing data
     const dataToUpdate: Record<string, any> = {};
     
     if (buttonData.title !== undefined) dataToUpdate.title = buttonData.title;
@@ -504,7 +469,6 @@ export async function deleteHeaderButton(id: string): Promise<void> {
   }
 }
 
-// Função para registrar erros
 export async function logError(
   errorMessage: string, 
   errorContext: string = '', 
