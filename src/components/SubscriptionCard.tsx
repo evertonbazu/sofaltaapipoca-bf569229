@@ -113,9 +113,9 @@ const SubscriptionCard = ({
             <span className="text-yellow-300 text-xl">⭐</span>
           </div>}
         
-        {/* Badge para submissões de membros */}
+        {/* Badge para submissões de membros - removendo o texto "Membro" */}
         {isMemberSubmission && <div className="absolute top-2 right-2">
-            <Badge variant="secondary" className="text-xs bg-green-600 text-white">Membro</Badge>
+            <div className="w-3 h-3 bg-green-600 rounded-full"></div>
           </div>}
         
         {/* Badge para submissões de administradores */}
@@ -125,7 +125,7 @@ const SubscriptionCard = ({
 
         {/* Se for destaque e submissão de membro, ajustar a posição da badge de membro */}
         {featured && isMemberSubmission && <div className="absolute top-8 right-2">
-            <Badge variant="secondary" className="text-xs bg-green-600 text-white">Membro</Badge>
+            <div className="w-3 h-3 bg-green-600 rounded-full"></div>
           </div>}
         
         {/* Se for destaque e submissão de admin, ajustar a posição da badge de admin */}
@@ -173,4 +173,5 @@ const SubscriptionCard = ({
       </div>
     </div>;
 };
+
 export default SubscriptionCard;
