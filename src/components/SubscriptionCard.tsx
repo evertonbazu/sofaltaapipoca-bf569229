@@ -38,7 +38,7 @@ const SubscriptionCard = ({
   icon = 'monitor',
   isSearchResult = false,
   addedDate,
-  version = '2.1.1',
+  version = '2.1.2',
   isMemberSubmission = false,
   featured = false,
   isAdminSubmission = false
@@ -113,21 +113,11 @@ const SubscriptionCard = ({
             <span className="text-yellow-300 text-xl">⭐</span>
           </div>}
         
-        {/* Badge para submissões de membros - removendo o texto "Membro" */}
-        {isMemberSubmission && <div className="absolute top-2 right-2">
-            <div className="w-3 h-3 bg-green-600 rounded-full"></div>
-          </div>}
-        
         {/* Badge para submissões de administradores */}
         {isAdminSubmission && <div className="absolute top-2 right-2">
             <Badge variant="secondary" className="text-xs bg-purple-600 text-white">Admin</Badge>
           </div>}
 
-        {/* Se for destaque e submissão de membro, ajustar a posição da badge de membro */}
-        {featured && isMemberSubmission && <div className="absolute top-8 right-2">
-            <div className="w-3 h-3 bg-green-600 rounded-full"></div>
-          </div>}
-        
         {/* Se for destaque e submissão de admin, ajustar a posição da badge de admin */}
         {featured && isAdminSubmission && <div className="absolute top-8 right-2">
             <Badge variant="secondary" className="text-xs bg-purple-600 text-white">Admin</Badge>
