@@ -8,6 +8,10 @@ import { SubscriptionData } from '@/types/subscriptionTypes';
 import { Loader2 } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 
+/**
+ * Página para editar assinaturas no painel administrativo
+ * @version 3.3.0
+ */
 const SubscriptionEditor = () => {
   const { id } = useParams<{ id?: string }>();
   const isEditing = !!id;
@@ -36,7 +40,7 @@ const SubscriptionEditor = () => {
             // Map the database column names to our frontend property names
             setSubscriptionData({
               id: data.id,
-              title: data.title,
+              title: data.custom_title || data.title, // Use custom_title if available, otherwise use title
               customTitle: data.custom_title,
               price: data.price,
               paymentMethod: data.payment_method,
@@ -76,16 +80,38 @@ const SubscriptionEditor = () => {
     fetchSubscription();
   }, [id, navigate, toast]);
 
+  // Generate dynamic title based on subscription data
+  const getPageTitle = () => {
+    if (!isEditing) return "Nova Assinatura";
+    
+    if (subscriptionData) {
+      // If there's a custom title, show it; otherwise show the regular title
+      const displayTitle = subscriptionData.customTitle || subscriptionData.title;
+      return `Editar: ${displayTitle}`;
+    }
+    
+    return "Editar Assinatura";
+  };
+
+  const getPageDescription = () => {
+    if (!isEditing) return "Preencha o formulário para adicionar uma nova assinatura.";
+    
+    if (subscriptionData) {
+      const displayTitle = subscriptionData.customTitle || subscriptionData.title;
+      return `Atualize as informações da assinatura "${displayTitle}" abaixo.`;
+    }
+    
+    return "Atualize as informações da assinatura abaixo.";
+  };
+
   return (
-    <AdminLayout title={isEditing ? "Editar Assinatura" : "Nova Assinatura"}>
+    <AdminLayout title={getPageTitle()}>
       <div className="mb-4">
         <h2 className="text-lg font-medium">
-          {isEditing ? "Editar Detalhes da Assinatura" : "Adicionar Nova Assinatura"}
+          {getPageTitle()}
         </h2>
         <p className="text-sm text-gray-500">
-          {isEditing 
-            ? "Atualize as informações da assinatura abaixo." 
-            : "Preencha o formulário para adicionar uma nova assinatura."}
+          {getPageDescription()}
         </p>
       </div>
 
