@@ -37,6 +37,7 @@ const SubscriptionEditor = () => {
             setSubscriptionData({
               id: data.id,
               title: data.title,
+              customTitle: data.custom_title,
               price: data.price,
               paymentMethod: data.payment_method,
               status: data.status,

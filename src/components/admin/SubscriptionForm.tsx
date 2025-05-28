@@ -14,10 +14,11 @@ import { useToast } from "@/components/ui/use-toast";
 import { Loader2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { SubscriptionData } from '@/types/subscriptionTypes';
-import { addSubscription, updateSubscription, logError, getAllSubscriptions } from '@/services/subscription-service';
+import { addSubscription, updateSubscription, logError, getAllSubscriptions, getAllCategories } from '@/services/subscription-service';
 
 // Lista de títulos predefinidos
 const PREDEFINED_TITLES = [
+  "Personalizado",
   "AMAZON PRIME VIDEO",
   "APPLE ONE (200GB)",
   "APPLE ONE (2TB)",
@@ -71,6 +72,8 @@ const formSchema = z.object({
   addedDate: z.string().optional(),
   featured: z.boolean().default(false),
   code: z.string().optional(),
+  pixKey: z.string().optional(),
+  category: z.string().optional(),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -94,6 +97,7 @@ const SubscriptionForm: React.FC<SubscriptionFormProps> = ({ initialData, isMemb
   const [selectedTitle, setSelectedTitle] = useState<string>("");
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<string>("");
   const [selectedAccess, setSelectedAccess] = useState<string>("");
+  const [categories, setCategories] = useState<string[]>([]);
   
   // Check if user is admin
   useEffect(() => {
@@ -111,22 +115,25 @@ const SubscriptionForm: React.FC<SubscriptionFormProps> = ({ initialData, isMemb
     checkIfAdmin();
   }, []);
 
-  // Fetch existing titles
+  // Fetch existing titles and categories
   useEffect(() => {
-    const fetchExistingTitles = async () => {
+    const fetchData = async () => {
       try {
-        const subscriptions = await getAllSubscriptions();
-        const titles = [...new Set(subscriptions.map(sub => sub.title.toUpperCase()))];
+        const [subscriptions, categoryList] = await Promise.all([
+          getAllSubscriptions(),
+          getAllCategories()
+        ]);
         
-        // Combine predefined titles with existing titles from the database
+        const titles = [...new Set(subscriptions.map(sub => sub.title.toUpperCase()))];
         const combinedTitles = [...new Set([...PREDEFINED_TITLES, ...titles])];
         setExistingTitles(combinedTitles);
+        setCategories(categoryList);
       } catch (error) {
-        console.error('Erro ao buscar títulos existentes:', error);
+        console.error('Erro ao buscar dados:', error);
       }
     };
     
-    fetchExistingTitles();
+    fetchData();
   }, []);
   
   // Set up form with default values
@@ -135,20 +142,22 @@ const SubscriptionForm: React.FC<SubscriptionFormProps> = ({ initialData, isMemb
     defaultValues: {
       title: "",
       customTitle: "",
-      price: "",
-      paymentMethod: "",
+      price: "R$ ",
+      paymentMethod: "PIX (Mensal)",
       customPaymentMethod: "",
       status: "Assinado",
-      access: "",
+      access: "LOGIN E SENHA",
       customAccess: "",
       headerColor: "bg-blue-600",
       priceColor: "text-blue-600",
-      whatsappNumber: "",
-      telegramUsername: "",
+      whatsappNumber: "+55",
+      telegramUsername: "@",
       icon: "none",
       addedDate: new Date().toLocaleDateString('pt-BR'),
       featured: false,
       code: "",
+      pixKey: "",
+      category: "",
     },
   });
 
@@ -167,7 +176,7 @@ const SubscriptionForm: React.FC<SubscriptionFormProps> = ({ initialData, isMemb
       const isPreDefinedPayment = ["PIX (Mensal)", "PIX (Anual)"].includes(paymentMethod);
       
       form.reset({
-        title: isTitleInList ? titleUppercase : "OUTRO",
+        title: isTitleInList ? titleUppercase : "Personalizado",
         customTitle: isTitleInList ? "" : initialData.title,
         price: initialData.price,
         paymentMethod: isPreDefinedPayment ? initialData.paymentMethod : "OUTRA FORMA",
@@ -183,9 +192,11 @@ const SubscriptionForm: React.FC<SubscriptionFormProps> = ({ initialData, isMemb
         addedDate: initialData.addedDate || new Date().toLocaleDateString('pt-BR'),
         featured: initialData.featured || false,
         code: initialData.code,
+        pixKey: initialData.pixKey || "",
+        category: initialData.category || "",
       });
       
-      setSelectedTitle(isTitleInList ? titleUppercase : "OUTRO");
+      setSelectedTitle(isTitleInList ? titleUppercase : "Personalizado");
       setSelectedPaymentMethod(isPreDefinedPayment ? initialData.paymentMethod : "OUTRA FORMA");
       setSelectedAccess(isAccessInList ? initialData.access : "OUTRO");
     }
@@ -196,7 +207,7 @@ const SubscriptionForm: React.FC<SubscriptionFormProps> = ({ initialData, isMemb
     setSelectedTitle(value);
     form.setValue("title", value);
     
-    if (value !== "OUTRO") {
+    if (value !== "Personalizado") {
       form.setValue("customTitle", "");
     }
   };
@@ -221,13 +232,55 @@ const SubscriptionForm: React.FC<SubscriptionFormProps> = ({ initialData, isMemb
     }
   };
 
+  // Formatação de preço em reais
+  const handlePriceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    let value = e.target.value;
+    
+    // Garantir que sempre começa com R$ 
+    if (!value.startsWith("R$ ")) {
+      value = "R$ " + value.replace("R$ ", "");
+    }
+    
+    // Remover qualquer caractere não numérico, exceto vírgula e ponto
+    const numericValue = value.substring(3).replace(/[^\d,\.]/g, "");
+    
+    // Formatar o valor como moeda brasileira
+    let formattedValue = "R$ " + numericValue;
+    
+    form.setValue("price", formattedValue);
+  };
+
+  // Manipular mudança no WhatsApp para manter o prefixo +55
+  const handleWhatsAppChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    let value = e.target.value;
+    
+    // Garantir que sempre começa com +55
+    if (!value.startsWith("+55")) {
+      value = "+55" + value.replace("+55", "");
+    }
+    
+    form.setValue("whatsappNumber", value);
+  };
+
+  // Manipular mudança no Telegram para manter o prefixo @
+  const handleTelegramChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    let value = e.target.value;
+    
+    // Garantir que sempre começa com @
+    if (value && !value.startsWith("@")) {
+      value = "@" + value.replace("@", "");
+    }
+    
+    form.setValue("telegramUsername", value);
+  };
+
   // Form submission handler
   const onSubmit = async (data: FormValues) => {
     setIsLoading(true);
     
     try {
       // Process custom title
-      const finalTitle = data.title === "OUTRO" ? data.customTitle : data.title;
+      const finalTitle = data.title === "Personalizado" ? data.customTitle : data.title;
       
       // Process custom payment method
       const finalPaymentMethod = data.paymentMethod === "OUTRA FORMA" ? data.customPaymentMethod : data.paymentMethod;
@@ -238,6 +291,7 @@ const SubscriptionForm: React.FC<SubscriptionFormProps> = ({ initialData, isMemb
       // Ensure all required fields are filled
       const formattedData: SubscriptionData = {
         title: finalTitle,
+        customTitle: data.title === "Personalizado" ? data.customTitle : undefined,
         price: data.price,
         paymentMethod: finalPaymentMethod,
         status: data.status,
@@ -249,7 +303,9 @@ const SubscriptionForm: React.FC<SubscriptionFormProps> = ({ initialData, isMemb
         icon: data.icon === 'none' ? '' : data.icon,
         addedDate: data.addedDate,
         featured: data.featured,
-        code: data.code
+        code: data.code,
+        pixKey: data.pixKey,
+        category: data.category
       };
       
       if (isEditing) {
@@ -340,7 +396,6 @@ const SubscriptionForm: React.FC<SubscriptionFormProps> = ({ initialData, isMemb
                         {PREDEFINED_TITLES.map((title) => (
                           <SelectItem key={title} value={title}>{title}</SelectItem>
                         ))}
-                        <SelectItem value="OUTRO">OUTRO</SelectItem>
                       </SelectContent>
                     </Select>
                     <FormMessage />
@@ -349,7 +404,7 @@ const SubscriptionForm: React.FC<SubscriptionFormProps> = ({ initialData, isMemb
               />
               
               {/* Título personalizado */}
-              {selectedTitle === "OUTRO" && (
+              {selectedTitle === "Personalizado" && (
                 <FormField
                   control={form.control}
                   name="customTitle"
@@ -373,12 +428,49 @@ const SubscriptionForm: React.FC<SubscriptionFormProps> = ({ initialData, isMemb
                   <FormItem>
                     <FormLabel>Preço</FormLabel>
                     <FormControl>
-                      <Input placeholder="R$ 19,90" {...field} />
+                      <Input 
+                        placeholder="R$ 19,90" 
+                        {...field} 
+                        onChange={(e) => {
+                          handlePriceChange(e);
+                          field.onChange(e);
+                        }}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
+
+              {/* Categoria */}
+              {categories.length > 0 && (
+                <FormField
+                  control={form.control}
+                  name="category"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Categoria</FormLabel>
+                      <Select
+                        onValueChange={field.onChange}
+                        defaultValue={field.value}
+                        value={field.value}
+                      >
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Selecione uma categoria" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {categories.map(category => (
+                            <SelectItem key={category} value={category}>{category}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              )}
               
               {/* Método de Pagamento */}
               <FormField
@@ -424,6 +516,21 @@ const SubscriptionForm: React.FC<SubscriptionFormProps> = ({ initialData, isMemb
                   )}
                 />
               )}
+
+              {/* Chave PIX */}
+              <FormField
+                control={form.control}
+                name="pixKey"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Chave PIX</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Sua chave PIX" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
               
               {/* Status */}
               <FormField
@@ -519,7 +626,14 @@ const SubscriptionForm: React.FC<SubscriptionFormProps> = ({ initialData, isMemb
                   <FormItem>
                     <FormLabel>Número do WhatsApp</FormLabel>
                     <FormControl>
-                      <Input placeholder="5511999999999" {...field} />
+                      <Input 
+                        placeholder="+5511999999999" 
+                        {...field} 
+                        onChange={(e) => {
+                          handleWhatsAppChange(e);
+                          field.onChange(e);
+                        }}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -534,7 +648,14 @@ const SubscriptionForm: React.FC<SubscriptionFormProps> = ({ initialData, isMemb
                   <FormItem>
                     <FormLabel>Usuário do Telegram</FormLabel>
                     <FormControl>
-                      <Input placeholder="usuariotelegram" {...field} />
+                      <Input 
+                        placeholder="@usuariotelegram" 
+                        {...field} 
+                        onChange={(e) => {
+                          handleTelegramChange(e);
+                          field.onChange(e);
+                        }}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>

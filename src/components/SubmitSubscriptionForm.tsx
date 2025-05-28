@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -116,8 +117,8 @@ const SubmitSubscriptionForm = () => {
       status: "Assinado",
       access: "LOGIN E SENHA",
       customAccess: "",
-      whatsappNumber: "",
-      telegramUsername: "",
+      whatsappNumber: "+55",
+      telegramUsername: "@",
       pixKey: "",
       category: "",
     },
@@ -168,6 +169,30 @@ const SubmitSubscriptionForm = () => {
     let formattedValue = "R$ " + numericValue;
     
     form.setValue("price", formattedValue);
+  };
+
+  // Manipular mudança no WhatsApp para manter o prefixo +55
+  const handleWhatsAppChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    let value = e.target.value;
+    
+    // Garantir que sempre começa com +55
+    if (!value.startsWith("+55")) {
+      value = "+55" + value.replace("+55", "");
+    }
+    
+    form.setValue("whatsappNumber", value);
+  };
+
+  // Manipular mudança no Telegram para manter o prefixo @
+  const handleTelegramChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    let value = e.target.value;
+    
+    // Garantir que sempre começa com @
+    if (value && !value.startsWith("@")) {
+      value = "@" + value.replace("@", "");
+    }
+    
+    form.setValue("telegramUsername", value);
   };
   
   // Manipulador para envio do formulário
@@ -483,7 +508,14 @@ const SubmitSubscriptionForm = () => {
                   <FormItem>
                     <FormLabel>Número do WhatsApp</FormLabel>
                     <FormControl>
-                      <Input placeholder="5511999999999" {...field} />
+                      <Input 
+                        placeholder="+5511999999999" 
+                        {...field} 
+                        onChange={(e) => {
+                          handleWhatsAppChange(e);
+                          field.onChange(e);
+                        }}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -498,7 +530,14 @@ const SubmitSubscriptionForm = () => {
                   <FormItem>
                     <FormLabel>Usuário do Telegram (opcional)</FormLabel>
                     <FormControl>
-                      <Input placeholder="@usuariodotelegram" {...field} />
+                      <Input 
+                        placeholder="@usuariodotelegram" 
+                        {...field} 
+                        onChange={(e) => {
+                          handleTelegramChange(e);
+                          field.onChange(e);
+                        }}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
