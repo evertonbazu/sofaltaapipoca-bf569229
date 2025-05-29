@@ -2,12 +2,14 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { Search, User, Menu, X, LogOut } from 'lucide-react';
 import { useDebounced } from '@/hooks/useDebounced';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/components/ui/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
+import { useUnreadMessages } from '@/hooks/useUnreadMessages';
 
 const NavBar: React.FC = () => {
   const [isAdmin, setIsAdmin] = useState(false);
@@ -17,6 +19,7 @@ const NavBar: React.FC = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { signOut, authState } = useAuth();
+  const { unreadCount } = useUnreadMessages();
 
   // Verificar se o usuário está logado e se é administrador
   useEffect(() => {
@@ -83,9 +86,17 @@ const NavBar: React.FC = () => {
             {isLoggedIn ? (
               <>
                 <Link to="/profile">
-                  <Button variant="outline" size="sm" className="flex items-center">
+                  <Button variant="outline" size="sm" className="flex items-center relative">
                     <User className="mr-1 h-4 w-4" />
                     Meu Perfil
+                    {unreadCount > 0 && (
+                      <Badge 
+                        variant="destructive" 
+                        className="absolute -top-2 -right-2 h-5 w-5 p-0 flex items-center justify-center text-xs"
+                      >
+                        {unreadCount}
+                      </Badge>
+                    )}
                   </Button>
                 </Link>
                 <Button variant="outline" size="sm" onClick={handleLogout} className="flex items-center">
@@ -118,9 +129,17 @@ const NavBar: React.FC = () => {
             {isLoggedIn ? (
               <>
                 <Link to="/profile" onClick={() => setMenuOpen(false)}>
-                  <Button variant="outline" size="sm" className="w-full justify-start flex items-center">
+                  <Button variant="outline" size="sm" className="w-full justify-start flex items-center relative">
                     <User className="mr-1 h-4 w-4" />
                     Meu Perfil
+                    {unreadCount > 0 && (
+                      <Badge 
+                        variant="destructive" 
+                        className="ml-auto h-5 w-5 p-0 flex items-center justify-center text-xs"
+                      >
+                        {unreadCount}
+                      </Badge>
+                    )}
                   </Button>
                 </Link>
                 <Button 

@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/components/ui/use-toast";
-import { Loader2, Mail, Reply, Eye, EyeOff } from 'lucide-react';
+import { Loader2, Mail, Reply, Eye, EyeOff, Trash2 } from 'lucide-react';
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -33,7 +33,7 @@ type ResponseFormValues = z.infer<typeof responseFormSchema>;
 
 /**
  * Página de gerenciamento de mensagens no painel administrativo
- * @version 1.0.0
+ * @version 2.0.0
  */
 const Messages = () => {
   const { toast } = useToast();
@@ -41,6 +41,7 @@ const Messages = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [respondingTo, setRespondingTo] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [deletingMessage, setDeletingMessage] = useState<string | null>(null);
 
   const form = useForm<ResponseFormValues>({
     resolver: zodResolver(responseFormSchema),
@@ -83,15 +84,59 @@ const Messages = () => {
         .update({ read: true })
         .eq('id', messageId);
 
-      if (error) throw error;
+      if (error) {
+        console.error('Erro ao marcar como lida:', error);
+        throw error;
+      }
 
+      // Atualizar o estado local
       setMessages(prev => 
         prev.map(msg => 
           msg.id === messageId ? { ...msg, read: true } : msg
         )
       );
+
+      toast({
+        title: "Sucesso",
+        description: "Mensagem marcada como lida.",
+      });
     } catch (error) {
       console.error('Erro ao marcar como lida:', error);
+      toast({
+        title: "Erro",
+        description: "Não foi possível marcar a mensagem como lida.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const deleteMessage = async (messageId: string) => {
+    try {
+      setDeletingMessage(messageId);
+      
+      const { error } = await supabase
+        .from('contact_messages')
+        .delete()
+        .eq('id', messageId);
+
+      if (error) throw error;
+
+      // Remover mensagem do estado local
+      setMessages(prev => prev.filter(msg => msg.id !== messageId));
+
+      toast({
+        title: "Mensagem excluída",
+        description: "A mensagem foi excluída com sucesso.",
+      });
+    } catch (error) {
+      console.error('Erro ao excluir mensagem:', error);
+      toast({
+        title: "Erro",
+        description: "Não foi possível excluir a mensagem.",
+        variant: "destructive",
+      });
+    } finally {
+      setDeletingMessage(null);
     }
   };
 
@@ -99,17 +144,22 @@ const Messages = () => {
     try {
       setIsSubmitting(true);
 
+      const { data: { user } } = await supabase.auth.getUser();
+      
       const { error } = await supabase
         .from('contact_messages')
         .update({
           response: data.response,
           responded_at: new Date().toISOString(),
-          responded_by: (await supabase.auth.getUser()).data.user?.id,
+          responded_by: user?.id,
           read: true,
         })
         .eq('id', messageId);
 
-      if (error) throw error;
+      if (error) {
+        console.error('Erro ao enviar resposta:', error);
+        throw error;
+      }
 
       toast({
         title: "Resposta enviada",
@@ -180,6 +230,18 @@ const Messages = () => {
                           Marcar como lida
                         </Button>
                       )}
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        onClick={() => deleteMessage(message.id)}
+                        disabled={deletingMessage === message.id}
+                      >
+                        {deletingMessage === message.id ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <Trash2 className="h-4 w-4" />
+                        )}
+                      </Button>
                       {message.read && <EyeOff className="h-4 w-4 text-gray-400" />}
                     </div>
                   </div>
