@@ -376,6 +376,7 @@ export type Database = {
         Row: {
           access: string
           added_date: string | null
+          category: string | null
           code: string
           created_at: string | null
           custom_title: string | null
@@ -401,6 +402,7 @@ export type Database = {
         Insert: {
           access: string
           added_date?: string | null
+          category?: string | null
           code: string
           created_at?: string | null
           custom_title?: string | null
@@ -426,6 +428,7 @@ export type Database = {
         Update: {
           access?: string
           added_date?: string | null
+          category?: string | null
           code?: string
           created_at?: string | null
           custom_title?: string | null
