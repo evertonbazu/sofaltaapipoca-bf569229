@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import SubscriptionList from '@/components/SubscriptionList';
@@ -11,7 +10,6 @@ import { getSiteConfig } from '@/services/subscription-service';
 import { useAuth } from '@/contexts/AuthContext';
 import { APP_VERSION } from '@/utils/shareUtils';
 import { User, MessageCircle, Plus } from 'lucide-react';
-
 const Index: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [hasResults, setHasResults] = useState(true);
@@ -19,15 +17,12 @@ const Index: React.FC = () => {
   const [siteSubtitle, setSiteSubtitle] = useState("Assinaturas premium com preços exclusivos");
   const [appVersion, setAppVersion] = useState(APP_VERSION);
   const [contactWhatsapp, setContactWhatsapp] = useState("5513992077804");
-  
   const subscriptionRefs = useRef<{
     [key: string]: HTMLDivElement | null;
   }>({});
-  
   const {
     authState
   } = useAuth();
-  
   const isLoggedIn = !!authState.session;
 
   // Carregar configurações do site
@@ -37,23 +32,19 @@ const Index: React.FC = () => {
         const title = await getSiteConfig('site_title');
         const subtitle = await getSiteConfig('site_subtitle');
         const whatsapp = await getSiteConfig('contact_whatsapp');
-        
         if (title) setSiteTitle(title);
         if (subtitle) setSiteSubtitle(subtitle);
         if (whatsapp) setContactWhatsapp(whatsapp);
-        
+
         // Always use the version from shareUtils.ts
         setAppVersion(APP_VERSION);
-        
+
         // Update the app_version in the database if it doesn't match current version
-        await supabase
-          .from('site_configurations')
-          .upsert({ 
-            key: 'app_version', 
-            value: APP_VERSION,
-            description: 'Current application version'
-          });
-        
+        await supabase.from('site_configurations').upsert({
+          key: 'app_version',
+          value: APP_VERSION,
+          description: 'Current application version'
+        });
         console.log(`App version set to ${APP_VERSION}`);
       } catch (error) {
         console.error('Erro ao carregar configurações do site:', error);
@@ -61,10 +52,8 @@ const Index: React.FC = () => {
         setAppVersion(APP_VERSION);
       }
     };
-    
     loadSiteConfig();
   }, []);
-  
   const handleSearch = (term: string) => {
     setSearchTerm(term.toLowerCase());
     // Make sure we show all results when search is cleared
@@ -72,9 +61,7 @@ const Index: React.FC = () => {
       setHasResults(true);
     }
   };
-  
-  return (
-    <div className="min-h-screen bg-gray-100">
+  return <div className="min-h-screen bg-gray-100">
       <NavBar />
       
       <header className="bg-gradient-to-r from-indigo-600 to-indigo-800 text-white py-4 sm:py-6">
@@ -89,31 +76,11 @@ const Index: React.FC = () => {
           
           {/* Botões fixos */}
           <div className="flex gap-2 sm:gap-3 mx-auto max-w-xs sm:max-w-sm mt-4">
-            <Link 
-              to="/submit-subscription" 
-              className="flex-1 flex flex-col items-center justify-center bg-white hover:bg-gray-100 text-gray-800 rounded-lg font-medium py-2 px-4 transition-all duration-200 hover:-translate-y-1 text-center shadow-sm w-[75px] h-[70px]"
-            >
-              <Plus className="h-5 w-5" />
-              <span className="text-xs mt-1">Anunciar</span>
-            </Link>
             
-            <Link 
-              to="/contact" 
-              className="flex-1 flex flex-col items-center justify-center bg-white hover:bg-gray-100 text-gray-800 rounded-lg font-medium py-2 px-4 transition-all duration-200 hover:-translate-y-1 text-center shadow-sm w-[75px] h-[70px]"
-            >
-              <MessageCircle className="h-5 w-5" />
-              <span className="text-xs mt-1">Fale Conosco</span>
-            </Link>
             
-            {isLoggedIn && (
-              <Link 
-                to="/profile" 
-                className="flex-initial flex flex-col items-center justify-center bg-white hover:bg-gray-100 text-gray-800 rounded-lg font-medium py-2 px-4 transition-all duration-200 hover:-translate-y-1 text-center shadow-sm w-[75px] h-[70px]"
-              >
-                <User className="h-5 w-5" />
-                <span className="text-xs mt-1">Meu Perfil</span>
-              </Link>
-            )}
+            
+            
+            {isLoggedIn}
           </div>
         </div>
       </header>
@@ -130,8 +97,6 @@ const Index: React.FC = () => {
           <p className="text-xs text-gray-400 mt-1">v{appVersion}</p>
         </div>
       </footer>
-    </div>
-  );
+    </div>;
 };
-
 export default Index;
