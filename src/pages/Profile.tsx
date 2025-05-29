@@ -7,7 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/components/ui/use-toast";
-import { Loader2, User, Edit, Trash2 } from 'lucide-react';
+import { Loader2, User, Edit, Trash2, Mail, MessageSquare } from 'lucide-react';
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -16,6 +16,16 @@ import { SubscriptionData } from '@/types/subscriptionTypes';
 import { deleteSubscription } from '@/services/subscription-service';
 import NavBar from '@/components/NavBar';
 import { useAuth } from '@/contexts/AuthContext';
+
+interface ContactMessage {
+  id: string;
+  subject: string;
+  message: string;
+  response?: string;
+  created_at: string;
+  responded_at?: string;
+  read: boolean;
+}
 
 // Schema para o formulário de perfil
 const profileFormSchema = z.object({
@@ -35,6 +45,10 @@ const passwordFormSchema = z.object({
 type ProfileFormValues = z.infer<typeof profileFormSchema>;
 type PasswordFormValues = z.infer<typeof passwordFormSchema>;
 
+/**
+ * Página de perfil do usuário
+ * @version 4.0.0
+ */
 const Profile = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -42,6 +56,7 @@ const Profile = () => {
   const [user, setUser] = useState<any>(null);
   const [userProfile, setUserProfile] = useState<any>(null);
   const [userSubscriptions, setUserSubscriptions] = useState<SubscriptionData[]>([]);
+  const [userMessages, setUserMessages] = useState<ContactMessage[]>([]);
   const [actionInProgress, setActionInProgress] = useState<string | null>(null);
   const { signOut, authState } = useAuth();
   const [redirected, setRedirected] = useState(false);
@@ -108,6 +123,19 @@ const Profile = () => {
           console.error('Erro ao buscar assinaturas do usuário:', subscriptionsError);
         } else {
           setUserSubscriptions(subscriptions || []);
+        }
+
+        // Buscar mensagens do usuário
+        const { data: messages, error: messagesError } = await supabase
+          .from('contact_messages')
+          .select('*')
+          .eq('user_id', authState.user.id)
+          .order('created_at', { ascending: false });
+        
+        if (messagesError) {
+          console.error('Erro ao buscar mensagens do usuário:', messagesError);
+        } else {
+          setUserMessages(messages || []);
         }
       } catch (error) {
         console.error('Erro ao verificar usuário:', error);
@@ -229,6 +257,10 @@ const Profile = () => {
       });
     }
   };
+
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleString('pt-BR');
+  };
   
   if (isLoading) {
     return (
@@ -256,9 +288,10 @@ const Profile = () => {
         </h1>
         
         <Tabs defaultValue="profile">
-          <TabsList className="grid w-full grid-cols-2 mb-8">
+          <TabsList className="grid w-full grid-cols-3 mb-8">
             <TabsTrigger value="profile">Meus Dados</TabsTrigger>
             <TabsTrigger value="subscriptions">Minhas Assinaturas</TabsTrigger>
+            <TabsTrigger value="messages">Mensagens</TabsTrigger>
           </TabsList>
           
           {/* Aba de Perfil */}
@@ -434,6 +467,71 @@ const Profile = () => {
                         )}
                       </Button>
                     </CardFooter>
+                  </Card>
+                ))}
+              </div>
+            )}
+          </TabsContent>
+
+          {/* Aba de Mensagens */}
+          <TabsContent value="messages">
+            <h2 className="text-xl font-medium mb-4">Minhas Mensagens</h2>
+            
+            {userMessages.length === 0 ? (
+              <Card>
+                <CardContent className="p-8 text-center">
+                  <Mail className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                  <p className="text-gray-500">Você ainda não enviou nenhuma mensagem.</p>
+                  <Button 
+                    className="mt-4"
+                    onClick={() => navigate('/contact')}
+                  >
+                    <MessageSquare className="mr-2 h-4 w-4" />
+                    Enviar Mensagem
+                  </Button>
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="space-y-4">
+                {userMessages.map((message) => (
+                  <Card key={message.id}>
+                    <CardHeader>
+                      <CardTitle className="flex items-center">
+                        <Mail className="mr-2 h-4 w-4" />
+                        {message.subject}
+                      </CardTitle>
+                      <CardDescription>
+                        Enviado em: {formatDate(message.created_at)}
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-4">
+                        <div>
+                          <h4 className="font-medium mb-2">Sua Mensagem:</h4>
+                          <p className="text-gray-700 whitespace-pre-wrap bg-gray-50 p-3 rounded">
+                            {message.message}
+                          </p>
+                        </div>
+
+                        {message.response ? (
+                          <div className="border-t pt-4">
+                            <h4 className="font-medium mb-2">Resposta da Administração:</h4>
+                            <p className="text-gray-700 whitespace-pre-wrap bg-blue-50 p-3 rounded border-l-4 border-blue-500">
+                              {message.response}
+                            </p>
+                            <p className="text-sm text-gray-500 mt-2">
+                              Respondido em: {message.responded_at ? formatDate(message.responded_at) : ''}
+                            </p>
+                          </div>
+                        ) : (
+                          <div className="border-t pt-4">
+                            <p className="text-sm text-yellow-600 bg-yellow-50 p-2 rounded">
+                              Aguardando resposta da administração...
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                    </CardContent>
                   </Card>
                 ))}
               </div>

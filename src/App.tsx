@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -17,6 +16,8 @@ import HeaderButtons from "./pages/admin/HeaderButtons";
 import Profile from "./pages/Profile";
 import SubmitSubscription from "./pages/SubmitSubscription";
 import PendingSubscriptions from "./pages/admin/PendingSubscriptions";
+import Contact from "./pages/Contact";
+import Messages from "./pages/admin/Messages";
 
 const queryClient = new QueryClient();
 
@@ -32,6 +33,7 @@ const App = () => (
             <Route path="/auth" element={<Auth />} />
             <Route path="/profile" element={<Profile />} />
             <Route path="/submit-subscription" element={<SubmitSubscription />} />
+            <Route path="/contact" element={<Contact />} />
             
             {/* Rotas Administrativas */}
             <Route path="/admin" element={<Dashboard />} />
@@ -40,6 +42,7 @@ const App = () => (
             <Route path="/admin/subscriptions/edit/:id" element={<SubscriptionEditor />} />
             <Route path="/admin/subscriptions/chat" element={<ChatSubscriptionEditor />} />
             <Route path="/admin/subscriptions/pending" element={<PendingSubscriptions />} />
+            <Route path="/admin/messages" element={<Messages />} />
             <Route path="/admin/header-buttons" element={<HeaderButtons />} />
             <Route path="/admin/settings" element={<Settings />} />
             
