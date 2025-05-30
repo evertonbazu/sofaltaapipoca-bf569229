@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Textarea } from "@/components/ui/textarea";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import { Loader2, Mail, Reply, Eye, EyeOff, Trash2 } from 'lucide-react';
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -33,7 +33,7 @@ type ResponseFormValues = z.infer<typeof responseFormSchema>;
 
 /**
  * Página de gerenciamento de mensagens no painel administrativo
- * @version 2.0.0
+ * @version 2.1.0
  */
 const Messages = () => {
   const { toast } = useToast();
@@ -42,6 +42,7 @@ const Messages = () => {
   const [respondingTo, setRespondingTo] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [deletingMessage, setDeletingMessage] = useState<string | null>(null);
+  const [markingAsRead, setMarkingAsRead] = useState<string | null>(null);
 
   const form = useForm<ResponseFormValues>({
     resolver: zodResolver(responseFormSchema),
@@ -79,15 +80,14 @@ const Messages = () => {
 
   const markAsRead = async (messageId: string) => {
     try {
+      setMarkingAsRead(messageId);
+      
       const { error } = await supabase
         .from('contact_messages')
         .update({ read: true })
         .eq('id', messageId);
 
-      if (error) {
-        console.error('Erro ao marcar como lida:', error);
-        throw error;
-      }
+      if (error) throw error;
 
       // Atualizar o estado local
       setMessages(prev => 
@@ -107,6 +107,8 @@ const Messages = () => {
         description: "Não foi possível marcar a mensagem como lida.",
         variant: "destructive",
       });
+    } finally {
+      setMarkingAsRead(null);
     }
   };
 
@@ -156,10 +158,7 @@ const Messages = () => {
         })
         .eq('id', messageId);
 
-      if (error) {
-        console.error('Erro ao enviar resposta:', error);
-        throw error;
-      }
+      if (error) throw error;
 
       toast({
         title: "Resposta enviada",
@@ -225,9 +224,16 @@ const Messages = () => {
                           variant="outline"
                           size="sm"
                           onClick={() => markAsRead(message.id)}
+                          disabled={markingAsRead === message.id}
                         >
-                          <Eye className="h-4 w-4 mr-1" />
-                          Marcar como lida
+                          {markingAsRead === message.id ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <>
+                              <Eye className="h-4 w-4 mr-1" />
+                              Marcar como lida
+                            </>
+                          )}
                         </Button>
                       )}
                       <Button

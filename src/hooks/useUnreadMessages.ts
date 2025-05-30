@@ -22,14 +22,15 @@ export const useUnreadMessages = () => {
         // Buscar mensagens do usuário que têm resposta e não foram lidas pelo usuário
         const { data, error } = await supabase
           .from('contact_messages')
-          .select('id, response, responded_at')
+          .select('id, response, responded_at, read')
           .eq('user_id', authState.user.id)
           .not('response', 'is', null)
-          .not('responded_at', 'is', null);
+          .not('responded_at', 'is', null)
+          .eq('read', false);
 
         if (error) throw error;
 
-        // Contar mensagens com resposta (consideradas como não lidas pelo usuário)
+        // Contar mensagens com resposta não lidas
         const unreadResponses = data?.length || 0;
         setUnreadCount(unreadResponses);
       } catch (error) {

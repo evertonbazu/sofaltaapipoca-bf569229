@@ -17,6 +17,9 @@ export type Database = {
           message: string
           name: string
           read: boolean | null
+          responded_at: string | null
+          responded_by: string | null
+          response: string | null
           subject: string
           user_id: string | null
         }
@@ -27,6 +30,9 @@ export type Database = {
           message: string
           name: string
           read?: boolean | null
+          responded_at?: string | null
+          responded_by?: string | null
+          response?: string | null
           subject: string
           user_id?: string | null
         }
@@ -37,6 +43,9 @@ export type Database = {
           message?: string
           name?: string
           read?: boolean | null
+          responded_at?: string | null
+          responded_by?: string | null
+          response?: string | null
           subject?: string
           user_id?: string | null
         }
