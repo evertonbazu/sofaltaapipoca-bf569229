@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
@@ -5,9 +6,8 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, User, Edit, Trash2, Mail, MessageSquare, Reply } from 'lucide-react';
+import { Loader2, User, Trash2, Mail, MessageSquare } from 'lucide-react';
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -16,16 +16,9 @@ import { SubscriptionData } from '@/types/subscriptionTypes';
 import { deleteSubscription } from '@/services/subscription-service';
 import NavBar from '@/components/NavBar';
 import { useAuth } from '@/contexts/AuthContext';
-
-interface ContactMessage {
-  id: string;
-  subject: string;
-  message: string;
-  response?: string;
-  created_at: string;
-  responded_at?: string;
-  read: boolean;
-}
+import MessageCard from '@/components/messages/MessageCard';
+import MessageResponseForm from '@/components/messages/MessageResponseForm';
+import { useMessages } from '@/hooks/useMessages';
 
 // Schema para o formulário de perfil
 const profileFormSchema = z.object({
@@ -42,18 +35,12 @@ const passwordFormSchema = z.object({
   path: ["confirmPassword"],
 });
 
-// Schema para resposta a mensagem
-const messageResponseSchema = z.object({
-  response: z.string().min(10, { message: "Resposta deve ter pelo menos 10 caracteres" }),
-});
-
 type ProfileFormValues = z.infer<typeof profileFormSchema>;
 type PasswordFormValues = z.infer<typeof passwordFormSchema>;
-type MessageResponseValues = z.infer<typeof messageResponseSchema>;
 
 /**
  * Página de perfil do usuário
- * @version 6.0.0
+ * @version 7.0.0
  */
 const Profile = () => {
   const navigate = useNavigate();
@@ -62,12 +49,14 @@ const Profile = () => {
   const [user, setUser] = useState<any>(null);
   const [userProfile, setUserProfile] = useState<any>(null);
   const [userSubscriptions, setUserSubscriptions] = useState<SubscriptionData[]>([]);
-  const [userMessages, setUserMessages] = useState<ContactMessage[]>([]);
   const [actionInProgress, setActionInProgress] = useState<string | null>(null);
   const [respondingTo, setRespondingTo] = useState<string | null>(null);
   const [deletingMessage, setDeletingMessage] = useState<string | null>(null);
   const { signOut, authState } = useAuth();
   const [redirected, setRedirected] = useState(false);
+
+  // Hook para gerenciar mensagens do usuário
+  const { messages, markAsRead, deleteMessage, sendResponse } = useMessages(false, authState.user?.id);
 
   // Formulário de perfil
   const profileForm = useForm<ProfileFormValues>({
@@ -84,14 +73,6 @@ const Profile = () => {
     defaultValues: {
       password: "",
       confirmPassword: "",
-    },
-  });
-
-  // Formulário de resposta
-  const responseForm = useForm<MessageResponseValues>({
-    resolver: zodResolver(messageResponseSchema),
-    defaultValues: {
-      response: "",
     },
   });
 
@@ -140,19 +121,6 @@ const Profile = () => {
         } else {
           setUserSubscriptions(subscriptions || []);
         }
-
-        // Buscar mensagens do usuário
-        const { data: messages, error: messagesError } = await supabase
-          .from('contact_messages')
-          .select('*')
-          .eq('user_id', authState.user.id)
-          .order('created_at', { ascending: false });
-        
-        if (messagesError) {
-          console.error('Erro ao buscar mensagens do usuário:', messagesError);
-        } else {
-          setUserMessages(messages || []);
-        }
       } catch (error) {
         console.error('Erro ao verificar usuário:', error);
         if (!redirected) {
@@ -169,127 +137,19 @@ const Profile = () => {
     }
   }, [navigate, authState, redirected]);
 
-  // Função para marcar mensagem como lida quando usuário visualiza a resposta
-  const markMessageAsRead = async (messageId: string) => {
-    try {
-      const { error } = await supabase
-        .from('contact_messages')
-        .update({ read: true })
-        .eq('id', messageId)
-        .eq('user_id', authState.user?.id);
-
-      if (error) {
-        console.error('Erro ao marcar mensagem como lida:', error);
-        return;
-      }
-
-      // Atualizar estado local
-      setUserMessages(prev => 
-        prev.map(msg => 
-          msg.id === messageId ? { ...msg, read: true } : msg
-        )
-      );
-    } catch (error) {
-      console.error('Erro ao marcar mensagem como lida:', error);
-    }
-  };
-
   // Função para excluir mensagem
-  const deleteMessage = async (messageId: string) => {
-    try {
-      setDeletingMessage(messageId);
-      console.log('Excluindo mensagem do usuário:', messageId);
-      
-      const { error } = await supabase
-        .from('contact_messages')
-        .delete()
-        .eq('id', messageId)
-        .eq('user_id', authState.user?.id);
-
-      if (error) {
-        console.error('Erro ao excluir mensagem:', error);
-        throw error;
-      }
-
-      // Remover mensagem do estado local
-      setUserMessages(prev => prev.filter(msg => msg.id !== messageId));
-
-      console.log('Mensagem excluída com sucesso');
-      toast({
-        title: "Mensagem excluída",
-        description: "Sua mensagem foi excluída com sucesso.",
-      });
-    } catch (error) {
-      console.error('Erro ao excluir mensagem:', error);
-      toast({
-        title: "Erro",
-        description: "Não foi possível excluir a mensagem.",
-        variant: "destructive",
-      });
-    } finally {
-      setDeletingMessage(null);
-    }
+  const handleDeleteMessage = async (messageId: string) => {
+    setDeletingMessage(messageId);
+    await deleteMessage(messageId);
+    setDeletingMessage(null);
   };
 
   // Função para responder à resposta do administrador
-  const onSubmitMessageResponse = async (data: MessageResponseValues, messageId: string) => {
-    try {
-      setActionInProgress('message-response');
-      console.log('Enviando nova mensagem em resposta ao admin:', messageId);
-
-      // Buscar a mensagem original para obter o assunto
-      const originalMessage = userMessages.find(msg => msg.id === messageId);
-      if (!originalMessage) {
-        throw new Error('Mensagem original não encontrada');
-      }
-
-      // Criar nova mensagem como resposta
-      const { error } = await supabase
-        .from('contact_messages')
-        .insert({
-          user_id: authState.user?.id,
-          name: userProfile?.username || authState.user?.email || 'Usuário',
-          email: authState.user?.email || '',
-          subject: `Re: ${originalMessage.subject}`,
-          message: data.response,
-          read: false,
-        });
-
-      if (error) {
-        console.error('Erro ao enviar resposta:', error);
-        throw error;
-      }
-
-      console.log('Resposta enviada com sucesso');
-      toast({
-        title: "Resposta enviada",
-        description: "Sua resposta foi enviada com sucesso.",
-      });
-
-      responseForm.reset();
-      setRespondingTo(null);
-      
-      // Recarregar mensagens
-      const { data: updatedMessages } = await supabase
-        .from('contact_messages')
-        .select('*')
-        .eq('user_id', authState.user?.id)
-        .order('created_at', { ascending: false });
-      
-      if (updatedMessages) {
-        setUserMessages(updatedMessages);
-      }
-
-    } catch (error) {
-      console.error('Erro ao enviar resposta:', error);
-      toast({
-        title: "Erro",
-        description: "Não foi possível enviar sua resposta.",
-        variant: "destructive",
-      });
-    } finally {
-      setActionInProgress(null);
-    }
+  const handleSendResponse = async (data: { response: string }, messageId: string) => {
+    setActionInProgress('message-response');
+    await sendResponse(messageId, data.response, false);
+    setActionInProgress(null);
+    setRespondingTo(null);
   };
   
   // Função para atualizar o perfil
@@ -395,10 +255,6 @@ const Profile = () => {
         variant: "destructive",
       });
     }
-  };
-
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleString('pt-BR');
   };
   
   if (isLoading) {
@@ -616,7 +472,7 @@ const Profile = () => {
           <TabsContent value="messages">
             <h2 className="text-xl font-medium mb-4">Minhas Mensagens</h2>
             
-            {userMessages.length === 0 ? (
+            {messages.length === 0 ? (
               <Card>
                 <CardContent className="p-8 text-center">
                   <Mail className="h-12 w-12 text-gray-400 mx-auto mb-4" />
@@ -632,140 +488,29 @@ const Profile = () => {
               </Card>
             ) : (
               <div className="space-y-4">
-                {userMessages.map((message) => (
-                  <Card key={message.id} className={!message.read && message.response ? 'border-blue-200 bg-blue-50' : ''}>
-                    <CardHeader>
-                      <div className="flex items-center justify-between">
-                        <CardTitle className="flex items-center">
-                          {!message.read && message.response && <div className="w-2 h-2 bg-blue-500 rounded-full mr-2" />}
-                          <Mail className="mr-2 h-4 w-4" />
-                          {message.subject}
-                        </CardTitle>
-                        <div className="flex items-center space-x-2">
-                          <Button
-                            variant="destructive"
-                            size="sm"
-                            onClick={() => deleteMessage(message.id)}
-                            disabled={deletingMessage === message.id}
-                          >
-                            {deletingMessage === message.id ? (
-                              <Loader2 className="h-4 w-4 animate-spin" />
-                            ) : (
-                              <Trash2 className="h-4 w-4" />
-                            )}
-                          </Button>
-                        </div>
+                {messages.map((message) => (
+                  <div key={message.id} className="space-y-4">
+                    <MessageCard
+                      message={message}
+                      isAdmin={false}
+                      onMarkAsRead={markAsRead}
+                      onDelete={handleDeleteMessage}
+                      onReply={setRespondingTo}
+                      deletingMessage={deletingMessage}
+                    />
+                    
+                    {respondingTo === message.id && (
+                      <div className="ml-8">
+                        <MessageResponseForm
+                          onSubmit={(data) => handleSendResponse(data, message.id)}
+                          onCancel={() => setRespondingTo(null)}
+                          isSubmitting={actionInProgress === 'message-response'}
+                          placeholder="Digite sua resposta à administração..."
+                          submitLabel="Enviar Resposta"
+                        />
                       </div>
-                      <CardDescription>
-                        Enviado em: {formatDate(message.created_at)}
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="space-y-4">
-                        <div>
-                          <h4 className="font-medium mb-2">Sua Mensagem:</h4>
-                          <p className="text-gray-700 whitespace-pre-wrap bg-gray-50 p-3 rounded">
-                            {message.message}
-                          </p>
-                        </div>
-
-                        {message.response ? (
-                          <div className="border-t pt-4">
-                            <h4 className="font-medium mb-2">Resposta da Administração:</h4>
-                            <p className="text-gray-700 whitespace-pre-wrap bg-blue-50 p-3 rounded border-l-4 border-blue-500">
-                              {message.response}
-                            </p>
-                            <p className="text-sm text-gray-500 mt-2">
-                              Respondido em: {message.responded_at ? formatDate(message.responded_at) : ''}
-                            </p>
-                            
-                            {/* Marcar como lida quando usuário visualiza */}
-                            {!message.read && (
-                              <div className="mt-2">
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() => markMessageAsRead(message.id)}
-                                >
-                                  Marcar como lida
-                                </Button>
-                              </div>
-                            )}
-
-                            {/* Opção de responder à resposta do admin */}
-                            <div className="mt-4">
-                              {respondingTo === message.id ? (
-                                <Form {...responseForm}>
-                                  <form onSubmit={responseForm.handleSubmit((data) => onSubmitMessageResponse(data, message.id))} className="space-y-4">
-                                    <FormField
-                                      control={responseForm.control}
-                                      name="response"
-                                      render={({ field }) => (
-                                        <FormItem>
-                                          <FormLabel>Sua Resposta</FormLabel>
-                                          <FormControl>
-                                            <Textarea 
-                                              placeholder="Digite sua resposta aqui..."
-                                              className="min-h-[100px]"
-                                              {...field} 
-                                            />
-                                          </FormControl>
-                                          <FormMessage />
-                                        </FormItem>
-                                      )}
-                                    />
-                                    
-                                    <div className="flex gap-2">
-                                      <Button 
-                                        type="submit" 
-                                        disabled={actionInProgress === 'message-response'}
-                                        size="sm"
-                                      >
-                                        {actionInProgress === 'message-response' ? (
-                                          <>
-                                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                            Enviando...
-                                          </>
-                                        ) : (
-                                          'Enviar Resposta'
-                                        )}
-                                      </Button>
-                                      <Button 
-                                        type="button" 
-                                        variant="outline"
-                                        size="sm"
-                                        onClick={() => {
-                                          setRespondingTo(null);
-                                          responseForm.reset();
-                                        }}
-                                      >
-                                        Cancelar
-                                      </Button>
-                                    </div>
-                                  </form>
-                                </Form>
-                              ) : (
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() => setRespondingTo(message.id)}
-                                >
-                                  <Reply className="mr-2 h-4 w-4" />
-                                  Responder
-                                </Button>
-                              )}
-                            </div>
-                          </div>
-                        ) : (
-                          <div className="border-t pt-4">
-                            <p className="text-sm text-yellow-600 bg-yellow-50 p-2 rounded">
-                              Aguardando resposta da administração...
-                            </p>
-                          </div>
-                        )}
-                      </div>
-                    </CardContent>
-                  </Card>
+                    )}
+                  </div>
                 ))}
               </div>
             )}
