@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import SubscriptionList from '@/components/SubscriptionList';
@@ -12,7 +11,6 @@ import { useAuth } from '@/contexts/AuthContext';
 import { APP_VERSION } from '@/utils/shareUtils';
 import { User, MessageCircle, Plus } from 'lucide-react';
 import { Button } from "@/components/ui/button";
-
 const Index: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [hasResults, setHasResults] = useState(true);
@@ -57,7 +55,6 @@ const Index: React.FC = () => {
     };
     loadSiteConfig();
   }, []);
-  
   const handleSearch = (term: string) => {
     setSearchTerm(term.toLowerCase());
     // Make sure we show all results when search is cleared
@@ -65,7 +62,6 @@ const Index: React.FC = () => {
       setHasResults(true);
     }
   };
-  
   return <div className="min-h-screen bg-gray-100">
       <NavBar />
       
@@ -82,10 +78,7 @@ const Index: React.FC = () => {
           {/* Botões fixos */}
           <div className="flex gap-2 sm:gap-3 mx-auto max-w-xs sm:max-w-sm mt-4">
             <Link to="/contact" className="flex-1">
-              <Button variant="secondary" className="w-full">
-                <MessageCircle className="mr-2 h-4 w-4" />
-                Fale conosco!
-              </Button>
+              
             </Link>
           </div>
         </div>
@@ -105,5 +98,4 @@ const Index: React.FC = () => {
       </footer>
     </div>;
 };
-
 export default Index;
