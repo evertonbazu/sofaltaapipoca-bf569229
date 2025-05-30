@@ -12,7 +12,7 @@ const responseFormSchema = z.object({
   response: z.string().min(10, { message: "Resposta deve ter pelo menos 10 caracteres" }),
 });
 
-type ResponseFormValues = z.infer<typeof responseFormSchema>;
+export type ResponseFormValues = z.infer<typeof responseFormSchema>;
 
 interface MessageResponseFormProps {
   onSubmit: (data: ResponseFormValues) => void;
@@ -24,7 +24,7 @@ interface MessageResponseFormProps {
 
 /**
  * Formulário para responder mensagens
- * @version 1.0.0
+ * @version 1.1.0
  */
 const MessageResponseForm: React.FC<MessageResponseFormProps> = ({
   onSubmit,

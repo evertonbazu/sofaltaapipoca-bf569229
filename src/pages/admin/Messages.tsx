@@ -1,16 +1,15 @@
-
 import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Loader2, Mail } from 'lucide-react';
 import AdminLayout from '@/components/admin/AdminLayout';
 import MessageCard from '@/components/messages/MessageCard';
-import MessageResponseForm from '@/components/messages/MessageResponseForm';
+import MessageResponseForm, { ResponseFormValues } from '@/components/messages/MessageResponseForm';
 import { useMessages } from '@/hooks/useMessages';
 
 /**
  * Página de gerenciamento de mensagens no painel administrativo
- * @version 5.0.0
+ * @version 5.1.0
  */
 const Messages = () => {
   const { messages, isLoading, markAsRead, deleteMessage, sendResponse } = useMessages(true);
@@ -31,7 +30,7 @@ const Messages = () => {
     setDeletingMessage(null);
   };
 
-  const handleSendResponse = async (data: { response: string }, messageId: string) => {
+  const handleSendResponse = async (data: ResponseFormValues, messageId: string) => {
     setIsSubmitting(true);
     await sendResponse(messageId, data.response, true);
     setIsSubmitting(false);

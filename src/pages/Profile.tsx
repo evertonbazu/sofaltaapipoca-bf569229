@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
@@ -17,7 +16,7 @@ import { deleteSubscription } from '@/services/subscription-service';
 import NavBar from '@/components/NavBar';
 import { useAuth } from '@/contexts/AuthContext';
 import MessageCard from '@/components/messages/MessageCard';
-import MessageResponseForm from '@/components/messages/MessageResponseForm';
+import MessageResponseForm, { ResponseFormValues } from '@/components/messages/MessageResponseForm';
 import { useMessages } from '@/hooks/useMessages';
 
 // Schema para o formulário de perfil
@@ -40,7 +39,7 @@ type PasswordFormValues = z.infer<typeof passwordFormSchema>;
 
 /**
  * Página de perfil do usuário
- * @version 7.0.0
+ * @version 7.1.0
  */
 const Profile = () => {
   const navigate = useNavigate();
@@ -55,7 +54,6 @@ const Profile = () => {
   const { signOut, authState } = useAuth();
   const [redirected, setRedirected] = useState(false);
 
-  // Hook para gerenciar mensagens do usuário
   const { messages, markAsRead, deleteMessage, sendResponse } = useMessages(false, authState.user?.id);
 
   // Formulário de perfil
@@ -137,22 +135,19 @@ const Profile = () => {
     }
   }, [navigate, authState, redirected]);
 
-  // Função para excluir mensagem
   const handleDeleteMessage = async (messageId: string) => {
     setDeletingMessage(messageId);
     await deleteMessage(messageId);
     setDeletingMessage(null);
   };
 
-  // Função para responder à resposta do administrador
-  const handleSendResponse = async (data: { response: string }, messageId: string) => {
+  const handleSendResponse = async (data: ResponseFormValues, messageId: string) => {
     setActionInProgress('message-response');
     await sendResponse(messageId, data.response, false);
     setActionInProgress(null);
     setRespondingTo(null);
   };
   
-  // Função para atualizar o perfil
   const onUpdateProfile = async (data: ProfileFormValues) => {
     try {
       setActionInProgress('profile');
@@ -184,7 +179,6 @@ const Profile = () => {
     }
   };
   
-  // Função para atualizar a senha
   const onUpdatePassword = async (data: PasswordFormValues) => {
     try {
       setActionInProgress('password');
@@ -215,7 +209,6 @@ const Profile = () => {
     }
   };
   
-  // Função para excluir uma assinatura
   const handleDeleteSubscription = async (id: string) => {
     try {
       setActionInProgress(id);
@@ -242,7 +235,6 @@ const Profile = () => {
     }
   };
   
-  // Função para fazer logout
   const handleLogout = async () => {
     try {
       await signOut();
