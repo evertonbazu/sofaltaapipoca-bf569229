@@ -25,14 +25,18 @@ export const useUnreadMessages = () => {
           .select('id, response, responded_at, read')
           .eq('user_id', authState.user.id)
           .not('response', 'is', null)
-          .not('responded_at', 'is', null)
           .eq('read', false);
 
-        if (error) throw error;
+        if (error) {
+          console.error('Erro ao buscar mensagens não lidas:', error);
+          setUnreadCount(0);
+          return;
+        }
 
         // Contar mensagens com resposta não lidas
         const unreadResponses = data?.length || 0;
         setUnreadCount(unreadResponses);
+        console.log('Mensagens não lidas encontradas:', unreadResponses);
       } catch (error) {
         console.error('Erro ao buscar mensagens não lidas:', error);
         setUnreadCount(0);
@@ -55,6 +59,7 @@ export const useUnreadMessages = () => {
           filter: `user_id=eq.${authState.user.id}`,
         },
         () => {
+          console.log('Mudança detectada nas mensagens, atualizando contagem...');
           fetchUnreadCount();
         }
       )

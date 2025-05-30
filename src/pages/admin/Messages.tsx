@@ -33,7 +33,7 @@ type ResponseFormValues = z.infer<typeof responseFormSchema>;
 
 /**
  * Página de gerenciamento de mensagens no painel administrativo
- * @version 2.1.0
+ * @version 3.0.0
  */
 const Messages = () => {
   const { toast } = useToast();
@@ -58,13 +58,19 @@ const Messages = () => {
   const fetchMessages = async () => {
     try {
       setIsLoading(true);
+      console.log('Buscando mensagens...');
+      
       const { data, error } = await supabase
         .from('contact_messages')
         .select('*')
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Erro ao buscar mensagens:', error);
+        throw error;
+      }
 
+      console.log('Mensagens encontradas:', data?.length || 0);
       setMessages(data || []);
     } catch (error) {
       console.error('Erro ao buscar mensagens:', error);
@@ -81,13 +87,17 @@ const Messages = () => {
   const markAsRead = async (messageId: string) => {
     try {
       setMarkingAsRead(messageId);
+      console.log('Marcando mensagem como lida:', messageId);
       
       const { error } = await supabase
         .from('contact_messages')
         .update({ read: true })
         .eq('id', messageId);
 
-      if (error) throw error;
+      if (error) {
+        console.error('Erro ao marcar como lida:', error);
+        throw error;
+      }
 
       // Atualizar o estado local
       setMessages(prev => 
@@ -96,6 +106,7 @@ const Messages = () => {
         )
       );
 
+      console.log('Mensagem marcada como lida com sucesso');
       toast({
         title: "Sucesso",
         description: "Mensagem marcada como lida.",
@@ -115,17 +126,22 @@ const Messages = () => {
   const deleteMessage = async (messageId: string) => {
     try {
       setDeletingMessage(messageId);
+      console.log('Excluindo mensagem:', messageId);
       
       const { error } = await supabase
         .from('contact_messages')
         .delete()
         .eq('id', messageId);
 
-      if (error) throw error;
+      if (error) {
+        console.error('Erro ao excluir mensagem:', error);
+        throw error;
+      }
 
       // Remover mensagem do estado local
       setMessages(prev => prev.filter(msg => msg.id !== messageId));
 
+      console.log('Mensagem excluída com sucesso');
       toast({
         title: "Mensagem excluída",
         description: "A mensagem foi excluída com sucesso.",
@@ -145,6 +161,7 @@ const Messages = () => {
   const onSubmitResponse = async (data: ResponseFormValues, messageId: string) => {
     try {
       setIsSubmitting(true);
+      console.log('Enviando resposta para mensagem:', messageId);
 
       const { data: { user } } = await supabase.auth.getUser();
       
@@ -154,12 +171,16 @@ const Messages = () => {
           response: data.response,
           responded_at: new Date().toISOString(),
           responded_by: user?.id,
-          read: true,
+          read: false, // Marcar como não lida para que o usuário veja a resposta
         })
         .eq('id', messageId);
 
-      if (error) throw error;
+      if (error) {
+        console.error('Erro ao enviar resposta:', error);
+        throw error;
+      }
 
+      console.log('Resposta enviada com sucesso');
       toast({
         title: "Resposta enviada",
         description: "Sua resposta foi enviada com sucesso.",
@@ -210,11 +231,11 @@ const Messages = () => {
             </Card>
           ) : (
             messages.map((message) => (
-              <Card key={message.id} className={!message.read ? 'border-blue-200 bg-blue-50' : ''}>
+              <Card key={message.id} className={!message.read && message.response ? 'border-blue-200 bg-blue-50' : ''}>
                 <CardHeader>
                   <div className="flex items-center justify-between">
                     <CardTitle className="flex items-center">
-                      {!message.read && <div className="w-2 h-2 bg-blue-500 rounded-full mr-2" />}
+                      {!message.read && message.response && <div className="w-2 h-2 bg-blue-500 rounded-full mr-2" />}
                       <Mail className="mr-2 h-4 w-4" />
                       {message.subject}
                     </CardTitle>
