@@ -6,7 +6,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import { Loader2, User, Edit, Trash2, Mail, MessageSquare, Reply } from 'lucide-react';
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -53,7 +53,7 @@ type MessageResponseValues = z.infer<typeof messageResponseSchema>;
 
 /**
  * Página de perfil do usuário
- * @version 5.0.0
+ * @version 6.0.0
  */
 const Profile = () => {
   const navigate = useNavigate();

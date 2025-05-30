@@ -33,7 +33,7 @@ type ResponseFormValues = z.infer<typeof responseFormSchema>;
 
 /**
  * Página de gerenciamento de mensagens no painel administrativo
- * @version 3.0.0
+ * @version 4.0.0
  */
 const Messages = () => {
   const { toast } = useToast();
@@ -89,6 +89,7 @@ const Messages = () => {
       setMarkingAsRead(messageId);
       console.log('Marcando mensagem como lida:', messageId);
       
+      // Usar upsert para garantir que a operação funcione mesmo se já existir
       const { error } = await supabase
         .from('contact_messages')
         .update({ read: true })
