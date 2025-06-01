@@ -22,6 +22,10 @@ const signupSchema = z.object({
   email: z.string().email({ message: "Email inválido" }),
   password: z.string().min(6, { message: "A senha deve ter pelo menos 6 caracteres" }),
   confirmPassword: z.string().min(6, { message: "A senha deve ter pelo menos 6 caracteres" }),
+  full_name: z.string().min(2, { message: "Nome completo é obrigatório" }),
+  username: z.string().min(3, { message: "Nome de usuário deve ter pelo menos 3 caracteres" }),
+  whatsapp: z.string().min(10, { message: "WhatsApp é obrigatório" }),
+  telegram_username: z.string().optional(),
 }).refine((data) => data.password === data.confirmPassword, {
   message: "As senhas não correspondem",
   path: ["confirmPassword"],
@@ -30,10 +34,14 @@ const signupSchema = z.object({
 type LoginFormValues = z.infer<typeof loginSchema>;
 type SignupFormValues = z.infer<typeof signupSchema>;
 
+/**
+ * Página de autenticação com login e cadastro
+ * @version 2.0.0
+ */
 const Auth: React.FC = () => {
   const [activeTab, setActiveTab] = useState<string>("login");
   const [isLoading, setIsLoading] = useState<boolean>(false);
-  const { signIn, signUp, authState } = useAuth();
+  const { signIn, authState } = useAuth();
   const navigate = useNavigate();
   const [redirected, setRedirected] = useState(false);
 
@@ -51,6 +59,10 @@ const Auth: React.FC = () => {
       email: "",
       password: "",
       confirmPassword: "",
+      full_name: "",
+      username: "",
+      whatsapp: "",
+      telegram_username: "",
     },
   });
 
@@ -80,7 +92,25 @@ const Auth: React.FC = () => {
   const onSignupSubmit = async (data: SignupFormValues) => {
     setIsLoading(true);
     try {
-      await signUp(data.email, data.password);
+      const { supabase } = await import('@/integrations/supabase/client');
+      
+      const { error } = await supabase.auth.signUp({
+        email: data.email,
+        password: data.password,
+        options: {
+          data: {
+            full_name: data.full_name,
+            username: data.username,
+            whatsapp: data.whatsapp,
+            telegram_username: data.telegram_username || null,
+          }
+        }
+      });
+
+      if (error) {
+        throw error;
+      }
+
       setActiveTab('login');
     } catch (error) {
       console.error('Erro no cadastro:', error);
@@ -157,7 +187,7 @@ const Auth: React.FC = () => {
                     name="email"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Email</FormLabel>
+                        <FormLabel>Email *</FormLabel>
                         <FormControl>
                           <Input placeholder="nome@exemplo.com" {...field} />
                         </FormControl>
@@ -165,12 +195,69 @@ const Auth: React.FC = () => {
                       </FormItem>
                     )}
                   />
+                  
+                  <FormField
+                    control={signupForm.control}
+                    name="full_name"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Nome Completo *</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Seu nome completo" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <FormField
+                    control={signupForm.control}
+                    name="username"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Nome de Usuário *</FormLabel>
+                        <FormControl>
+                          <Input placeholder="usuario123" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <FormField
+                    control={signupForm.control}
+                    name="whatsapp"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>WhatsApp *</FormLabel>
+                        <FormControl>
+                          <Input placeholder="(11) 99999-9999" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <FormField
+                    control={signupForm.control}
+                    name="telegram_username"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Telegram (Opcional)</FormLabel>
+                        <FormControl>
+                          <Input placeholder="@usuario" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
                   <FormField
                     control={signupForm.control}
                     name="password"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Senha</FormLabel>
+                        <FormLabel>Senha *</FormLabel>
                         <FormControl>
                           <Input type="password" placeholder="******" {...field} />
                         </FormControl>
@@ -183,7 +270,7 @@ const Auth: React.FC = () => {
                     name="confirmPassword"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Confirmar Senha</FormLabel>
+                        <FormLabel>Confirmar Senha *</FormLabel>
                         <FormControl>
                           <Input type="password" placeholder="******" {...field} />
                         </FormControl>
@@ -191,6 +278,11 @@ const Auth: React.FC = () => {
                       </FormItem>
                     )}
                   />
+                  
+                  <div className="text-sm text-gray-500">
+                    <span className="text-red-500">* Campos obrigatórios</span>
+                  </div>
+                  
                   <Button type="submit" className="w-full" disabled={isLoading}>
                     {isLoading ? "Cadastrando..." : "Cadastrar"}
                   </Button>
