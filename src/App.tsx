@@ -1,3 +1,4 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -13,6 +14,7 @@ import SubscriptionEditor from "./pages/admin/SubscriptionEditor";
 import ChatSubscriptionEditor from "./pages/admin/ChatSubscriptionEditor";
 import Settings from "./pages/admin/Settings";
 import HeaderButtons from "./pages/admin/HeaderButtons";
+import Users from "./pages/admin/Users";
 import Profile from "./pages/Profile";
 import SubmitSubscription from "./pages/SubmitSubscription";
 import PendingSubscriptions from "./pages/admin/PendingSubscriptions";
@@ -43,6 +45,7 @@ const App = () => (
             <Route path="/admin/subscriptions/chat" element={<ChatSubscriptionEditor />} />
             <Route path="/admin/subscriptions/pending" element={<PendingSubscriptions />} />
             <Route path="/admin/messages" element={<Messages />} />
+            <Route path="/admin/users" element={<Users />} />
             <Route path="/admin/header-buttons" element={<HeaderButtons />} />
             <Route path="/admin/settings" element={<Settings />} />
             

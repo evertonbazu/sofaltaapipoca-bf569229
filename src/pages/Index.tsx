@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import SubscriptionList from '@/components/SubscriptionList';
@@ -11,6 +12,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { APP_VERSION } from '@/utils/shareUtils';
 import { User, MessageCircle, Plus } from 'lucide-react';
 import { Button } from "@/components/ui/button";
+
 const Index: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [hasResults, setHasResults] = useState(true);
@@ -33,20 +35,26 @@ const Index: React.FC = () => {
         const title = await getSiteConfig('site_title');
         const subtitle = await getSiteConfig('site_subtitle');
         const whatsapp = await getSiteConfig('contact_whatsapp');
+        const configVersion = await getSiteConfig('app_version');
+        
         if (title) setSiteTitle(title);
         if (subtitle) setSiteSubtitle(subtitle);
         if (whatsapp) setContactWhatsapp(whatsapp);
 
-        // Always use the version from shareUtils.ts
-        setAppVersion(APP_VERSION);
-
-        // Update the app_version in the database if it doesn't match current version
-        await supabase.from('site_configurations').upsert({
-          key: 'app_version',
-          value: APP_VERSION,
-          description: 'Current application version'
-        });
-        console.log(`App version set to ${APP_VERSION}`);
+        // Use the version from config if available, otherwise use the current app version
+        if (configVersion) {
+          setAppVersion(configVersion);
+        } else {
+          setAppVersion(APP_VERSION);
+          // Update the app_version in the database if it doesn't exist
+          await supabase.from('site_configurations').upsert({
+            key: 'app_version',
+            value: APP_VERSION,
+            description: 'Current application version'
+          });
+        }
+        
+        console.log(`App version set to ${configVersion || APP_VERSION}`);
       } catch (error) {
         console.error('Erro ao carregar configurações do site:', error);
         // In case of error, use the current app version from shareUtils
@@ -55,6 +63,7 @@ const Index: React.FC = () => {
     };
     loadSiteConfig();
   }, []);
+
   const handleSearch = (term: string) => {
     setSearchTerm(term.toLowerCase());
     // Make sure we show all results when search is cleared
@@ -62,6 +71,7 @@ const Index: React.FC = () => {
       setHasResults(true);
     }
   };
+
   return <div className="min-h-screen bg-gray-100">
       <NavBar />
       
@@ -98,4 +108,5 @@ const Index: React.FC = () => {
       </footer>
     </div>;
 };
+
 export default Index;

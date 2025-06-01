@@ -17,6 +17,7 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children, title }) => {
     { icon: Package, label: 'Assinaturas', path: '/admin/subscriptions' },
     { icon: ClipboardList, label: 'Pendentes', path: '/admin/subscriptions/pending' },
     { icon: MessageSquare, label: 'Mensagens', path: '/admin/messages' },
+    { icon: Users, label: 'Usuários', path: '/admin/users' },
     { icon: PlusCircle, label: 'Botões', path: '/admin/header-buttons' },
     { icon: Settings, label: 'Configurações', path: '/admin/settings' },
   ];
