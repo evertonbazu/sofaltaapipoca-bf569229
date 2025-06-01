@@ -336,8 +336,10 @@ export type Database = {
           id: string
           phone: string | null
           role: string | null
+          telegram_username: string | null
           updated_at: string | null
           username: string | null
+          whatsapp: string | null
         }
         Insert: {
           avatar_url?: string | null
@@ -347,8 +349,10 @@ export type Database = {
           id: string
           phone?: string | null
           role?: string | null
+          telegram_username?: string | null
           updated_at?: string | null
           username?: string | null
+          whatsapp?: string | null
         }
         Update: {
           avatar_url?: string | null
@@ -358,8 +362,10 @@ export type Database = {
           id?: string
           phone?: string | null
           role?: string | null
+          telegram_username?: string | null
           updated_at?: string | null
           username?: string | null
+          whatsapp?: string | null
         }
         Relationships: []
       }

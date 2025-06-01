@@ -15,13 +15,15 @@ interface User {
   username: string;
   full_name: string;
   phone: string;
+  whatsapp: string;
+  telegram_username: string;
   role: string;
   created_at: string;
 }
 
 /**
  * Lista de usuários para o painel administrativo
- * @version 1.0.0
+ * @version 1.1.0
  */
 const UsersList = () => {
   const [users, setUsers] = useState<User[]>([]);
@@ -61,7 +63,9 @@ const UsersList = () => {
   const filteredUsers = users.filter(user => 
     user.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     user.username?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    user.full_name?.toLowerCase().includes(searchTerm.toLowerCase())
+    user.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    user.whatsapp?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    user.telegram_username?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const handleEdit = (user: User) => {
@@ -77,6 +81,25 @@ const UsersList = () => {
   const handleSaveEdit = async () => {
     if (!editingUser) return;
 
+    // Validar campos obrigatórios
+    if (!editForm.full_name?.trim()) {
+      toast({
+        title: "Erro",
+        description: "Nome completo é obrigatório.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!editForm.whatsapp?.trim()) {
+      toast({
+        title: "Erro",
+        description: "WhatsApp é obrigatório.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     try {
       const { error } = await supabase
         .from('profiles')
@@ -84,6 +107,8 @@ const UsersList = () => {
           username: editForm.username,
           full_name: editForm.full_name,
           phone: editForm.phone,
+          whatsapp: editForm.whatsapp,
+          telegram_username: editForm.telegram_username,
           role: editForm.role,
         })
         .eq('id', editingUser);
@@ -160,7 +185,7 @@ const UsersList = () => {
           <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
             <Input
-              placeholder="Buscar por email, nome ou usuário..."
+              placeholder="Buscar por email, nome, usuário, WhatsApp ou Telegram..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="pl-10"
@@ -174,8 +199,10 @@ const UsersList = () => {
               <TableRow>
                 <TableHead>Email</TableHead>
                 <TableHead>Nome de Usuário</TableHead>
-                <TableHead>Nome Completo</TableHead>
+                <TableHead>Nome Completo *</TableHead>
                 <TableHead>Telefone</TableHead>
+                <TableHead>WhatsApp *</TableHead>
+                <TableHead>Telegram</TableHead>
                 <TableHead>Função</TableHead>
                 <TableHead>Data de Cadastro</TableHead>
                 <TableHead>Ações</TableHead>
@@ -184,7 +211,7 @@ const UsersList = () => {
             <TableBody>
               {filteredUsers.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={7} className="text-center py-8 text-gray-500">
+                  <TableCell colSpan={9} className="text-center py-8 text-gray-500">
                     {searchTerm ? 'Nenhum usuário encontrado com esse termo de busca.' : 'Nenhum usuário encontrado.'}
                   </TableCell>
                 </TableRow>
@@ -209,9 +236,12 @@ const UsersList = () => {
                           value={editForm.full_name || ''}
                           onChange={(e) => setEditForm({ ...editForm, full_name: e.target.value })}
                           className="w-40"
+                          required
                         />
                       ) : (
-                        user.full_name || '-'
+                        <span className={!user.full_name ? 'text-red-500' : ''}>
+                          {user.full_name || 'Não informado'}
+                        </span>
                       )}
                     </TableCell>
                     <TableCell>
@@ -223,6 +253,32 @@ const UsersList = () => {
                         />
                       ) : (
                         user.phone || '-'
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      {editingUser === user.id ? (
+                        <Input
+                          value={editForm.whatsapp || ''}
+                          onChange={(e) => setEditForm({ ...editForm, whatsapp: e.target.value })}
+                          className="w-32"
+                          required
+                        />
+                      ) : (
+                        <span className={!user.whatsapp ? 'text-red-500' : ''}>
+                          {user.whatsapp || 'Não informado'}
+                        </span>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      {editingUser === user.id ? (
+                        <Input
+                          value={editForm.telegram_username || ''}
+                          onChange={(e) => setEditForm({ ...editForm, telegram_username: e.target.value })}
+                          className="w-32"
+                          placeholder="@usuario"
+                        />
+                      ) : (
+                        user.telegram_username || '-'
                       )}
                     </TableCell>
                     <TableCell>
@@ -308,6 +364,8 @@ const UsersList = () => {
 
         <div className="mt-4 text-sm text-gray-500">
           Total: {filteredUsers.length} usuário(s)
+          <br />
+          <span className="text-red-500">* Campos obrigatórios</span>
         </div>
       </CardContent>
     </Card>
