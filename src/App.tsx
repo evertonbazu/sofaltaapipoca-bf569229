@@ -20,6 +20,7 @@ import SubmitSubscription from "./pages/SubmitSubscription";
 import PendingSubscriptions from "./pages/admin/PendingSubscriptions";
 import Contact from "./pages/Contact";
 import Messages from "./pages/admin/Messages";
+import SubscriptionDetails from "./pages/SubscriptionDetails";
 
 const queryClient = new QueryClient();
 
@@ -36,6 +37,7 @@ const App = () => (
             <Route path="/profile" element={<Profile />} />
             <Route path="/submit-subscription" element={<SubmitSubscription />} />
             <Route path="/contact" element={<Contact />} />
+            <Route path="/subscription/:id" element={<SubscriptionDetails />} />
             
             {/* Rotas Administrativas */}
             <Route path="/admin" element={<Dashboard />} />
