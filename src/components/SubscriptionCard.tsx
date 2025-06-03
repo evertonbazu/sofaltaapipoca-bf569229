@@ -41,7 +41,7 @@ const SubscriptionCard = ({
   icon = 'monitor',
   isSearchResult = false,
   addedDate,
-  version = '2.2.0',
+  version = '2.1.1',
   isMemberSubmission = false,
   featured = false,
   isAdminSubmission = false
