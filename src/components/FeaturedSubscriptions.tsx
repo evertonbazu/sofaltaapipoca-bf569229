@@ -2,6 +2,7 @@
 import React, { useEffect, useState } from "react";
 import SubscriptionItem from "./SubscriptionItem";
 import { SubscriptionData } from "@/types/subscriptionTypes";
+import { sortSubscriptionsByDateDesc } from "@/utils/dateUtils";
 
 interface FeaturedSubscriptionsProps {
   subscriptionRefs: React.MutableRefObject<{[key: string]: HTMLDivElement | null}>;
@@ -16,16 +17,18 @@ const FeaturedSubscriptions: React.FC<FeaturedSubscriptionsProps> = ({
   setHasResults,
   subscriptionList = []
 }) => {
-  const [visibleSubscriptions, setVisibleSubscriptions] = useState<SubscriptionData[]>(subscriptionList);
+  const [visibleSubscriptions, setVisibleSubscriptions] = useState<SubscriptionData[]>([]);
 
-  // Atualizar lista quando subscriptionList mudar
+  // Atualizar lista quando subscriptionList mudar, ordenando por data
   useEffect(() => {
-    setVisibleSubscriptions(subscriptionList);
+    const sortedList = sortSubscriptionsByDateDesc(subscriptionList);
+    setVisibleSubscriptions(sortedList);
   }, [subscriptionList]);
 
   useEffect(() => {
     if (searchTerm.trim() === "") {
-      setVisibleSubscriptions(subscriptionList);
+      const sortedList = sortSubscriptionsByDateDesc(subscriptionList);
+      setVisibleSubscriptions(sortedList);
       return;
     }
     
@@ -35,7 +38,9 @@ const FeaturedSubscriptions: React.FC<FeaturedSubscriptionsProps> = ({
       return content.includes(searchTerm.toLowerCase());
     });
     
-    setVisibleSubscriptions(filtered);
+    // Ordenar os resultados filtrados também
+    const sortedFiltered = sortSubscriptionsByDateDesc(filtered);
+    setVisibleSubscriptions(sortedFiltered);
     
     // Atualizar hasResults se a prop estiver disponível
     if (setHasResults) {
