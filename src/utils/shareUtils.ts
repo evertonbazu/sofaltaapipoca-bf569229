@@ -1,8 +1,10 @@
-
 import { SubscriptionData } from '@/types/subscriptionTypes';
 import { supabase } from '@/integrations/supabase/client';
 
 /**
+ * Version 2.3.0
+ * - Versão atualizada após reversão para commit anterior
+ * 
  * Version 3.0.6
  * - Adicionados emojis simples e compatíveis com WhatsApp
  * - Testado com emojis que funcionam corretamente na codificação URL
@@ -51,7 +53,7 @@ import { supabase } from '@/integrations/supabase/client';
  */
 
 // Export the current version as a constant for use throughout the app
-export const APP_VERSION = "3.0.6";
+export const APP_VERSION = "2.3.0";
 
 /**
  * Formats subscription data for sharing on messaging platforms
