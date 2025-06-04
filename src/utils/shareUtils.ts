@@ -1,8 +1,11 @@
-
 import { SubscriptionData } from '@/types/subscriptionTypes';
 import { supabase } from '@/integrations/supabase/client';
 
 /**
+ * Version 2.3.2
+ * - Corrigido acesso às variáveis de ambiente para usar import.meta.env (Vite)
+ * - Fixado erro "process is not defined" no frontend
+ * 
  * Version 2.3.1
  * - Adicionada ordenação por data nas assinaturas da tela inicial
  * - Criados utilitários de data para ordenação consistente
@@ -46,12 +49,12 @@ import { supabase } from '@/integrations/supabase/client';
  */
 
 // Export the current version as a constant for use throughout the app
-export const APP_VERSION = "2.3.1";
+export const APP_VERSION = "2.3.2";
 
-const telegramApiUrl = process.env.NEXT_PUBLIC_TELEGRAM_API_URL;
-const telegramBotToken = process.env.NEXT_PUBLIC_TELEGRAM_BOT_TOKEN;
-const telegramChatId = process.env.NEXT_PUBLIC_TELEGRAM_CHAT_ID;
-const edgeFunctionUrl = process.env.NEXT_PUBLIC_EDGE_FUNCTION_URL;
+const telegramApiUrl = import.meta.env.VITE_TELEGRAM_API_URL;
+const telegramBotToken = import.meta.env.VITE_TELEGRAM_BOT_TOKEN;
+const telegramChatId = import.meta.env.VITE_TELEGRAM_CHAT_ID;
+const edgeFunctionUrl = import.meta.env.VITE_EDGE_FUNCTION_URL;
 
 async function ensureDefaultConfig(key: string, defaultValue: string, description: string) {
   try {
