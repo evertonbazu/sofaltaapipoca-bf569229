@@ -1,3 +1,4 @@
+
 import { SubscriptionData } from '@/types/subscriptionTypes';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -58,7 +59,7 @@ async function ensureDefaultConfig(key: string, defaultValue: string, descriptio
       .from('site_configurations')
       .upsert(
         { key: key, value: defaultValue, description: description },
-        { onConflict: ['key'] }
+        { onConflict: 'key' }
       );
 
     if (error) {
@@ -210,6 +211,78 @@ export async function isAutoPostingEnabled(): Promise<boolean> {
     return data.value === 'true';
   } catch (error) {
     console.error("Erro ao verificar configuração de auto_post_to_telegram:", error);
+    return false;
+  }
+}
+
+// Função para gerar links de compartilhamento do WhatsApp
+export function getWhatsAppShareLink(subscription: SubscriptionData): string {
+  const message = `
+🎉 *${subscription.title}*
+
+💰 Preço: *${subscription.price}*
+🔄 Forma de Pagamento: ${subscription.paymentMethod}
+📊 Status: ${subscription.status}
+🔐 Acesso: ${subscription.access}
+
+Entre em contato comigo para mais informações!
+  `.trim();
+
+  const encodedMessage = encodeURIComponent(message);
+  return `https://wa.me/?text=${encodedMessage}`;
+}
+
+// Função para gerar links de compartilhamento do Telegram
+export function getTelegramShareLink(subscription: SubscriptionData): string {
+  const message = `
+🎉 *${subscription.title}*
+
+💰 Preço: *${subscription.price}*
+🔄 Forma de Pagamento: ${subscription.paymentMethod}
+📊 Status: ${subscription.status}
+🔐 Acesso: ${subscription.access}
+
+Entre em contato comigo para mais informações!
+  `.trim();
+
+  const encodedMessage = encodeURIComponent(message);
+  return `https://t.me/share/url?text=${encodedMessage}`;
+}
+
+// Função para conversão segura para booleano
+export function toBooleanSafe(value: any): boolean {
+  if (typeof value === 'boolean') {
+    return value;
+  }
+  if (typeof value === 'string') {
+    return value.toLowerCase() === 'true';
+  }
+  return Boolean(value);
+}
+
+// Função para atualizar status de postagem automática
+export async function updateAutoPostingStatus(enabled: boolean): Promise<boolean> {
+  try {
+    const { error } = await supabase
+      .from('site_configurations')
+      .upsert(
+        { 
+          key: 'auto_post_to_telegram', 
+          value: enabled.toString(), 
+          description: 'Configuração para postagem automática no Telegram' 
+        },
+        { onConflict: 'key' }
+      );
+
+    if (error) {
+      console.error('Erro ao atualizar configuração de postagem automática:', error);
+      return false;
+    }
+
+    console.log('Configuração de postagem automática atualizada com sucesso:', enabled);
+    return true;
+  } catch (error) {
+    console.error('Erro ao atualizar configuração de postagem automática:', error);
     return false;
   }
 }
