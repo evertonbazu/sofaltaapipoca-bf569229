@@ -2,7 +2,6 @@
 import React, { useEffect, useState } from "react";
 import SubscriptionItem from "./SubscriptionItem";
 import { SubscriptionData } from "@/types/subscriptionTypes";
-import { compareDates } from "@/utils/dateUtils";
 
 interface MemberSubscriptionsProps {
   searchTerm?: string;
@@ -15,24 +14,18 @@ const MemberSubscriptions: React.FC<MemberSubscriptionsProps> = ({
   setHasResults,
   subscriptionList = []
 }) => {
-  const [visibleSubscriptions, setVisibleSubscriptions] = useState<SubscriptionData[]>([]);
+  const [visibleSubscriptions, setVisibleSubscriptions] = useState<SubscriptionData[]>(subscriptionList);
 
-  // Atualizar lista quando subscriptionList mudar, ordenando por data
+  // Atualizar lista quando subscriptionList mudar
   useEffect(() => {
-    const sortedList = [...subscriptionList].sort((a, b) => 
-      compareDates(a.addedDate, b.addedDate)
-    );
-    setVisibleSubscriptions(sortedList);
+    setVisibleSubscriptions(subscriptionList);
   }, [subscriptionList]);
   
   useEffect(() => {
     if (searchTerm.trim() === "") {
-      const sortedList = [...subscriptionList].sort((a, b) => 
-        compareDates(a.addedDate, b.addedDate)
-      );
-      setVisibleSubscriptions(sortedList);
+      setVisibleSubscriptions(subscriptionList);
       if (setHasResults) {
-        setHasResults(sortedList.length > 0);
+        setHasResults(subscriptionList.length > 0);
       }
       return;
     }
@@ -43,16 +36,11 @@ const MemberSubscriptions: React.FC<MemberSubscriptionsProps> = ({
       return content.includes(searchTerm.toLowerCase());
     });
     
-    // Ordenar os resultados filtrados por data
-    const sortedFiltered = filtered.sort((a, b) => 
-      compareDates(a.addedDate, b.addedDate)
-    );
-    
-    setVisibleSubscriptions(sortedFiltered);
+    setVisibleSubscriptions(filtered);
     
     // Atualizar hasResults se a prop estiver disponível
     if (setHasResults) {
-      setHasResults(sortedFiltered.length > 0);
+      setHasResults(filtered.length > 0);
     }
   }, [searchTerm, subscriptionList, setHasResults]);
 
