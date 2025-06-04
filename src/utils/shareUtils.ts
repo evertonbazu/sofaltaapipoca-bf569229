@@ -1,8 +1,11 @@
-
 import { SubscriptionData } from '@/types/subscriptionTypes';
 import { supabase } from '@/integrations/supabase/client';
 
 /**
+ * Version 3.0.8
+ * - Implementada ordenação de assinaturas por data do mais recente para o mais antigo
+ * - Refatoração para melhor organização do código
+ * 
  * Version 3.0.7
  * - Adicionadas funções ausentes que estavam sendo importadas em outros arquivos
  * - Corrigidas as exportações para evitar erros de TypeScript
@@ -55,7 +58,7 @@ import { supabase } from '@/integrations/supabase/client';
  */
 
 // Export the current version as a constant for use throughout the app
-export const APP_VERSION = "3.0.7";
+export const APP_VERSION = "3.0.8";
 
 /**
  * Formats subscription data for sharing on messaging platforms

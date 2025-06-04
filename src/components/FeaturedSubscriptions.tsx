@@ -2,6 +2,7 @@
 import React, { useEffect, useState } from "react";
 import SubscriptionItem from "./SubscriptionItem";
 import { SubscriptionData } from "@/types/subscriptionTypes";
+import { sortByDateDesc } from "@/utils/dateUtils";
 
 interface FeaturedSubscriptionsProps {
   subscriptionRefs: React.MutableRefObject<{[key: string]: HTMLDivElement | null}>;
@@ -16,20 +17,23 @@ const FeaturedSubscriptions: React.FC<FeaturedSubscriptionsProps> = ({
   setHasResults,
   subscriptionList = []
 }) => {
-  const [visibleSubscriptions, setVisibleSubscriptions] = useState<SubscriptionData[]>(subscriptionList);
+  const [visibleSubscriptions, setVisibleSubscriptions] = useState<SubscriptionData[]>([]);
 
-  // Atualizar lista quando subscriptionList mudar
+  // Atualizar e ordenar lista quando subscriptionList mudar
   useEffect(() => {
-    setVisibleSubscriptions(subscriptionList);
+    const sortedList = sortByDateDesc(subscriptionList);
+    setVisibleSubscriptions(sortedList);
   }, [subscriptionList]);
 
   useEffect(() => {
+    const sortedList = sortByDateDesc(subscriptionList);
+    
     if (searchTerm.trim() === "") {
-      setVisibleSubscriptions(subscriptionList);
+      setVisibleSubscriptions(sortedList);
       return;
     }
     
-    const filtered = subscriptionList.filter(sub => {
+    const filtered = sortedList.filter(sub => {
       // Filtrar principalmente pelo título (case insensitive)
       const content = `${sub.title} ${sub.price} ${sub.paymentMethod}`.toLowerCase();
       return content.includes(searchTerm.toLowerCase());

@@ -2,6 +2,7 @@
 import React, { useEffect, useState } from "react";
 import SubscriptionItem from "./SubscriptionItem";
 import { SubscriptionData } from "@/types/subscriptionTypes";
+import { sortByDateDesc } from "@/utils/dateUtils";
 
 interface MemberSubscriptionsProps {
   searchTerm?: string;
@@ -14,23 +15,26 @@ const MemberSubscriptions: React.FC<MemberSubscriptionsProps> = ({
   setHasResults,
   subscriptionList = []
 }) => {
-  const [visibleSubscriptions, setVisibleSubscriptions] = useState<SubscriptionData[]>(subscriptionList);
+  const [visibleSubscriptions, setVisibleSubscriptions] = useState<SubscriptionData[]>([]);
 
-  // Atualizar lista quando subscriptionList mudar
+  // Atualizar e ordenar lista quando subscriptionList mudar
   useEffect(() => {
-    setVisibleSubscriptions(subscriptionList);
+    const sortedList = sortByDateDesc(subscriptionList);
+    setVisibleSubscriptions(sortedList);
   }, [subscriptionList]);
   
   useEffect(() => {
+    const sortedList = sortByDateDesc(subscriptionList);
+    
     if (searchTerm.trim() === "") {
-      setVisibleSubscriptions(subscriptionList);
+      setVisibleSubscriptions(sortedList);
       if (setHasResults) {
-        setHasResults(subscriptionList.length > 0);
+        setHasResults(sortedList.length > 0);
       }
       return;
     }
     
-    const filtered = subscriptionList.filter(sub => {
+    const filtered = sortedList.filter(sub => {
       // Filtrar pelo título, preço ou método de pagamento (case insensitive)
       const content = `${sub.title} ${sub.price} ${sub.paymentMethod}`.toLowerCase();
       return content.includes(searchTerm.toLowerCase());
