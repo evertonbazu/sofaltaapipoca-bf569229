@@ -2,290 +2,416 @@ import { SubscriptionData } from '@/types/subscriptionTypes';
 import { supabase } from '@/integrations/supabase/client';
 
 /**
- * Version 2.3.2
- * - Corrigido acesso às variáveis de ambiente para usar import.meta.env (Vite)
- * - Fixado erro "process is not defined" no frontend
- * 
- * Version 2.3.1
- * - Adicionada ordenação por data nas assinaturas da tela inicial
- * - Criados utilitários de data para ordenação consistente
- * 
  * Version 2.3.0
  * - Versão atualizada após reversão para commit anterior
  * 
  * Version 3.0.6
  * - Adicionados emojis simples e compatíveis com WhatsApp
  * - Testado com emojis que funcionam corretamente na codificação URL
- * - Mantida compatibilidade com Telegram
  * 
  * Version 3.0.5
- * - Removida validação desnecessária de configuração
- * - Corrigida função isAutoPostingEnabled para verificar apenas a configuração
- * - Simplificada lógica de verificação de postagem automática
+ * - Removidos emojis para evitar problemas de codificação no WhatsApp
+ * - Usado apenas texto simples que funciona em todas as plataformas
  * 
  * Version 3.0.4
- * - Corrigido parâmetro onConflict que deve ser string, não array
- * - Melhorada função ensureDefaultConfig para usar upsert corretamente
+ * - Corrigido problema de ícones usando emojis básicos compatíveis com WhatsApp
+ * - Testados emojis que funcionam em todas as versões do WhatsApp
  * 
  * Version 3.0.3
- * - Corrigidas funções sendToTelegramGroup e deleteFromTelegramGroup
- * - Adicionada função isAutoPostingEnabled para verificar configuração
- * - Melhorada integração com Telegram
+ * - Corrigido definitivamente o problema de ícones no WhatsApp
+ * - Usados ícones simples compatíveis com WhatsApp
  * 
  * Version 3.0.2
- * - Adicionadas funções de compartilhamento para WhatsApp e Telegram
- * - Melhorada formatação de mensagens com emojis compatíveis
- * - Corrigida codificação de URLs para evitar problemas com caracteres especiais
+ * - Corrigido problema de codificação de ícones Unicode no WhatsApp
+ * - Melhorada a codificação URL para preservar caracteres especiais
  * 
  * Version 3.0.1
- * - Adicionado sistema de compartilhamento automático via Telegram
- * - Integração com edge function para envio de mensagens
- * - Suporte a configurações dinâmicas para URLs e tokens
+ * - Corrigido problema de exibição de ícones no WhatsApp
+ * - Ícones agora são exibidos corretamente no formato Unicode
  * 
  * Version 3.0.0
- * - Refatorado sistema de compartilhamento
- * - Melhorada formatação de mensagens
- * - Adicionado suporte a múltiplas plataformas
+ * - Corrigido problema de envio de assinaturas aprovadas para o Telegram
+ * 
+ * Version 2.9.0
+ * - Corrigido problema de envio duplicado para o Telegram
+ * - Adicionada verificação para evitar envios repetidos
+ * 
+ * Version 2.8.0
+ * - Adicionado suporte para botões inline no Telegram
+ * - Implementada funcionalidade para excluir mensagens do Telegram
+ * - Melhoradas as integrações de postagem automática
+ * 
+ * Version 2.7.0
+ * - Improved Telegram integration reliability
+ * - Fixed auto-posting functionality issues
+ * - Added better configuration defaults
+ * 
+ * Version 2.6.0
+ * - Added default auto-posting enabled
+ * - Set default bot token and group ID
+ * - Updated version display mechanism
  */
 
 // Export the current version as a constant for use throughout the app
-export const APP_VERSION = "2.3.2";
+export const APP_VERSION = "2.3.0";
 
-const telegramApiUrl = import.meta.env.VITE_TELEGRAM_API_URL;
-const telegramBotToken = import.meta.env.VITE_TELEGRAM_BOT_TOKEN;
-const telegramChatId = import.meta.env.VITE_TELEGRAM_CHAT_ID;
-const edgeFunctionUrl = import.meta.env.VITE_EDGE_FUNCTION_URL;
+/**
+ * Formats subscription data for sharing on messaging platforms
+ */
+export const formatSubscriptionForSharing = (subscription: SubscriptionData): string => {
+  // Format the subscription data using simple emojis that work well in WhatsApp
+  let content = '';
+  
+  // Title
+  content += `📺 ${subscription.title}\n`;
+  
+  // Price
+  content += `💰 ${subscription.price}\n`;
+  
+  // Payment method
+  if (subscription.paymentMethod) {
+    content += `💳 ${subscription.paymentMethod}\n`;
+  }
+  
+  // Status
+  content += `✅ ${subscription.status}\n`;
+  
+  // Access method
+  content += `🔑 ${subscription.access}\n`;
+  
+  // Contact methods
+  if (subscription.telegramUsername) {
+    content += `📧 ${subscription.telegramUsername}\n`;
+  }
+  
+  if (subscription.whatsappNumber) {
+    content += `📱 https://wa.me/${subscription.whatsappNumber}\n`;
+  }
+  
+  // Date added
+  if (subscription.addedDate) {
+    content += `\n📅 Adicionado em: ${subscription.addedDate}`;
+  }
+  
+  return content;
+};
 
-async function ensureDefaultConfig(key: string, defaultValue: string, description: string) {
+/**
+ * Creates a WhatsApp share link with formatted subscription data
+ * Using proper encoding to preserve Unicode characters
+ */
+export const getWhatsAppShareLink = (subscription: SubscriptionData): string => {
+  const formattedText = formatSubscriptionForSharing(subscription);
+  // Use encodeURIComponent to properly encode Unicode characters
+  const encodedText = encodeURIComponent(formattedText);
+  return `https://wa.me/?text=${encodedText}`;
+};
+
+/**
+ * Creates a Telegram share link with formatted subscription data
+ */
+export const getTelegramShareLink = (subscription: SubscriptionData): string => {
+  const formattedText = formatSubscriptionForSharing(subscription);
+  const encodedText = encodeURIComponent(formattedText);
+  return `https://t.me/share/url?url=&text=${encodedText}`;
+};
+
+/**
+ * Verifica se uma assinatura já foi enviada para o Telegram
+ * para evitar envios duplicados
+ */
+async function isSubscriptionAlreadySentToTelegram(subscriptionId: string): Promise<boolean> {
   try {
+    // Verifica se já existe um registro de mensagem para esta assinatura
     const { data, error } = await supabase
-      .from('site_configurations')
-      .upsert(
-        { key: key, value: defaultValue, description: description },
-        { onConflict: 'key' }
-      );
-
+      .from('telegram_messages')
+      .select('message_id')
+      .eq('subscription_id', subscriptionId)
+      .maybeSingle();
+    
     if (error) {
-      console.error(`Erro ao inserir/atualizar configuração padrão ${key}:`, error);
-    } else {
-      console.log(`Configuração padrão ${key} verificada/atualizada com sucesso.`);
+      console.error('Erro ao verificar se a assinatura já foi enviada:', error);
+      return false;
     }
+    
+    return !!data?.message_id; // Retorna true se já foi enviada
   } catch (error) {
-    console.error(`Erro ao inserir/atualizar configuração padrão ${key}:`, error);
+    console.error('Erro ao verificar envio anterior:', error);
+    return false;
   }
 }
 
-export async function sendToTelegramGroup(subscriptionId: string): Promise<any> {
-    try {
-        if (!telegramApiUrl || !telegramBotToken || !telegramChatId || !edgeFunctionUrl) {
-            console.warn("Variáveis de ambiente do Telegram não configuradas.");
-            return { success: false, message: "Telegram não configurado." };
-        }
-
-        // Buscar os dados da assinatura no Supabase
-        const { data: subscription, error: subscriptionError } = await supabase
-            .from('subscriptions')
-            .select('*')
-            .eq('id', subscriptionId)
-            .single();
-
-        if (subscriptionError) {
-            console.error("Erro ao buscar detalhes da assinatura:", subscriptionError);
-            return { success: false, message: "Erro ao buscar detalhes da assinatura." };
-        }
-
-        if (!subscription) {
-            console.warn("Assinatura não encontrada com ID:", subscriptionId);
-            return { success: false, message: "Assinatura não encontrada." };
-        }
-
-        // Formatar a mensagem com emojis e quebras de linha
-        const message = `
-🎉 Nova assinatura adicionada! 🎉
-
-Título: ${subscription.title}
-Preço: ${subscription.price}
-Forma de Pagamento: ${subscription.payment_method}
-Status: ${subscription.status}
-Envio: ${subscription.access}
-
-Entre em contato:
-📱 WhatsApp: ${subscription.whatsapp_number || 'Não informado'}
-📩 Telegram: ${subscription.telegram_username ? `@${subscription.telegram_username}` : 'Não informado'}
-        `;
-
-        // Codificar a mensagem para a URL
-        const encodedMessage = encodeURIComponent(message);
-
-  const functionURL = `${edgeFunctionUrl}?subscriptionId=${subscriptionId}&message=${encodedMessage}`;
-
-        // Enviar a mensagem usando a Edge Function
-        const response = await fetch(functionURL, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-        });
-
-        const result = await response.json();
-
-        if (result.success) {
-            console.log("Mensagem enviada para o Telegram com sucesso!");
-            return { success: true, message: "Mensagem enviada para o Telegram com sucesso!" };
-        } else {
-            console.error("Falha ao enviar mensagem para o Telegram:", result.message);
-            return { success: false, message: "Falha ao enviar mensagem para o Telegram." };
-        }
-
-    } catch (error: any) {
-        console.error("Erro ao enviar mensagem para o Telegram:", error);
-        return { success: false, message: "Erro ao enviar mensagem para o Telegram." };
-    }
-}
-
-export async function deleteFromTelegramGroup(subscriptionId: string): Promise<any> {
-    try {
-        if (!telegramApiUrl || !telegramBotToken || !telegramChatId || !edgeFunctionUrl) {
-            console.warn("Variáveis de ambiente do Telegram não configuradas.");
-            return { success: false, message: "Telegram não configurado." };
-        }
-
-        // Buscar o código da mensagem no Supabase
-        const { data: subscription, error: subscriptionError } = await supabase
-            .from('subscriptions')
-            .select('code')
-            .eq('id', subscriptionId)
-            .single();
-
-        if (subscriptionError) {
-            console.error("Erro ao buscar código da assinatura:", subscriptionError);
-            return { success: false, message: "Erro ao buscar código da assinatura." };
-        }
-
-        if (!subscription || !subscription.code) {
-            console.warn("Código da assinatura não encontrado para o ID:", subscriptionId);
-            return { success: false, message: "Código da assinatura não encontrado." };
-        }
-
-        // Usar o código da assinatura como message_id
-        const messageId = subscription.code;
-
-        const deleteURL = `${telegramApiUrl}/bot${telegramBotToken}/deleteMessage?chat_id=${telegramChatId}&message_id=${messageId}`;
-
-        // Enviar a solicitação para excluir a mensagem
-        const response = await fetch(deleteURL, {
-            method: 'POST',
-        });
-
-        const result = await response.json();
-
-        if (result.ok) {
-            console.log(`Mensagem ${messageId} excluída do Telegram com sucesso!`);
-            return { success: true, message: `Mensagem ${messageId} excluída do Telegram com sucesso!` };
-        } else {
-            console.error(`Falha ao excluir mensagem ${messageId} do Telegram:`, result);
-            return { success: false, message: `Falha ao excluir mensagem ${messageId} do Telegram.` };
-        }
-
-    } catch (error: any) {
-        console.error("Erro ao excluir mensagem do Telegram:", error);
-        return { success: false, message: "Erro ao excluir mensagem do Telegram." };
-    }
-}
-
-export async function isAutoPostingEnabled(): Promise<boolean> {
+/**
+ * Sends a subscription to the Telegram group configured in settings
+ */
+export const sendToTelegramGroup = async (subscriptionId: string): Promise<{success: boolean, error?: string, messageId?: number}> => {
   try {
+    console.log('Verificando se a assinatura já foi enviada:', subscriptionId);
+    
+    // Verifica se a assinatura já foi enviada anteriormente
+    const alreadySent = await isSubscriptionAlreadySentToTelegram(subscriptionId);
+    if (alreadySent) {
+      console.log('Assinatura já foi enviada anteriormente, ignorando envio duplicado.');
+      return { success: true, error: "Assinatura já foi enviada anteriormente." };
+    }
+    
+    console.log('Enviando assinatura ao grupo do Telegram:', subscriptionId);
+    
+    const { data, error } = await supabase.functions.invoke('telegram-integration', {
+      body: {
+        action: 'send-subscription',
+        subscriptionId
+      }
+    });
+    
+    if (error) {
+      console.error('Erro na função edge do Telegram:', error);
+      throw new Error(error.message || 'Falha ao enviar para o grupo do Telegram');
+    }
+    
+    if (!data?.success) {
+      console.error('Erro no envio para o Telegram:', data?.error);
+      throw new Error(data?.error || 'Falha ao enviar para o grupo do Telegram');
+    }
+    
+    console.log('Assinatura enviada com sucesso para o grupo do Telegram', data);
+    
+    // Armazenar o ID da mensagem para referência futura
+    if (data.messageId) {
+      await storeMessageId(subscriptionId, data.messageId);
+    }
+    
+    return { success: true, messageId: data.messageId };
+  } catch (error) {
+    console.error('Erro enviando para o Telegram:', error);
+    return { 
+      success: false, 
+      error: error instanceof Error ? error.message : 'Erro desconhecido ao enviar para o Telegram'
+    };
+  }
+};
+
+/**
+ * Exclui uma mensagem do grupo do Telegram
+ */
+export const deleteFromTelegramGroup = async (subscriptionId: string): Promise<{success: boolean, error?: string}> => {
+  try {
+    // Primeiro, obtemos o ID da mensagem do Telegram associada a esta assinatura
+    const { data: messageData } = await supabase
+      .from('telegram_messages')
+      .select('message_id')
+      .eq('subscription_id', subscriptionId)
+      .maybeSingle();
+    
+    if (!messageData?.message_id) {
+      console.log('Nenhum ID de mensagem encontrado para esta assinatura. Nada a excluir do Telegram.');
+      return { success: true };
+    }
+    
+    console.log('Excluindo mensagem do grupo do Telegram:', messageData.message_id);
+    
+    const { data, error } = await supabase.functions.invoke('telegram-integration', {
+      body: {
+        action: 'delete-message',
+        messageId: messageData.message_id
+      }
+    });
+    
+    if (error) {
+      console.error('Erro na função edge do Telegram:', error);
+      throw new Error(error.message || 'Falha ao excluir mensagem do grupo do Telegram');
+    }
+    
+    if (!data?.success) {
+      console.error('Erro ao excluir mensagem do Telegram:', data?.error);
+      throw new Error(data?.error || 'Falha ao excluir mensagem do grupo do Telegram');
+    }
+    
+    console.log('Mensagem excluída com sucesso do grupo do Telegram');
+    
+    // Remover o registro do ID da mensagem do banco de dados
+    await supabase
+      .from('telegram_messages')
+      .delete()
+      .eq('subscription_id', subscriptionId);
+    
+    return { success: true };
+  } catch (error) {
+    console.error('Erro ao excluir do Telegram:', error);
+    return { 
+      success: false, 
+      error: error instanceof Error ? error.message : 'Erro desconhecido ao excluir do Telegram'
+    };
+  }
+};
+
+/**
+ * Armazena o ID da mensagem do Telegram para referência futura
+ */
+async function storeMessageId(subscriptionId: string, messageId: number) {
+  try {
+    // Verificar se já existe um registro para esta assinatura
+    const { data: existingRecord } = await supabase
+      .from('telegram_messages')
+      .select('id')
+      .eq('subscription_id', subscriptionId)
+      .maybeSingle();
+    
+    if (existingRecord) {
+      // Atualizar o registro existente
+      await supabase
+        .from('telegram_messages')
+        .update({ message_id: messageId })
+        .eq('subscription_id', subscriptionId);
+    } else {
+      // Criar um novo registro
+      await supabase
+        .from('telegram_messages')
+        .insert({
+          subscription_id: subscriptionId,
+          message_id: messageId,
+          sent_at: new Date().toISOString()
+        });
+    }
+    
+    console.log('ID da mensagem do Telegram armazenado com sucesso');
+  } catch (error) {
+    console.error('Erro ao armazenar ID da mensagem do Telegram:', error);
+  }
+}
+
+/**
+ * Helper function to convert any value to a proper boolean
+ * This ensures consistent boolean conversion throughout the app
+ */
+export const toBooleanSafe = (value: any): boolean => {
+  if (typeof value === 'boolean') {
+    return value;
+  }
+  
+  if (typeof value === 'string') {
+    const lowercaseValue = value.toLowerCase();
+    return lowercaseValue === 'true' || lowercaseValue === '1' || lowercaseValue === 'yes';
+  }
+  
+  if (typeof value === 'number') {
+    return value === 1;
+  }
+  
+  return false;
+};
+
+// Default configuration values for Telegram
+export const DEFAULT_BOT_TOKEN = '5921988686:AAHXpA6Wyre4BIGACaFLOqB6YrhTavIdbQQ';
+export const DEFAULT_GROUP_ID = '1001484207364';
+
+/**
+ * Verifica se a postagem automática no Telegram está ativada
+ * Default: true (enabled by default)
+ */
+export const isAutoPostingEnabled = async (): Promise<boolean> => {
+  try {
+    console.log('Verificando configuração de postagem automática');
+    
+    // Verifica se já existe configurações no banco de dados
+    const { data: configExists, error: checkError } = await supabase
+      .from('site_configurations')
+      .select('count')
+      .eq('key', 'auto_post_to_telegram')
+      .single();
+      
+    // Se não existir configuração, vamos criar uma com valor padrão true
+    if (checkError || !configExists || configExists.count === 0) {
+      console.log('Configuração de postagem automática não encontrada, criando com valor padrão true');
+      
+      await supabase
+        .from('site_configurations')
+        .insert({ key: 'auto_post_to_telegram', value: 'true' });
+      
+      await supabase
+        .from('site_configurations')
+        .insert({ key: 'telegram_bot_token', value: DEFAULT_BOT_TOKEN });
+      
+      await supabase
+        .from('site_configurations')
+        .insert({ key: 'telegram_group_id', value: DEFAULT_GROUP_ID });
+      
+      return true;
+    }
+    
+    // Se existir, busca o valor atual
     const { data, error } = await supabase
       .from('site_configurations')
       .select('value')
       .eq('key', 'auto_post_to_telegram')
       .single();
-
+    
     if (error) {
-      console.error("Erro ao verificar configuração de auto_post_to_telegram:", error);
-      return false;
+      console.error('Erro ao verificar configuração de postagem automática:', error);
+      // Return true by default if there's an error
+      return true;
     }
-
-    if (!data) {
-      console.warn("Configuração auto_post_to_telegram não encontrada, desativando.");
-      return false;
+    
+    console.log('Valor da configuração auto_post_to_telegram:', data?.value, 'tipo:', typeof data?.value);
+    
+    // Default to true if value is null or undefined
+    if (data?.value === null || data?.value === undefined) {
+      return true;
     }
-
-    return data.value === 'true';
+    
+    // Use the helper function for safe boolean conversion
+    return toBooleanSafe(data?.value);
   } catch (error) {
-    console.error("Erro ao verificar configuração de auto_post_to_telegram:", error);
-    return false;
+    console.error('Erro ao verificar configuração de postagem automática:', error);
+    // Return true by default in case of error
+    return true;
   }
-}
+};
 
-// Função para gerar links de compartilhamento do WhatsApp
-export function getWhatsAppShareLink(subscription: SubscriptionData): string {
-  const message = `
-🎉 *${subscription.title}*
-
-💰 Preço: *${subscription.price}*
-🔄 Forma de Pagamento: ${subscription.paymentMethod}
-📊 Status: ${subscription.status}
-🔐 Acesso: ${subscription.access}
-
-Entre em contato comigo para mais informações!
-  `.trim();
-
-  const encodedMessage = encodeURIComponent(message);
-  return `https://wa.me/?text=${encodedMessage}`;
-}
-
-// Função para gerar links de compartilhamento do Telegram
-export function getTelegramShareLink(subscription: SubscriptionData): string {
-  const message = `
-🎉 *${subscription.title}*
-
-💰 Preço: *${subscription.price}*
-🔄 Forma de Pagamento: ${subscription.paymentMethod}
-📊 Status: ${subscription.status}
-🔐 Acesso: ${subscription.access}
-
-Entre em contato comigo para mais informações!
-  `.trim();
-
-  const encodedMessage = encodeURIComponent(message);
-  return `https://t.me/share/url?text=${encodedMessage}`;
-}
-
-// Função para conversão segura para booleano
-export function toBooleanSafe(value: any): boolean {
-  if (typeof value === 'boolean') {
-    return value;
-  }
-  if (typeof value === 'string') {
-    return value.toLowerCase() === 'true';
-  }
-  return Boolean(value);
-}
-
-// Função para atualizar status de postagem automática
-export async function updateAutoPostingStatus(enabled: boolean): Promise<boolean> {
+/**
+ * Atualiza o status da postagem automática no Telegram
+ */
+export const updateAutoPostingStatus = async (enabled: boolean): Promise<boolean> => {
   try {
-    const { error } = await supabase
+    console.log('Atualizando status de postagem automática para:', enabled, 'tipo:', typeof enabled);
+    
+    const stringValue = String(enabled);
+    console.log('Valor convertido para string:', stringValue);
+    
+    // Verificar se a configuração já existe
+    const { data: configExists, error: checkError } = await supabase
       .from('site_configurations')
-      .upsert(
-        { 
-          key: 'auto_post_to_telegram', 
-          value: enabled.toString(), 
-          description: 'Configuração para postagem automática no Telegram' 
-        },
-        { onConflict: 'key' }
-      );
-
-    if (error) {
-      console.error('Erro ao atualizar configuração de postagem automática:', error);
-      return false;
+      .select('count')
+      .eq('key', 'auto_post_to_telegram')
+      .single();
+    
+    // Se não existir, inserir
+    if (checkError || !configExists || configExists.count === 0) {
+      const { error: insertError } = await supabase
+        .from('site_configurations')
+        .insert({ key: 'auto_post_to_telegram', value: stringValue });
+      
+      if (insertError) {
+        console.error('Erro ao criar configuração de postagem automática:', insertError);
+        return false;
+      }
+    } else {
+      // Se existir, atualizar
+      const { error } = await supabase
+        .from('site_configurations')
+        .update({ value: stringValue })
+        .eq('key', 'auto_post_to_telegram');
+      
+      if (error) {
+        console.error('Erro ao atualizar configuração de postagem automática:', error);
+        return false;
+      }
     }
-
-    console.log('Configuração de postagem automática atualizada com sucesso:', enabled);
+    
+    console.log('Configuração de postagem automática atualizada com sucesso');
     return true;
   } catch (error) {
     console.error('Erro ao atualizar configuração de postagem automática:', error);
     return false;
   }
-}
+};
