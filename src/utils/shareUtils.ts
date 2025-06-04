@@ -1,9 +1,11 @@
+
 import { SubscriptionData } from '@/types/subscriptionTypes';
 import { supabase } from '@/integrations/supabase/client';
 
 /**
- * Version 2.3.0
- * - Versão atualizada após reversão para commit anterior
+ * Version 3.0.7
+ * - Adicionadas funções ausentes que estavam sendo importadas em outros arquivos
+ * - Corrigidas as exportações para evitar erros de TypeScript
  * 
  * Version 3.0.6
  * - Adicionados emojis simples e compatíveis com WhatsApp
@@ -53,7 +55,7 @@ import { supabase } from '@/integrations/supabase/client';
  */
 
 // Export the current version as a constant for use throughout the app
-export const APP_VERSION = "2.3.0";
+export const APP_VERSION = "3.0.7";
 
 /**
  * Formats subscription data for sharing on messaging platforms
@@ -114,6 +116,27 @@ export const getTelegramShareLink = (subscription: SubscriptionData): string => 
   const formattedText = formatSubscriptionForSharing(subscription);
   const encodedText = encodeURIComponent(formattedText);
   return `https://t.me/share/url?url=&text=${encodedText}`;
+};
+
+/**
+ * Helper function to convert any value to a proper boolean
+ * This ensures consistent boolean conversion throughout the app
+ */
+export const toBooleanSafe = (value: any): boolean => {
+  if (typeof value === 'boolean') {
+    return value;
+  }
+  
+  if (typeof value === 'string') {
+    const lowercaseValue = value.toLowerCase();
+    return lowercaseValue === 'true' || lowercaseValue === '1' || lowercaseValue === 'yes';
+  }
+  
+  if (typeof value === 'number') {
+    return value === 1;
+  }
+  
+  return false;
 };
 
 /**
@@ -280,27 +303,6 @@ async function storeMessageId(subscriptionId: string, messageId: number) {
   }
 }
 
-/**
- * Helper function to convert any value to a proper boolean
- * This ensures consistent boolean conversion throughout the app
- */
-export const toBooleanSafe = (value: any): boolean => {
-  if (typeof value === 'boolean') {
-    return value;
-  }
-  
-  if (typeof value === 'string') {
-    const lowercaseValue = value.toLowerCase();
-    return lowercaseValue === 'true' || lowercaseValue === '1' || lowercaseValue === 'yes';
-  }
-  
-  if (typeof value === 'number') {
-    return value === 1;
-  }
-  
-  return false;
-};
-
 // Default configuration values for Telegram
 export const DEFAULT_BOT_TOKEN = '5921988686:AAHXpA6Wyre4BIGACaFLOqB6YrhTavIdbQQ';
 export const DEFAULT_GROUP_ID = '1001484207364';
@@ -378,34 +380,17 @@ export const updateAutoPostingStatus = async (enabled: boolean): Promise<boolean
     const stringValue = String(enabled);
     console.log('Valor convertido para string:', stringValue);
     
-    // Verificar se a configuração já existe
-    const { data: configExists, error: checkError } = await supabase
+    // Usar upsert para inserir ou atualizar
+    const { error } = await supabase
       .from('site_configurations')
-      .select('count')
-      .eq('key', 'auto_post_to_telegram')
-      .single();
+      .upsert(
+        { key: 'auto_post_to_telegram', value: stringValue },
+        { onConflict: 'key' }
+      );
     
-    // Se não existir, inserir
-    if (checkError || !configExists || configExists.count === 0) {
-      const { error: insertError } = await supabase
-        .from('site_configurations')
-        .insert({ key: 'auto_post_to_telegram', value: stringValue });
-      
-      if (insertError) {
-        console.error('Erro ao criar configuração de postagem automática:', insertError);
-        return false;
-      }
-    } else {
-      // Se existir, atualizar
-      const { error } = await supabase
-        .from('site_configurations')
-        .update({ value: stringValue })
-        .eq('key', 'auto_post_to_telegram');
-      
-      if (error) {
-        console.error('Erro ao atualizar configuração de postagem automática:', error);
-        return false;
-      }
+    if (error) {
+      console.error('Erro ao atualizar configuração de postagem automática:', error);
+      return false;
     }
     
     console.log('Configuração de postagem automática atualizada com sucesso');
