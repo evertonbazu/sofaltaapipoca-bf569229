@@ -85,6 +85,10 @@ export interface SubscriptionFormProps {
   isPendingEdit?: boolean;
 }
 
+/**
+ * Formulário para criação e edição de assinaturas
+ * @version 3.0.8
+ */
 const SubscriptionForm: React.FC<SubscriptionFormProps> = ({ initialData, isMemberSubmission = false, isPendingEdit = false }) => {
   const { id } = useParams<{ id: string }>();
   const isEditing = !!id;
@@ -274,11 +278,69 @@ const SubscriptionForm: React.FC<SubscriptionFormProps> = ({ initialData, isMemb
     form.setValue("telegramUsername", value);
   };
 
+  // Função para validar formato de data DD/MM/YYYY
+  const validateDateFormat = (dateString: string): boolean => {
+    const dateRegex = /^(\d{2})\/(\d{2})\/(\d{4})$/;
+    const match = dateString.match(dateRegex);
+    
+    if (!match) return false;
+    
+    const [, day, month, year] = match;
+    const dayNum = parseInt(day, 10);
+    const monthNum = parseInt(month, 10);
+    const yearNum = parseInt(year, 10);
+    
+    // Verificar valores válidos
+    if (dayNum < 1 || dayNum > 31) return false;
+    if (monthNum < 1 || monthNum > 12) return false;
+    if (yearNum < 1900 || yearNum > new Date().getFullYear()) return false;
+    
+    // Criar data para verificar se é válida
+    const date = new Date(yearNum, monthNum - 1, dayNum);
+    return date.getDate() === dayNum && 
+           date.getMonth() === monthNum - 1 && 
+           date.getFullYear() === yearNum;
+  };
+
+  // Manipular mudança na data de adição
+  const handleAddedDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    let value = e.target.value;
+    
+    // Remover caracteres não numéricos e barras
+    value = value.replace(/[^\d\/]/g, '');
+    
+    // Aplicar máscara DD/MM/YYYY
+    if (value.length >= 2 && value.indexOf('/') === -1) {
+      value = value.substring(0, 2) + '/' + value.substring(2);
+    }
+    if (value.length >= 5 && value.lastIndexOf('/') === 2) {
+      value = value.substring(0, 5) + '/' + value.substring(5);
+    }
+    
+    // Limitar a 10 caracteres (DD/MM/YYYY)
+    if (value.length > 10) {
+      value = value.substring(0, 10);
+    }
+    
+    form.setValue("addedDate", value);
+  };
+
   // Form submission handler
   const onSubmit = async (data: FormValues) => {
     setIsLoading(true);
     
     try {
+      // Validar formato da data se for administrador
+      if (isAdmin && data.addedDate && !validateDateFormat(data.addedDate)) {
+        toast({
+          title: "Data inválida",
+          description: "A data de adição deve estar no formato DD/MM/YYYY e ser uma data válida.",
+          variant: "destructive",
+        });
+        setIsLoading(false);
+        return;
+      }
+
       // Process custom title
       const finalTitle = data.title === "Personalizado" ? data.customTitle : data.title;
       
@@ -609,9 +671,21 @@ const SubscriptionForm: React.FC<SubscriptionFormProps> = ({ initialData, isMemb
                 name="addedDate"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Data de Adição (não editável)</FormLabel>
+                    <FormLabel>
+                      Data de Adição {isAdmin ? "(editável para admins)" : "(não editável)"}
+                    </FormLabel>
                     <FormControl>
-                      <Input disabled {...field} />
+                      <Input 
+                        placeholder="DD/MM/YYYY"
+                        disabled={!isAdmin}
+                        {...field} 
+                        onChange={(e) => {
+                          if (isAdmin) {
+                            handleAddedDateChange(e);
+                            field.onChange(e);
+                          }
+                        }}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
