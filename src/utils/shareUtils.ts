@@ -1,4 +1,5 @@
 
+
 /**
  * Utilitários para compartilhamento de assinaturas
  * @version 3.1.0
@@ -58,18 +59,18 @@ export async function updateAutoPostingStatus(enabled: boolean): Promise<boolean
  * Gera link para compartilhamento via WhatsApp
  */
 export function getWhatsAppShareLink(subscription: SubscriptionData): string {
-  const title = subscription.custom_title || subscription.title;
+  const title = subscription.customTitle || subscription.title;
   const price = subscription.price;
-  const paymentMethod = subscription.payment_method;
+  const paymentMethod = subscription.paymentMethod;
   const subscriptionLink = `${SITE_URL}/assinatura/${subscription.code}`;
   
   let message = `🎬 *${title}*\n💰 Preço: ${price}\n💳 Pagamento: ${paymentMethod}\n\n`;
   
-  if (subscription.whatsapp_number) {
-    message += `📞 WhatsApp: ${subscription.whatsapp_number}\n`;
+  if (subscription.whatsappNumber) {
+    message += `📞 WhatsApp: ${subscription.whatsappNumber}\n`;
   }
-  if (subscription.telegram_username) {
-    message += `✉️ Telegram: ${subscription.telegram_username}\n`;
+  if (subscription.telegramUsername) {
+    message += `✉️ Telegram: ${subscription.telegramUsername}\n`;
   }
   
   message += `🔗 Link: ${subscriptionLink}`;
@@ -81,18 +82,18 @@ export function getWhatsAppShareLink(subscription: SubscriptionData): string {
  * Gera link para compartilhamento via Telegram
  */
 export function getTelegramShareLink(subscription: SubscriptionData): string {
-  const title = subscription.custom_title || subscription.title;
+  const title = subscription.customTitle || subscription.title;
   const price = subscription.price;
-  const paymentMethod = subscription.payment_method;
+  const paymentMethod = subscription.paymentMethod;
   const subscriptionLink = `${SITE_URL}/assinatura/${subscription.code}`;
   
   let message = `🎬 *${title}*\n💰 Preço: ${price}\n💳 Pagamento: ${paymentMethod}\n\n`;
   
-  if (subscription.whatsapp_number) {
-    message += `📞 WhatsApp: ${subscription.whatsapp_number}\n`;
+  if (subscription.whatsappNumber) {
+    message += `📞 WhatsApp: ${subscription.whatsappNumber}\n`;
   }
-  if (subscription.telegram_username) {
-    message += `✉️ Telegram: ${subscription.telegram_username}\n`;
+  if (subscription.telegramUsername) {
+    message += `✉️ Telegram: ${subscription.telegramUsername}\n`;
   }
   
   message += `🔗 Link: ${subscriptionLink}`;
