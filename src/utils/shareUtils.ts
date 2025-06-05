@@ -1,13 +1,104 @@
+
 /**
  * Utilitários para compartilhamento de assinaturas
- * @version 3.0.9
+ * @version 3.1.0
  */
 
 import { supabase } from '@/integrations/supabase/client';
+import { SubscriptionData } from '@/types/subscriptionTypes';
 
 const TELEGRAM_BOT_TOKEN = process.env.NEXT_PUBLIC_TELEGRAM_BOT_TOKEN;
 const TELEGRAM_CHANNEL_ID = process.env.NEXT_PUBLIC_TELEGRAM_CHANNEL_ID;
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL;
+
+export const APP_VERSION = '3.1.0';
+
+/**
+ * Converte valor para booleano de forma segura
+ */
+export function toBooleanSafe(value: any): boolean {
+  if (typeof value === 'boolean') {
+    return value;
+  }
+  if (typeof value === 'string') {
+    return value.toLowerCase() === 'true' || value === '1';
+  }
+  if (typeof value === 'number') {
+    return value === 1;
+  }
+  return false;
+}
+
+/**
+ * Atualiza o status de postagem automática no Telegram
+ */
+export async function updateAutoPostingStatus(enabled: boolean): Promise<boolean> {
+  try {
+    const { error } = await supabase
+      .from('site_configurations')
+      .upsert({
+        key: 'auto_post_to_telegram',
+        value: enabled.toString(),
+        description: 'Enable/disable automatic posting to Telegram'
+      });
+    
+    if (error) {
+      console.error('Erro ao atualizar configuração de autopost:', error);
+      return false;
+    }
+    
+    return true;
+  } catch (error) {
+    console.error('Erro ao atualizar configuração de autopost:', error);
+    return false;
+  }
+}
+
+/**
+ * Gera link para compartilhamento via WhatsApp
+ */
+export function getWhatsAppShareLink(subscription: SubscriptionData): string {
+  const title = subscription.custom_title || subscription.title;
+  const price = subscription.price;
+  const paymentMethod = subscription.payment_method;
+  const subscriptionLink = `${SITE_URL}/assinatura/${subscription.code}`;
+  
+  let message = `🎬 *${title}*\n💰 Preço: ${price}\n💳 Pagamento: ${paymentMethod}\n\n`;
+  
+  if (subscription.whatsapp_number) {
+    message += `📞 WhatsApp: ${subscription.whatsapp_number}\n`;
+  }
+  if (subscription.telegram_username) {
+    message += `✉️ Telegram: ${subscription.telegram_username}\n`;
+  }
+  
+  message += `🔗 Link: ${subscriptionLink}`;
+  
+  return `https://wa.me/?text=${encodeURIComponent(message)}`;
+}
+
+/**
+ * Gera link para compartilhamento via Telegram
+ */
+export function getTelegramShareLink(subscription: SubscriptionData): string {
+  const title = subscription.custom_title || subscription.title;
+  const price = subscription.price;
+  const paymentMethod = subscription.payment_method;
+  const subscriptionLink = `${SITE_URL}/assinatura/${subscription.code}`;
+  
+  let message = `🎬 *${title}*\n💰 Preço: ${price}\n💳 Pagamento: ${paymentMethod}\n\n`;
+  
+  if (subscription.whatsapp_number) {
+    message += `📞 WhatsApp: ${subscription.whatsapp_number}\n`;
+  }
+  if (subscription.telegram_username) {
+    message += `✉️ Telegram: ${subscription.telegram_username}\n`;
+  }
+  
+  message += `🔗 Link: ${subscriptionLink}`;
+  
+  return `https://t.me/share/url?url=${encodeURIComponent(subscriptionLink)}&text=${encodeURIComponent(message)}`;
+}
 
 async function getTelegramMessageId(subscriptionId: string): Promise<string | null> {
   try {
