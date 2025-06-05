@@ -1,18 +1,16 @@
-
-
 /**
  * Utilitários para compartilhamento de assinaturas
- * @version 3.1.0
+ * @version 3.1.1
  */
 
 import { supabase } from '@/integrations/supabase/client';
 import { SubscriptionData } from '@/types/subscriptionTypes';
 
-const TELEGRAM_BOT_TOKEN = process.env.NEXT_PUBLIC_TELEGRAM_BOT_TOKEN;
-const TELEGRAM_CHANNEL_ID = process.env.NEXT_PUBLIC_TELEGRAM_CHANNEL_ID;
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL;
+const TELEGRAM_BOT_TOKEN = import.meta.env.VITE_TELEGRAM_BOT_TOKEN;
+const TELEGRAM_CHANNEL_ID = import.meta.env.VITE_TELEGRAM_CHANNEL_ID;
+const SITE_URL = import.meta.env.VITE_SITE_URL;
 
-export const APP_VERSION = '3.1.0';
+export const APP_VERSION = '3.1.1';
 
 /**
  * Converte valor para booleano de forma segura
