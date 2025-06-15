@@ -433,7 +433,13 @@ const Profile = () => {
                       <div className="space-y-2">
                         <p><strong>Envio:</strong> {subscription.access}</p>
                         <p><strong>Status:</strong> {subscription.status}</p>
-                        <p><strong>Adicionado em:</strong> {subscription.addedDate}</p>
+                        {/* Exibir a data de publicação utilizando o campo addedDate */}
+                        <p>
+                          <strong>Adicionado em:</strong>{" "}
+                          {subscription.addedDate
+                            ? subscription.addedDate
+                            : "N/A"}
+                        </p>
                         <p><strong>Código:</strong> {subscription.code}</p>
                       </div>
                     </CardContent>
