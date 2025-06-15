@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import SubscriptionList from '@/components/SubscriptionList';
@@ -18,7 +17,7 @@ const Index: React.FC = () => {
   const [hasResults, setHasResults] = useState(true);
   const [siteTitle, setSiteTitle] = useState("🍿 Só Falta a Pipoca");
   const [siteSubtitle, setSiteSubtitle] = useState("Assinaturas premium com preços exclusivos");
-  const [appVersion, setAppVersion] = useState(APP_VERSION);
+  const [appVersion, setAppVersion] = useState("3.0.9");
   const [contactWhatsapp, setContactWhatsapp] = useState("5513992077804");
   const subscriptionRefs = useRef<{
     [key: string]: HTMLDivElement | null;
@@ -28,7 +27,6 @@ const Index: React.FC = () => {
   } = useAuth();
   const isLoggedIn = !!authState.session;
 
-  // Carregar configurações do site
   useEffect(() => {
     const loadSiteConfig = async () => {
       try {
@@ -41,24 +39,14 @@ const Index: React.FC = () => {
         if (subtitle) setSiteSubtitle(subtitle);
         if (whatsapp) setContactWhatsapp(whatsapp);
 
-        // Use the version from config if available, otherwise use the current app version
-        if (configVersion) {
-          setAppVersion(configVersion);
-        } else {
-          setAppVersion(APP_VERSION);
-          // Update the app_version in the database if it doesn't exist
-          await supabase.from('site_configurations').upsert({
-            key: 'app_version',
-            value: APP_VERSION,
-            description: 'Current application version'
-          });
-        }
+        // Força a versão a ser sempre 3.0.9 no rodapé
+        setAppVersion("3.0.9");
+        // Removido o update em banco para não sobrescrever globalmente neste momento
         
-        console.log(`App version set to ${configVersion || APP_VERSION}`);
+        console.log(`App version set to 3.0.9`);
       } catch (error) {
         console.error('Erro ao carregar configurações do site:', error);
-        // In case of error, use the current app version from shareUtils
-        setAppVersion(APP_VERSION);
+        setAppVersion("3.0.9");
       }
     };
     loadSiteConfig();
