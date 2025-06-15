@@ -21,6 +21,9 @@ import { useMessages } from '@/hooks/useMessages';
 import ProfileSubscriptionsList from "@/components/profile/ProfileSubscriptionsList";
 import ProfileMessagesTab from "@/components/profile/ProfileMessagesTab";
 
+import ProfilePersonalDataForm from "@/components/profile/ProfilePersonalDataForm";
+import ProfileChangePasswordForm from "@/components/profile/ProfileChangePasswordForm";
+
 // Schema para o formulário de perfil
 const profileFormSchema = z.object({
   email: z.string().email({ message: "E-mail inválido" }).min(1, { message: "E-mail é obrigatório" }),
@@ -282,7 +285,7 @@ const Profile = () => {
             <TabsTrigger value="subscriptions">Minhas Assinaturas</TabsTrigger>
             <TabsTrigger value="messages">Mensagens</TabsTrigger>
           </TabsList>
-          
+
           {/* Aba de Perfil */}
           <TabsContent value="profile">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -293,55 +296,14 @@ const Profile = () => {
                   <CardDescription>Atualize suas informações de perfil</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <Form {...profileForm}>
-                    <form onSubmit={profileForm.handleSubmit(onUpdateProfile)} className="space-y-4">
-                      <FormField
-                        control={profileForm.control}
-                        name="email"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>E-mail</FormLabel>
-                            <FormControl>
-                              <Input disabled {...field} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      
-                      <FormField
-                        control={profileForm.control}
-                        name="username"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Nome de Usuário</FormLabel>
-                            <FormControl>
-                              <Input placeholder="Seu nome de usuário" {...field} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      
-                      <Button 
-                        type="submit" 
-                        className="w-full"
-                        disabled={actionInProgress === 'profile'}
-                      >
-                        {actionInProgress === 'profile' ? (
-                          <>
-                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                            Atualizando...
-                          </>
-                        ) : (
-                          'Salvar alterações'
-                        )}
-                      </Button>
-                    </form>
-                  </Form>
+                  <ProfilePersonalDataForm 
+                    profileForm={profileForm}
+                    onUpdateProfile={onUpdateProfile}
+                    actionInProgress={actionInProgress}
+                  />
                 </CardContent>
               </Card>
-              
+            
               {/* Card de alteração de senha */}
               <Card>
                 <CardHeader>
@@ -349,62 +311,17 @@ const Profile = () => {
                   <CardDescription>Defina uma nova senha para sua conta</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <Form {...passwordForm}>
-                    <form onSubmit={passwordForm.handleSubmit(onUpdatePassword)} className="space-y-4">
-                      <FormField
-                        control={passwordForm.control}
-                        name="password"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Nova Senha</FormLabel>
-                            <FormControl>
-                              <Input type="password" placeholder="******" {...field} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      
-                      <FormField
-                        control={passwordForm.control}
-                        name="confirmPassword"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Confirme a Nova Senha</FormLabel>
-                            <FormControl>
-                              <Input type="password" placeholder="******" {...field} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      
-                      <Button 
-                        type="submit" 
-                        className="w-full"
-                        disabled={actionInProgress === 'password'}
-                      >
-                        {actionInProgress === 'password' ? (
-                          <>
-                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                            Atualizando...
-                          </>
-                        ) : (
-                          'Alterar senha'
-                        )}
-                      </Button>
-                    </form>
-                  </Form>
+                  <ProfileChangePasswordForm 
+                    passwordForm={passwordForm}
+                    onUpdatePassword={onUpdatePassword}
+                    actionInProgress={actionInProgress}
+                    handleLogout={handleLogout}
+                  />
                 </CardContent>
-                <CardFooter>
-                  <Button variant="outline" className="w-full" onClick={handleLogout}>
-                    Sair da conta
-                  </Button>
-                </CardFooter>
               </Card>
             </div>
           </TabsContent>
-          
+        
           {/* Aba de Assinaturas */}
           <TabsContent value="subscriptions">
             <ProfileSubscriptionsList 
