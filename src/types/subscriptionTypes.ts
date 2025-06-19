@@ -20,6 +20,7 @@ export interface SubscriptionData {
   category?: string;
   isMemberSubmission?: boolean;
   visible?: boolean;
+  fullName?: string; // Novo campo para nome completo
   // Fields needed for handling previous pending subscriptions
   statusApproval?: string;
   rejectionReason?: string;

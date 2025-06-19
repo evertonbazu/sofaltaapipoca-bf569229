@@ -119,6 +119,7 @@ export type Database = {
           created_at: string | null
           expired_at: string | null
           expiry_reason: string
+          full_name: string | null
           header_color: string
           icon: string | null
           id: string
@@ -142,6 +143,7 @@ export type Database = {
           created_at?: string | null
           expired_at?: string | null
           expiry_reason: string
+          full_name?: string | null
           header_color: string
           icon?: string | null
           id?: string
@@ -165,6 +167,7 @@ export type Database = {
           created_at?: string | null
           expired_at?: string | null
           expiry_reason?: string
+          full_name?: string | null
           header_color?: string
           icon?: string | null
           id?: string
@@ -255,6 +258,7 @@ export type Database = {
           added_date: string | null
           code: string
           custom_title: string | null
+          full_name: string | null
           header_color: string
           icon: string | null
           id: string
@@ -280,6 +284,7 @@ export type Database = {
           added_date?: string | null
           code: string
           custom_title?: string | null
+          full_name?: string | null
           header_color: string
           icon?: string | null
           id?: string
@@ -305,6 +310,7 @@ export type Database = {
           added_date?: string | null
           code?: string
           custom_title?: string | null
+          full_name?: string | null
           header_color?: string
           icon?: string | null
           id?: string
@@ -406,6 +412,7 @@ export type Database = {
           custom_title: string | null
           expiration_date: string | null
           featured: boolean | null
+          full_name: string | null
           header_color: string
           icon: string | null
           id: string
@@ -432,6 +439,7 @@ export type Database = {
           custom_title?: string | null
           expiration_date?: string | null
           featured?: boolean | null
+          full_name?: string | null
           header_color: string
           icon?: string | null
           id?: string
@@ -458,6 +466,7 @@ export type Database = {
           custom_title?: string | null
           expiration_date?: string | null
           featured?: boolean | null
+          full_name?: string | null
           header_color?: string
           icon?: string | null
           id?: string

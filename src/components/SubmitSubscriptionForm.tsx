@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -47,6 +46,7 @@ const PREDEFINED_TITLES = [
 
 // Schema para validação do formulário
 const formSchema = z.object({
+  fullName: z.string().min(1, { message: "O nome completo é obrigatório" }),
   title: z.string().min(1, { message: "O título é obrigatório" }),
   customTitle: z.string().min(1, { message: "O título personalizado é obrigatório" }).optional().or(z.literal("")),
   price: z.string().min(1, { message: "O preço é obrigatório" }),
@@ -109,6 +109,7 @@ const SubmitSubscriptionForm = () => {
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
+      fullName: "",
       title: "",
       customTitle: "",
       price: "R$ ",
@@ -220,8 +221,9 @@ const SubmitSubscriptionForm = () => {
       const { error } = await supabase
         .from('subscriptions')
         .insert({
+          full_name: data.fullName,
           title: titleWithAsterisk,
-          custom_title: data.title === "Personalizado" ? data.customTitle : null, // Salvar título personalizado
+          custom_title: data.title === "Personalizado" ? data.customTitle : null,
           price: data.price,
           payment_method: finalPaymentMethod,
           status: data.status,
@@ -235,7 +237,7 @@ const SubmitSubscriptionForm = () => {
           user_id: userId,
           pix_key: data.pixKey,
           featured: false,
-          visible: false // Definir como não aprovado por padrão
+          visible: false
         });
       
       if (error) throw error;
@@ -275,6 +277,21 @@ const SubmitSubscriptionForm = () => {
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Nome Completo */}
+              <FormField
+                control={form.control}
+                name="fullName"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Nome Completo</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Seu nome completo" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
               {/* Título */}
               <FormField
                 control={form.control}

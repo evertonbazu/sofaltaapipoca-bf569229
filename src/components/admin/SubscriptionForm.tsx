@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -56,6 +55,7 @@ const ACCESS_TYPES = [
 
 // Schema for form validation
 const formSchema = z.object({
+  fullName: z.string().min(1, { message: "O nome completo é obrigatório" }),
   title: z.string().min(1, { message: "O título é obrigatório" }),
   customTitle: z.string().optional(),
   price: z.string().min(1, { message: "O preço é obrigatório" }),
@@ -140,6 +140,7 @@ const SubscriptionForm: React.FC<SubscriptionFormProps> = ({ initialData, isMemb
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
+      fullName: "",
       title: "",
       customTitle: "",
       price: "R$ ",
@@ -176,6 +177,7 @@ const SubscriptionForm: React.FC<SubscriptionFormProps> = ({ initialData, isMemb
       const isPreDefinedPayment = ["PIX (Mensal)", "PIX (Anual)"].includes(paymentMethod);
       
       form.reset({
+        fullName: initialData.fullName || "",
         title: isTitleInList ? titleUppercase : "Personalizado",
         customTitle: isTitleInList ? "" : initialData.title,
         price: initialData.price,
@@ -290,6 +292,7 @@ const SubscriptionForm: React.FC<SubscriptionFormProps> = ({ initialData, isMemb
       
       // Ensure all required fields are filled
       const formattedData: SubscriptionData = {
+        fullName: data.fullName,
         title: finalTitle,
         customTitle: data.title === "Personalizado" ? data.customTitle : undefined,
         price: data.price,
@@ -374,6 +377,21 @@ const SubscriptionForm: React.FC<SubscriptionFormProps> = ({ initialData, isMemb
                   )}
                 />
               )}
+              
+              {/* Nome Completo */}
+              <FormField
+                control={form.control}
+                name="fullName"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Nome Completo</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Nome completo do anunciante" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
               
               {/* Título */}
               <FormField

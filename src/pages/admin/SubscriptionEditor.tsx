@@ -10,7 +10,7 @@ import { useToast } from '@/components/ui/use-toast';
 
 /**
  * Página para editar assinaturas no painel administrativo
- * @version 3.4.0
+ * @version 3.5.0
  */
 const SubscriptionEditor = () => {
   const { id } = useParams<{ id?: string }>();
@@ -40,6 +40,7 @@ const SubscriptionEditor = () => {
             // Map the database column names to our frontend property names
             setSubscriptionData({
               id: data.id,
+              fullName: data.full_name,
               title: data.title,
               customTitle: data.custom_title,
               price: data.price,
