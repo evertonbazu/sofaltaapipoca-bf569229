@@ -7,10 +7,11 @@ const SubmitSubscription = () => {
       
       <div className="container mx-auto py-8 px-4">
         <h1 className="text-2xl font-bold mb-6">Anunciar no Só Falta a Pipoca</h1>
-        <p className="mb-6 text-gray-600 text-center text-lg font-bold">Preencha o formulário abaixo para enviar seu anúncio para aprovação dos administradores.
-Após a análise, seu anúncio será publicado no site.
+        <p className="mb-6 text-center text-lg font-bold text-zinc-950">Preencha o formulário abaixo para enviar seu anúncio para aprovação dos administradores. 
+Após a análise, seu anúncio será publicado no site. 
+SEU ANÚNCIO FICARÁ NO SITE POR DUAS SEMANAS, DEPOIS SERÁ EXCLUÍDO AUTOMATICAMENTE. 
 
-SEU ANÚNCIO FICARÁ NO SITE POR DUAS SEMANAS, DEPOIS SERÁ EXCLUÍDO AUTOMATICAMENTE.</p>
+Para remover o anúncio manualmente vá em Meu Perfil&gt;Minhas Assinaturas.</p>
         
         <SubmitSubscriptionForm />
       </div>
