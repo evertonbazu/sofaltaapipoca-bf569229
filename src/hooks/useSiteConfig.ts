@@ -1,7 +1,12 @@
 
 import { useState, useEffect } from "react";
 import { getSiteConfig } from "@/services/subscription-service";
+import { APP_VERSION } from "@/components/Version";
 
+/**
+ * Hook para configurações do site
+ * @version 3.8.0
+ */
 interface SiteConfig {
   siteTitle: string;
   siteSubtitle: string;
@@ -9,7 +14,7 @@ interface SiteConfig {
   contactWhatsapp: string;
 }
 
-export function useSiteConfig(initialAppVersion: string = "3.0.9"): SiteConfig {
+export function useSiteConfig(initialAppVersion: string = APP_VERSION): SiteConfig {
   const [siteTitle, setSiteTitle] = useState("🍿 Só Falta a Pipoca");
   const [siteSubtitle, setSiteSubtitle] = useState("Assinaturas premium com preços exclusivos");
   const [appVersion, setAppVersion] = useState(initialAppVersion);
@@ -21,14 +26,13 @@ export function useSiteConfig(initialAppVersion: string = "3.0.9"): SiteConfig {
         const title = await getSiteConfig('site_title');
         const subtitle = await getSiteConfig('site_subtitle');
         const whatsapp = await getSiteConfig('contact_whatsapp');
-        // Força a versão a 3.0.9, se quiser buscar do banco use:
-        // const configVersion = await getSiteConfig('app_version');
+        
         if (title) setSiteTitle(title);
         if (subtitle) setSiteSubtitle(subtitle);
         if (whatsapp) setContactWhatsapp(whatsapp);
-        setAppVersion(initialAppVersion);
+        setAppVersion(APP_VERSION);
       } catch {
-        setAppVersion(initialAppVersion);
+        setAppVersion(APP_VERSION);
       }
     };
     loadSiteConfig();

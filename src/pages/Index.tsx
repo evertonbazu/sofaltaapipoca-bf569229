@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import SubscriptionList from '@/components/SubscriptionList';
@@ -8,19 +9,22 @@ import HeaderButtonsDisplay from '@/components/HeaderButtonsDisplay';
 import { supabase } from '@/integrations/supabase/client';
 import { getSiteConfig } from '@/services/subscription-service';
 import { useAuth } from '@/contexts/AuthContext';
-import { APP_VERSION } from '@/utils/shareUtils';
 import { User, MessageCircle, Plus } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { useSiteConfig } from "@/hooks/useSiteConfig";
 import Footer from "@/components/Footer";
 
+/**
+ * Página inicial da aplicação
+ * @version 3.8.0
+ */
 const Index: React.FC = () => {
   const {
     siteTitle,
     siteSubtitle,
     appVersion,
     contactWhatsapp
-  } = useSiteConfig("3.0.9");
+  } = useSiteConfig("3.8.0");
   const [searchTerm, setSearchTerm] = useState("");
   const [hasResults, setHasResults] = useState(true);
 
@@ -65,7 +69,7 @@ const Index: React.FC = () => {
           : <NoResults searchTerm={searchTerm} />}
       </main>
 
-      <Footer appVersion={appVersion} />
+      <Footer />
     </div>
   );
 };
