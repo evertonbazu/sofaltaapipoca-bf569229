@@ -4,10 +4,11 @@ import { toast } from '@/components/ui/use-toast';
 import { sendToTelegramGroup, deleteFromTelegramGroup, isAutoPostingEnabled } from '@/utils/shareUtils';
 
 /**
- * Version 3.1.0
+ * Version 3.8.0
  * - Adicionado suporte ao campo custom_title
  * - Corrigido problema de envio de assinaturas aprovadas para o Telegram
  * - Melhorado o fluxo de aprovação e envio automático
+ * - Adicionadas funções createSubscription e getSubscription
  */
 
 // Função para mapear dados do banco de dados para o formato da aplicação
@@ -82,6 +83,34 @@ export async function getSiteConfig(key: string): Promise<string | null> {
 async function isAutoTelegramEnabled(): Promise<boolean> {
   const autoPostSetting = await getSiteConfig('auto_post_to_telegram');
   return autoPostSetting === 'true';
+}
+
+// Nova função para obter uma assinatura específica
+export async function getSubscription(id: string): Promise<SubscriptionData> {
+  try {
+    const { data, error } = await supabase
+      .from('subscriptions')
+      .select('*')
+      .eq('id', id)
+      .single();
+    
+    if (error) throw error;
+    return mapToSubscriptionData(data);
+  } catch (error: any) {
+    console.error('Erro ao obter assinatura:', error);
+    throw error;
+  }
+}
+
+// Nova função para criar assinatura (alias para addSubscription)
+export async function createSubscription(subscription: SubscriptionData): Promise<boolean> {
+  try {
+    await addSubscription(subscription);
+    return true;
+  } catch (error: any) {
+    console.error('Erro ao criar assinatura:', error);
+    return false;
+  }
 }
 
 export async function getAllSubscriptions(): Promise<SubscriptionData[]> {

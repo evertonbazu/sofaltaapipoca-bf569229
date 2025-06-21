@@ -114,7 +114,7 @@ const SubmitSubscriptionForm = () => {
             <Combobox
               options={titleOptions}
               placeholder="Escolha um título ou digite um personalizado"
-              onChange={(value: string) => field.onChange(value)}
+              onValueChange={(value: string) => field.onChange(value)}
               value={field.value}
               error={errors.title?.message}
             />

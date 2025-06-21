@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import AdminLayout from '@/components/admin/AdminLayout';
@@ -123,7 +124,8 @@ const SubscriptionEditor = () => {
         <SubscriptionForm
           initialValues={subscription}
           onSubmit={handleSave}
-          isSaving={isSaving}
+          isLoading={isSaving}
+          onCancel={() => navigate('/admin/subscriptions')}
         />
 
         <Button

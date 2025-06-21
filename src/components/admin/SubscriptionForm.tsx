@@ -47,7 +47,6 @@ const subscriptionSchema = z.object({
   whatsappNumber: z.string().optional(),
   telegramUsername: z.string().optional(),
   featured: z.boolean().default(false).optional(),
-  autoPostTelegram: z.boolean().default(false).optional(),
   addedDate: z.string().optional(),
 });
 
@@ -56,18 +55,22 @@ interface SubscriptionFormProps {
   onCancel: () => void;
   initialValues?: SubscriptionData;
   isLoading?: boolean;
+  isSaving?: boolean; // Added for backward compatibility
 }
 
 const SubscriptionForm: React.FC<SubscriptionFormProps> = ({
   onSubmit,
   onCancel,
   initialValues,
-  isLoading = false
+  isLoading = false,
+  isSaving = false
 }) => {
   const { toast } = useToast()
   const [isFeatured, setIsFeatured] = useState(initialValues?.featured || false);
-  const [isAutoPostTelegram, setIsAutoPostTelegram] = useState(initialValues?.autoPostTelegram || false);
   const [selectedTitle, setSelectedTitle] = useState(initialValues?.title || '');
+
+  // Use either isLoading or isSaving for backward compatibility
+  const loading = isLoading || isSaving;
 
   const form = useForm<z.infer<typeof subscriptionSchema>>({
     resolver: zodResolver(subscriptionSchema),
@@ -80,7 +83,6 @@ const SubscriptionForm: React.FC<SubscriptionFormProps> = ({
       whatsappNumber: initialValues?.whatsappNumber || "",
       telegramUsername: initialValues?.telegramUsername || "",
       featured: initialValues?.featured || false,
-      autoPostTelegram: initialValues?.autoPostTelegram || false,
       addedDate: initialValues?.addedDate || new Date().toLocaleDateString('pt-BR'),
     },
     mode: "onChange",
@@ -89,7 +91,6 @@ const SubscriptionForm: React.FC<SubscriptionFormProps> = ({
   useEffect(() => {
     if (initialValues) {
       setIsFeatured(initialValues.featured || false);
-      setIsAutoPostTelegram(initialValues.autoPostTelegram || false);
       setSelectedTitle(initialValues.title || '');
 
       // Update form values with initialValues
@@ -101,7 +102,6 @@ const SubscriptionForm: React.FC<SubscriptionFormProps> = ({
       form.setValue('whatsappNumber', initialValues.whatsappNumber || '');
       form.setValue('telegramUsername', initialValues.telegramUsername || '');
       form.setValue('featured', initialValues.featured || false);
-      form.setValue('autoPostTelegram', initialValues.autoPostTelegram || false);
       form.setValue('addedDate', initialValues.addedDate || new Date().toLocaleDateString('pt-BR'));
     }
   }, [initialValues, form]);
@@ -110,7 +110,6 @@ const SubscriptionForm: React.FC<SubscriptionFormProps> = ({
     const subscriptionData: SubscriptionData = {
       ...values,
       featured: isFeatured,
-      autoPostTelegram: isAutoPostTelegram,
     };
 
     onSubmit(subscriptionData);
@@ -146,7 +145,7 @@ const SubscriptionForm: React.FC<SubscriptionFormProps> = ({
                   <Combobox
                     options={titleOptions}
                     value={selectedTitle}
-                    onChange={(value: string) => {
+                    onValueChange={(value: string) => {
                       setSelectedTitle(value);
                       field.onChange(value);
                     }}
@@ -357,7 +356,7 @@ const SubscriptionForm: React.FC<SubscriptionFormProps> = ({
 
         <Separator />
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 lg:grid-cols-1 gap-4">
           {/* Destaque */}
           <FormField
             control={form.control}
@@ -382,37 +381,12 @@ const SubscriptionForm: React.FC<SubscriptionFormProps> = ({
               </FormItem>
             )}
           />
-
-          {/* Auto Post Telegram */}
-          <FormField
-            control={form.control}
-            name="autoPostTelegram"
-            render={({ field }) => (
-              <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
-                <div className="space-y-0.5">
-                  <FormLabel className="text-base">Auto Post Telegram</FormLabel>
-                  <FormDescription>
-                    Envia automaticamente esta assinatura para o Telegram.
-                  </FormDescription>
-                </div>
-                <FormControl>
-                  <Switch
-                    checked={isAutoPostTelegram}
-                    onCheckedChange={(checked) => {
-                      setIsAutoPostTelegram(checked);
-                      field.onChange(checked);
-                    }}
-                  />
-                </FormControl>
-              </FormItem>
-            )}
-          />
         </div>
 
         <div className="flex justify-between">
           <Button variant="ghost" onClick={onCancel}>Cancelar</Button>
-          <Button type="submit" disabled={isLoading}>
-            {isLoading ? (
+          <Button type="submit" disabled={loading}>
+            {loading ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 Salvando...
