@@ -1,7 +1,7 @@
 
 /**
  * Lista de títulos predefinidos para assinaturas
- * @version 3.8.0
+ * @version 3.7.0
  */
 
 export const PREDEFINED_TITLES = [

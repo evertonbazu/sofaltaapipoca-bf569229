@@ -65,7 +65,7 @@ const Index: React.FC = () => {
           : <NoResults searchTerm={searchTerm} />}
       </main>
 
-      <Footer />
+      <Footer appVersion={appVersion} />
     </div>
   );
 };

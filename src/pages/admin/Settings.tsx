@@ -32,10 +32,6 @@ import {
 // Link this file version to the shared version in shareUtils
 const CURRENT_VERSION = APP_VERSION;
 
-/**
- * Página de configurações administrativas
- * @version 3.8.0
- */
 const Settings = () => {
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(true);

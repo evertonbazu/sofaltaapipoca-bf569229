@@ -5,7 +5,7 @@ import SubmitSubscriptionForm from '@/components/SubmitSubscriptionForm';
 
 /**
  * Página para submissão de anúncios pelos usuários
- * @version 3.8.0
+ * @version 3.7.0
  */
 const SubmitSubscription = () => {
   return (
