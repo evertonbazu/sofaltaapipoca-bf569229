@@ -1,7 +1,12 @@
 import { SubscriptionData } from '@/types/subscriptionTypes';
 import { supabase } from '@/integrations/supabase/client';
+import { APP_VERSION } from '@/components/Version';
 
 /**
+ * Version 3.8.0
+ * - Centralizada gestão de versão através do componente Version
+ * - Removida duplicação de constante APP_VERSION
+ * 
  * Version 3.0.8
  * - Implementada ordenação de assinaturas por data do mais recente para o mais antigo
  * - Refatoração para melhor organização do código
@@ -58,7 +63,7 @@ import { supabase } from '@/integrations/supabase/client';
  */
 
 // Export the current version as a constant for use throughout the app
-export const APP_VERSION = "3.0.8";
+export { APP_VERSION } from '@/components/Version';
 
 /**
  * Formats subscription data for sharing on messaging platforms
