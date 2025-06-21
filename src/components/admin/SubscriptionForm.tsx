@@ -24,36 +24,50 @@ import { handlePriceChange, handleWhatsAppChange, handleTelegramChange } from '@
  */
 
 // Lista de tipos de acesso
-const ACCESS_TYPES = [
-  "LOGIN E SENHA",
-  "CONVITE",
-  "ATIVAÇÃO",
-  "OUTRO"
-];
+const ACCESS_TYPES = ["LOGIN E SENHA", "CONVITE", "ATIVAÇÃO", "OUTRO"];
 
 // Schema for form validation
 const formSchema = z.object({
-  fullName: z.string().min(1, { message: "O nome completo é obrigatório" }),
-  title: z.string().min(1, { message: "O título é obrigatório" }),
+  fullName: z.string().min(1, {
+    message: "O nome completo é obrigatório"
+  }),
+  title: z.string().min(1, {
+    message: "O título é obrigatório"
+  }),
   customTitle: z.string().optional(),
-  price: z.string().min(1, { message: "O preço é obrigatório" }),
-  paymentMethod: z.string().min(1, { message: "O método de pagamento é obrigatório" }),
+  price: z.string().min(1, {
+    message: "O preço é obrigatório"
+  }),
+  paymentMethod: z.string().min(1, {
+    message: "O método de pagamento é obrigatório"
+  }),
   customPaymentMethod: z.string().optional(),
-  status: z.string().min(1, { message: "O status é obrigatório" }),
-  access: z.string().min(1, { message: "O acesso é obrigatório" }),
+  status: z.string().min(1, {
+    message: "O status é obrigatório"
+  }),
+  access: z.string().min(1, {
+    message: "O acesso é obrigatório"
+  }),
   customAccess: z.string().optional(),
-  headerColor: z.string().min(1, { message: "A cor do cabeçalho é obrigatória" }),
-  priceColor: z.string().min(1, { message: "A cor do preço é obrigatória" }),
-  whatsappNumber: z.string().min(1, { message: "O número do WhatsApp é obrigatório" }),
-  telegramUsername: z.string().min(1, { message: "O usuário do Telegram é obrigatório" }),
+  headerColor: z.string().min(1, {
+    message: "A cor do cabeçalho é obrigatória"
+  }),
+  priceColor: z.string().min(1, {
+    message: "A cor do preço é obrigatória"
+  }),
+  whatsappNumber: z.string().min(1, {
+    message: "O número do WhatsApp é obrigatório"
+  }),
+  telegramUsername: z.string().min(1, {
+    message: "O usuário do Telegram é obrigatório"
+  }),
   icon: z.string().optional(),
   addedDate: z.string().optional(),
   featured: z.boolean().default(false),
   code: z.string().optional(),
   pixKey: z.string().optional(),
-  category: z.string().optional(),
+  category: z.string().optional()
 });
-
 type FormValues = z.infer<typeof formSchema>;
 
 // Add the interface for the component props
@@ -62,12 +76,21 @@ export interface SubscriptionFormProps {
   isMemberSubmission?: boolean;
   isPendingEdit?: boolean;
 }
-
-const SubscriptionForm: React.FC<SubscriptionFormProps> = ({ initialData, isMemberSubmission = false, isPendingEdit = false }) => {
-  const { id } = useParams<{ id: string }>();
+const SubscriptionForm: React.FC<SubscriptionFormProps> = ({
+  initialData,
+  isMemberSubmission = false,
+  isPendingEdit = false
+}) => {
+  const {
+    id
+  } = useParams<{
+    id: string;
+  }>();
   const isEditing = !!id;
   const navigate = useNavigate();
-  const { toast } = useToast();
+  const {
+    toast
+  } = useToast();
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [isFetchingData, setIsFetchingData] = useState<boolean>(false);
   const [isAdmin, setIsAdmin] = useState<boolean>(false);
@@ -76,12 +99,15 @@ const SubscriptionForm: React.FC<SubscriptionFormProps> = ({ initialData, isMemb
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<string>("");
   const [selectedAccess, setSelectedAccess] = useState<string>("");
   const [categories, setCategories] = useState<string[]>([]);
-  
+
   // Check if user is admin
   useEffect(() => {
     const checkIfAdmin = async () => {
       try {
-        const { data, error } = await supabase.rpc('is_admin');
+        const {
+          data,
+          error
+        } = await supabase.rpc('is_admin');
         if (error) throw error;
         setIsAdmin(data);
       } catch (error) {
@@ -89,7 +115,6 @@ const SubscriptionForm: React.FC<SubscriptionFormProps> = ({ initialData, isMemb
         setIsAdmin(false);
       }
     };
-    
     checkIfAdmin();
   }, []);
 
@@ -97,11 +122,7 @@ const SubscriptionForm: React.FC<SubscriptionFormProps> = ({ initialData, isMemb
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [subscriptions, categoryList] = await Promise.all([
-          getAllSubscriptions(),
-          getAllCategories()
-        ]);
-        
+        const [subscriptions, categoryList] = await Promise.all([getAllSubscriptions(), getAllCategories()]);
         const titles = [...new Set(subscriptions.map(sub => sub.title.toUpperCase()))];
         setExistingTitles(titles);
         setCategories(categoryList);
@@ -109,10 +130,9 @@ const SubscriptionForm: React.FC<SubscriptionFormProps> = ({ initialData, isMemb
         console.error('Erro ao buscar dados:', error);
       }
     };
-    
     fetchData();
   }, []);
-  
+
   // Set up form with default values
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -135,8 +155,8 @@ const SubscriptionForm: React.FC<SubscriptionFormProps> = ({ initialData, isMemb
       featured: false,
       code: "",
       pixKey: "",
-      category: "",
-    },
+      category: ""
+    }
   });
 
   // Initialize form with initialData if provided
@@ -144,15 +164,14 @@ const SubscriptionForm: React.FC<SubscriptionFormProps> = ({ initialData, isMemb
     if (initialData) {
       // Check if access is one of the predefined options
       const isAccessInList = ACCESS_TYPES.includes(initialData.access);
-      
+
       // Check if title is in the list of predefined titles or existing titles
       const titleUppercase = initialData.title.toUpperCase();
       const isTitleInList = titleOptions.some(option => option.value === titleUppercase);
-      
+
       // Check if payment method is one of the predefined ones
       const paymentMethod = initialData.paymentMethod;
       const isPreDefinedPayment = ["PIX (Mensal)", "PIX (Anual)"].includes(paymentMethod);
-      
       form.reset({
         fullName: initialData.fullName || "",
         title: isTitleInList ? titleUppercase : "Personalizado",
@@ -172,9 +191,8 @@ const SubscriptionForm: React.FC<SubscriptionFormProps> = ({ initialData, isMemb
         featured: initialData.featured || false,
         code: initialData.code,
         pixKey: initialData.pixKey || "",
-        category: initialData.category || "",
+        category: initialData.category || ""
       });
-      
       setSelectedTitle(isTitleInList ? titleUppercase : "Personalizado");
       setSelectedPaymentMethod(isPreDefinedPayment ? initialData.paymentMethod : "OUTRA FORMA");
       setSelectedAccess(isAccessInList ? initialData.access : "OUTRO");
@@ -185,27 +203,24 @@ const SubscriptionForm: React.FC<SubscriptionFormProps> = ({ initialData, isMemb
   const handleTitleChange = (value: string) => {
     setSelectedTitle(value);
     form.setValue("title", value);
-    
     if (value !== "Personalizado") {
       form.setValue("customTitle", "");
     }
   };
-  
+
   // Handle payment method change
   const handlePaymentMethodChange = (value: string) => {
     setSelectedPaymentMethod(value);
     form.setValue("paymentMethod", value);
-    
     if (value !== "OUTRA FORMA") {
       form.setValue("customPaymentMethod", "");
     }
   };
-  
+
   // Handle access type change
   const handleAccessChange = (value: string) => {
     setSelectedAccess(value);
     form.setValue("access", value);
-    
     if (value !== "OUTRO") {
       form.setValue("customAccess", "");
     }
@@ -214,17 +229,16 @@ const SubscriptionForm: React.FC<SubscriptionFormProps> = ({ initialData, isMemb
   // Form submission handler
   const onSubmit = async (data: FormValues) => {
     setIsLoading(true);
-    
     try {
       // Process custom title
       const finalTitle = data.title === "Personalizado" ? data.customTitle : data.title;
-      
+
       // Process custom payment method
       const finalPaymentMethod = data.paymentMethod === "OUTRA FORMA" ? data.customPaymentMethod : data.paymentMethod;
-      
+
       // Process custom access
       const finalAccess = data.access === "OUTRO" ? data.customAccess : data.access;
-      
+
       // Ensure all required fields are filled
       const formattedData: SubscriptionData = {
         fullName: data.fullName,
@@ -245,192 +259,127 @@ const SubscriptionForm: React.FC<SubscriptionFormProps> = ({ initialData, isMemb
         pixKey: data.pixKey,
         category: data.category
       };
-      
       if (isEditing) {
         await updateSubscription(id, formattedData);
         toast({
           title: "Assinatura atualizada",
-          description: "A assinatura foi atualizada com sucesso.",
+          description: "A assinatura foi atualizada com sucesso."
         });
       } else {
         await addSubscription(formattedData);
         toast({
           title: "Assinatura adicionada",
-          description: "A assinatura foi adicionada com sucesso.",
+          description: "A assinatura foi adicionada com sucesso."
         });
       }
-      
       navigate('/admin/subscriptions');
     } catch (error) {
       console.error('Erro ao salvar assinatura:', error);
       toast({
         title: "Erro ao salvar",
         description: "Não foi possível salvar a assinatura.",
-        variant: "destructive",
+        variant: "destructive"
       });
-      
+
       // Log error
-      logError(
-        'Erro ao salvar assinatura',
-        JSON.stringify(data),
-        isEditing ? 'UPDATE_ERROR' : 'INSERT_ERROR',
-        JSON.stringify(error)
-      );
+      logError('Erro ao salvar assinatura', JSON.stringify(data), isEditing ? 'UPDATE_ERROR' : 'INSERT_ERROR', JSON.stringify(error));
     } finally {
       setIsLoading(false);
     }
   };
-
   if (isFetchingData) {
-    return (
-      <div className="flex items-center justify-center p-8">
+    return <div className="flex items-center justify-center p-8">
         <Loader2 className="animate-spin h-8 w-8 text-primary" />
         <span className="ml-2">Carregando dados da assinatura...</span>
-      </div>
-    );
+      </div>;
   }
-
-  return (
-    <Card>
+  return <Card>
       <CardContent className="pt-6">
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* Código (somente para edição) */}
-              {isEditing && (
-                <FormField
-                  control={form.control}
-                  name="code"
-                  render={({ field }) => (
-                    <FormItem>
+              {isEditing && <FormField control={form.control} name="code" render={({
+              field
+            }) => <FormItem>
                       <FormLabel>Código (não editável)</FormLabel>
                       <FormControl>
                         <Input disabled {...field} />
                       </FormControl>
                       <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              )}
+                    </FormItem>} />}
               
               {/* Nome Completo */}
-              <FormField
-                control={form.control}
-                name="fullName"
-                render={({ field }) => (
-                  <FormItem>
+              <FormField control={form.control} name="fullName" render={({
+              field
+            }) => <FormItem>
                     <FormLabel>Nome Completo</FormLabel>
                     <FormControl>
                       <Input placeholder="Nome completo do anunciante" {...field} />
                     </FormControl>
                     <FormMessage />
-                  </FormItem>
-                )}
-              />
+                  </FormItem>} />
               
               {/* Título */}
-              <FormField
-                control={form.control}
-                name="title"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Título</FormLabel>
+              <FormField control={form.control} name="title" render={({
+              field
+            }) => <FormItem>
+                    <FormLabel>Título do Anúncio</FormLabel>
                     <FormControl>
-                      <Combobox
-                        options={titleOptions}
-                        value={field.value}
-                        onValueChange={handleTitleChange}
-                        placeholder="Selecione ou busque um título"
-                        searchPlaceholder="Buscar título..."
-                        emptyText="Nenhum título encontrado."
-                      />
+                      <Combobox options={titleOptions} value={field.value} onValueChange={handleTitleChange} placeholder="Selecione ou busque um título" searchPlaceholder="Buscar título..." emptyText="Nenhum título encontrado." />
                     </FormControl>
                     <FormMessage />
-                  </FormItem>
-                )}
-              />
+                  </FormItem>} />
               
               {/* Título personalizado */}
-              {selectedTitle === "Personalizado" && (
-                <FormField
-                  control={form.control}
-                  name="customTitle"
-                  render={({ field }) => (
-                    <FormItem>
+              {selectedTitle === "Personalizado" && <FormField control={form.control} name="customTitle" render={({
+              field
+            }) => <FormItem>
                       <FormLabel>Título Personalizado</FormLabel>
                       <FormControl>
                         <Input placeholder="Insira um título personalizado" {...field} />
                       </FormControl>
                       <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              )}
+                    </FormItem>} />}
               
               {/* Preço */}
-              <FormField
-                control={form.control}
-                name="price"
-                render={({ field }) => (
-                  <FormItem>
+              <FormField control={form.control} name="price" render={({
+              field
+            }) => <FormItem>
                     <FormLabel>Preço</FormLabel>
                     <FormControl>
-                      <Input 
-                        placeholder="R$ 15,00" 
-                        {...field} 
-                        onChange={(e) => {
-                          handlePriceChange(e, form.setValue);
-                          field.onChange(e);
-                        }}
-                      />
+                      <Input placeholder="R$ 15,00" {...field} onChange={e => {
+                  handlePriceChange(e, form.setValue);
+                  field.onChange(e);
+                }} />
                     </FormControl>
                     <FormMessage />
-                  </FormItem>
-                )}
-              />
+                  </FormItem>} />
 
               {/* Categoria */}
-              {categories.length > 0 && (
-                <FormField
-                  control={form.control}
-                  name="category"
-                  render={({ field }) => (
-                    <FormItem>
+              {categories.length > 0 && <FormField control={form.control} name="category" render={({
+              field
+            }) => <FormItem>
                       <FormLabel>Categoria</FormLabel>
-                      <Select
-                        onValueChange={field.onChange}
-                        defaultValue={field.value}
-                        value={field.value}
-                      >
+                      <Select onValueChange={field.onChange} defaultValue={field.value} value={field.value}>
                         <FormControl>
                           <SelectTrigger>
                             <SelectValue placeholder="Selecione uma categoria" />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          {categories.map(category => (
-                            <SelectItem key={category} value={category}>{category}</SelectItem>
-                          ))}
+                          {categories.map(category => <SelectItem key={category} value={category}>{category}</SelectItem>)}
                         </SelectContent>
                       </Select>
                       <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              )}
+                    </FormItem>} />}
               
               {/* Método de Pagamento */}
-              <FormField
-                control={form.control}
-                name="paymentMethod"
-                render={({ field }) => (
-                  <FormItem>
+              <FormField control={form.control} name="paymentMethod" render={({
+              field
+            }) => <FormItem>
                     <FormLabel>Método de Pagamento</FormLabel>
-                    <Select
-                      onValueChange={handlePaymentMethodChange}
-                      defaultValue={field.value}
-                      value={field.value}
-                    >
+                    <Select onValueChange={handlePaymentMethodChange} defaultValue={field.value} value={field.value}>
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Selecione um método" />
@@ -443,53 +392,36 @@ const SubscriptionForm: React.FC<SubscriptionFormProps> = ({ initialData, isMemb
                       </SelectContent>
                     </Select>
                     <FormMessage />
-                  </FormItem>
-                )}
-              />
+                  </FormItem>} />
               
               {/* Método de pagamento personalizado */}
-              {selectedPaymentMethod === "OUTRA FORMA" && (
-                <FormField
-                  control={form.control}
-                  name="customPaymentMethod"
-                  render={({ field }) => (
-                    <FormItem>
+              {selectedPaymentMethod === "OUTRA FORMA" && <FormField control={form.control} name="customPaymentMethod" render={({
+              field
+            }) => <FormItem>
                       <FormLabel>Método de Pagamento Personalizado</FormLabel>
                       <FormControl>
                         <Input placeholder="Insira um método de pagamento" {...field} />
                       </FormControl>
                       <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              )}
+                    </FormItem>} />}
 
               {/* Chave PIX */}
-              <FormField
-                control={form.control}
-                name="pixKey"
-                render={({ field }) => (
-                  <FormItem>
+              <FormField control={form.control} name="pixKey" render={({
+              field
+            }) => <FormItem>
                     <FormLabel>Chave PIX</FormLabel>
                     <FormControl>
                       <Input placeholder="Sua chave PIX" {...field} />
                     </FormControl>
                     <FormMessage />
-                  </FormItem>
-                )}
-              />
+                  </FormItem>} />
               
               {/* Status */}
-              <FormField
-                control={form.control}
-                name="status"
-                render={({ field }) => (
-                  <FormItem>
+              <FormField control={form.control} name="status" render={({
+              field
+            }) => <FormItem>
                     <FormLabel>Status</FormLabel>
-                    <Select
-                      onValueChange={field.onChange}
-                      defaultValue={field.value}
-                    >
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Selecione um status" />
@@ -501,254 +433,122 @@ const SubscriptionForm: React.FC<SubscriptionFormProps> = ({ initialData, isMemb
                       </SelectContent>
                     </Select>
                     <FormMessage />
-                  </FormItem>
-                )}
-              />
+                  </FormItem>} />
               
               {/* Acesso */}
-              <FormField
-                control={form.control}
-                name="access"
-                render={({ field }) => (
-                  <FormItem>
+              <FormField control={form.control} name="access" render={({
+              field
+            }) => <FormItem>
                     <FormLabel>Envio</FormLabel>
-                    <Select
-                      onValueChange={handleAccessChange}
-                      defaultValue={field.value}
-                      value={field.value}
-                    >
+                    <Select onValueChange={handleAccessChange} defaultValue={field.value} value={field.value}>
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Selecione o tipo de envio" />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        {ACCESS_TYPES.map(accessType => (
-                          <SelectItem key={accessType} value={accessType}>{accessType}</SelectItem>
-                        ))}
+                        {ACCESS_TYPES.map(accessType => <SelectItem key={accessType} value={accessType}>{accessType}</SelectItem>)}
                       </SelectContent>
                     </Select>
                     <FormMessage />
-                  </FormItem>
-                )}
-              />
+                  </FormItem>} />
               
               {/* Acesso personalizado */}
-              {selectedAccess === "OUTRO" && (
-                <FormField
-                  control={form.control}
-                  name="customAccess"
-                  render={({ field }) => (
-                    <FormItem>
+              {selectedAccess === "OUTRO" && <FormField control={form.control} name="customAccess" render={({
+              field
+            }) => <FormItem>
                       <FormLabel>Tipo de Envio Personalizado</FormLabel>
                       <FormControl>
                         <Input placeholder="Especifique o tipo de envio" {...field} />
                       </FormControl>
                       <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              )}
+                    </FormItem>} />}
               
               {/* Data de Adição */}
-              <FormField
-                control={form.control}
-                name="addedDate"
-                render={({ field }) => (
-                  <FormItem>
+              <FormField control={form.control} name="addedDate" render={({
+              field
+            }) => <FormItem>
                     <FormLabel>Data de Adição (não editável)</FormLabel>
                     <FormControl>
                       <Input disabled {...field} />
                     </FormControl>
                     <FormMessage />
-                  </FormItem>
-                )}
-              />
+                  </FormItem>} />
               
               {/* WhatsApp */}
-              <FormField
-                control={form.control}
-                name="whatsappNumber"
-                render={({ field }) => (
-                  <FormItem>
+              <FormField control={form.control} name="whatsappNumber" render={({
+              field
+            }) => <FormItem>
                     <FormLabel>Número do WhatsApp</FormLabel>
                     <FormControl>
-                      <Input 
-                        placeholder="+5511999999999" 
-                        {...field} 
-                        onChange={(e) => {
-                          handleWhatsAppChange(e, form.setValue);
-                          field.onChange(e);
-                        }}
-                      />
+                      <Input placeholder="+5511999999999" {...field} onChange={e => {
+                  handleWhatsAppChange(e, form.setValue);
+                  field.onChange(e);
+                }} />
                     </FormControl>
                     <FormMessage />
-                  </FormItem>
-                )}
-              />
+                  </FormItem>} />
               
               {/* Telegram */}
-              <FormField
-                control={form.control}
-                name="telegramUsername"
-                render={({ field }) => (
-                  <FormItem>
+              <FormField control={form.control} name="telegramUsername" render={({
+              field
+            }) => <FormItem>
                     <FormLabel>Usuário do Telegram</FormLabel>
                     <FormControl>
-                      <Input 
-                        placeholder="@usuariotelegram" 
-                        {...field} 
-                        onChange={(e) => {
-                          handleTelegramChange(e, form.setValue);
-                          field.onChange(e);
-                        }}
-                      />
+                      <Input placeholder="@usuariotelegram" {...field} onChange={e => {
+                  handleTelegramChange(e, form.setValue);
+                  field.onChange(e);
+                }} />
                     </FormControl>
                     <FormMessage />
-                  </FormItem>
-                )}
-              />
+                  </FormItem>} />
               
               {/* Campos apenas para administradores */}
-              {isAdmin && (
-                <>
+              {isAdmin && <>
                   {/* Cor do Cabeçalho */}
-                  <FormField
-                    control={form.control}
-                    name="headerColor"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Cor do Cabeçalho (admin)</FormLabel>
-                        <Select
-                          onValueChange={field.onChange}
-                          defaultValue={field.value}
-                        >
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Selecione uma cor" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            <SelectItem value="bg-blue-600">Azul</SelectItem>
-                            <SelectItem value="bg-gradient-indigo">Índigo</SelectItem>
-                            <SelectItem value="bg-gradient-purple">Roxo</SelectItem>
-                            <SelectItem value="bg-gradient-green">Verde</SelectItem>
-                            <SelectItem value="bg-gradient-red">Vermelho</SelectItem>
-                            <SelectItem value="bg-gradient-orange">Laranja</SelectItem>
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                  <FormField control={form.control} name="headerColor" render={({
+                field
+              }) => {}} />
                   
                   {/* Cor do Preço */}
-                  <FormField
-                    control={form.control}
-                    name="priceColor"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Cor do Preço (admin)</FormLabel>
-                        <Select
-                          onValueChange={field.onChange}
-                          defaultValue={field.value}
-                        >
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Selecione uma cor" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            <SelectItem value="text-blue-600">Azul</SelectItem>
-                            <SelectItem value="text-indigo-600">Índigo</SelectItem>
-                            <SelectItem value="text-purple-600">Roxo</SelectItem>
-                            <SelectItem value="text-green-600">Verde</SelectItem>
-                            <SelectItem value="text-red-600">Vermelho</SelectItem>
-                            <SelectItem value="text-orange-600">Laranja</SelectItem>
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                  <FormField control={form.control} name="priceColor" render={({
+                field
+              }) => {}} />
                   
                   {/* Ícone */}
-                  <FormField
-                    control={form.control}
-                    name="icon"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Ícone (admin)</FormLabel>
-                        <Select
-                          onValueChange={field.onChange}
-                          defaultValue={field.value}
-                        >
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Selecione um ícone" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            <SelectItem value="none">Nenhum</SelectItem>
-                            <SelectItem value="tv">TV</SelectItem>
-                            <SelectItem value="youtube">YouTube</SelectItem>
-                            <SelectItem value="apple">Apple</SelectItem>
-                            <SelectItem value="monitor">Monitor</SelectItem>
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                  <FormField control={form.control} name="icon" render={({
+                field
+              }) => {}} />
                   
                   {/* Destaque */}
-                  <FormField
-                    control={form.control}
-                    name="featured"
-                    render={({ field }) => (
-                      <FormItem className="flex flex-row items-center space-x-3 space-y-0">
+                  <FormField control={form.control} name="featured" render={({
+                field
+              }) => <FormItem className="flex flex-row items-center space-x-3 space-y-0">
                         <FormControl>
-                          <Checkbox
-                            checked={field.value}
-                            onCheckedChange={field.onChange}
-                          />
+                          <Checkbox checked={field.value} onCheckedChange={field.onChange} />
                         </FormControl>
                         <FormLabel className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
                           Destacar esta assinatura (admin)
                         </FormLabel>
-                      </FormItem>
-                    )}
-                  />
-                </>
-              )}
+                      </FormItem>} />
+                </>}
             </div>
             
             {/* Botões */}
             <div className="flex justify-end space-x-2">
-              <Button 
-                type="button" 
-                variant="outline" 
-                onClick={() => navigate('/admin/subscriptions')}
-                disabled={isLoading}
-              >
+              <Button type="button" variant="outline" onClick={() => navigate('/admin/subscriptions')} disabled={isLoading}>
                 Cancelar
               </Button>
               <Button type="submit" disabled={isLoading}>
-                {isLoading ? (
-                  <>
+                {isLoading ? <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                     {isEditing ? 'Atualizando...' : 'Salvando...'}
-                  </>
-                ) : (
-                  isEditing ? 'Atualizar Assinatura' : 'Salvar Assinatura'
-                )}
+                  </> : isEditing ? 'Atualizar Assinatura' : 'Salvar Assinatura'}
               </Button>
             </div>
           </form>
         </Form>
       </CardContent>
-    </Card>
-  );
+    </Card>;
 };
-
 export default SubscriptionForm;
