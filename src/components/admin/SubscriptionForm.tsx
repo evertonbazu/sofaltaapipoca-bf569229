@@ -9,41 +9,184 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Card, CardContent } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Combobox } from "@/components/ui/combobox";
 import { useToast } from "@/components/ui/use-toast";
 import { Loader2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { SubscriptionData } from '@/types/subscriptionTypes';
 import { addSubscription, updateSubscription, logError, getAllSubscriptions, getAllCategories } from '@/services/subscription-service';
 
-// Lista de títulos predefinidos
+// Lista de títulos predefinidos atualizada
 const PREDEFINED_TITLES = [
   "Personalizado",
-  "AMAZON PRIME VIDEO",
-  "APPLE ONE (200GB)",
-  "APPLE ONE (2TB)",
-  "APPLE TV+",
-  "CANVA PRO",
-  "CLARO TV+",
-  "CRUNCHYROLL",
-  "DEEZER",
-  "DISCOVERY+",
-  "DISNEY+ PADRÃO (COM ANÚNCIOS)",
-  "DISNEY+ PADRÃO (SEM ANÚNCIOS)",
-  "DISNEY+ PREMIUM",
-  "FUNIMATION",
-  "GLOBOPLAY PREMIUM",
-  "GLOBOPLAY PADRÃO (COM ANÚNCIOS)",
-  "GLOBOPLAY PADRÃO (SEM ANÚNCIOS)",
-  "MAX STANDARD",
-  "MAX PLATINUM",
-  "NETFLIX (DISPOSITIVOS MÓVEIS)",
-  "NETFLIX (DISPOSITIVOS MÓVEIS/TV)",
-  "MICROSOFT 365",
-  "PARAMOUNT PADRÃO (MELI+)",
-  "PARAMOUNT PREMIUM",
-  "SPOTIFY",
-  "YOUTUBE PREMIUM",
+  "1Password Famílias",
+  "12min - Resumo de Livros",
+  "AdGuard VPN Familiar",
+  "Adobe Creative Cloud",
+  "Adobe Stock",
+  "Alphaplay",
+  "Alura",
+  "Amazon Luna+",
+  "Amazon Music Unlimited",
+  "Apple Arcade Familiar",
+  "Apple Music Familiar",
+  "Apple One Familiar",
+  "Apple One Premium",
+  "Apple TV+",
+  "Avast Premium Security",
+  "Babbel",
+  "Boosteroid - Jogos",
+  "Brainly Plus",
+  "Brainstorm Academy Premium",
+  "Brasil Paralelo Premium",
+  "Canva para Educação",
+  "Canva Pro",
+  "CapCut Pro",
+  "ChatGPT Plus",
+  "Claude AI Pro",
+  "Claro TV+",
+  "Combate",
+  "Crunchyroll Mega Fan",
+  "Curso.dev",
+  "Cyber Ghost VPN",
+  "DAZN",
+  "Deezer Family",
+  "Deezer Premium",
+  "Discovery+",
+  "Disney+ Acesso Extra",
+  "Disney+ Cel/PC",
+  "Disney+ Com Anúncios",
+  "Doozy TV",
+  "DunaTV",
+  "Duolingo Family",
+  "Envato Elements Equipe",
+  "Eppi Cinema",
+  "Estratégia Concursos",
+  "ExpressVPN",
+  "F1 TV Premium",
+  "Filmicca",
+  "Finclass",
+  "Focus Concursos",
+  "Freepik Premium",
+  "Globoplay Padrão",
+  "Globoplay Padrão Com Anúncios",
+  "Globoplay Premium",
+  "Google One AI Premium",
+  "Google One Premium",
+  "Google Play Pass",
+  "GoRead Revistas",
+  "Gran Cursos Amigos",
+  "Gran Cursos Dupla",
+  "Gympass - Fitness",
+  "HotGo",
+  "iCloud+ 12TB",
+  "iCloud+ 200GB",
+  "iCloud+ 2TB",
+  "iCloud+ 6TB",
+  "iLovePDF Premium",
+  "iQIYI Premium",
+  "Iridium Academy",
+  "Jaleko Pro",
+  "Kaspersky Plus",
+  "Kaspersky Premium",
+  "Kaspersky Standard",
+  "Kaspersky VPN Secure",
+  "Kindle Unlimited",
+  "Kocowa+ Premium",
+  "Laravel Herd Pro",
+  "Leonard AI Apprentice",
+  "Leonard AI Artisan",
+  "Leonard AI Maestro",
+  "Looke",
+  "Max Básico Com Anúncio",
+  "Max Platinum",
+  "Max Standard",
+  "McAfee+ Premium",
+  "Mettzer",
+  "Microsoft 365 Enterprise",
+  "Microsoft 365 Family 1TB",
+  "Midjourney Básico",
+  "Midjourney Mega",
+  "Midjourney Padrão",
+  "Midjourney Pro",
+  "MUBI",
+  "My Family Cinema",
+  "Napster Família",
+  "NBA Básico Com Anúncios",
+  "NBA League Pass Premium",
+  "Netflix - Acesso Extra",
+  "Netflix - Cel/PC",
+  "Netflix - Com Anúncios",
+  "NordVPN Básico",
+  "NordVPN Completo",
+  "NordVPN Plus",
+  "Nova Concursos Premium",
+  "Oldflix",
+  "Origamid Curso Front-End",
+  "Paramount+ Padrão",
+  "Paramount+ Premium",
+  "Passei Direto Premium",
+  "Perplexity AI Pro",
+  "Photoroom Pro",
+  "Picsart Pro",
+  "PlayKids+",
+  "PlayPlus Premium",
+  "Premiere",
+  "Prime Video",
+  "Prime Video Com Anúncio",
+  "PrivateVPN",
+  "Proton Pass Family",
+  "Proton VPN Plus",
+  "Proton VPN Visionary",
+  "PureVPN",
+  "Qconcursos Básico",
+  "Qconcursos Ilimitado",
+  "Qconcursos Intermediário",
+  "Qobuz Studio Familiar",
+  "Queima Diária",
+  "Rakuten Viki Pass Plus",
+  "Reserva Imovision",
+  "Reservatório de Dopamina",
+  "Rocketseat",
+  "SanarFlix",
+  "Scribd",
+  "SeaArt AI Beginner",
+  "SeaArt AI Master",
+  "SeaArt AI Professional",
+  "SeaArt AI Standard",
+  "Sky+",
+  "Spotify Premium Duo",
+  "Spotify Premium Família",
+  "Suno AI Premium",
+  "Surfshark VPN One",
+  "Surfshark VPN Starter",
+  "TIDAL Familiar",
+  "TotalPass - Fitness",
+  "Truecaller Premium",
+  "Ubisoft+ Classics",
+  "Ubisoft+ Premium",
+  "UFC Fight Pass",
+  "UniTV",
+  "Univer Vídeo",
+  "Universal+ Premium",
+  "Universal+ Standard",
+  "Vivo Play",
+  "Watch TV Brasil",
+  "Wellhub - Fitness",
+  "Xbox Game Pass",
+  "YouCine",
+  "YOUKU",
+  "YouTube Premium",
+  "YouTube Premium Lite",
+  "Zapping Full",
+  "Zapping Lite+"
 ];
+
+// Converter títulos para o formato do Combobox
+const titleOptions = PREDEFINED_TITLES.map(title => ({
+  value: title,
+  label: title
+}));
 
 // Lista de tipos de acesso
 const ACCESS_TYPES = [
@@ -400,22 +543,16 @@ const SubscriptionForm: React.FC<SubscriptionFormProps> = ({ initialData, isMemb
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Título</FormLabel>
-                    <Select
-                      onValueChange={handleTitleChange}
-                      defaultValue={field.value}
-                      value={field.value}
-                    >
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Selecione um título" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent className="max-h-[300px]">
-                        {PREDEFINED_TITLES.map((title) => (
-                          <SelectItem key={title} value={title}>{title}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <FormControl>
+                      <Combobox
+                        options={titleOptions}
+                        value={field.value}
+                        onValueChange={handleTitleChange}
+                        placeholder="Selecione ou busque um título"
+                        searchPlaceholder="Buscar título..."
+                        emptyText="Nenhum título encontrado."
+                      />
+                    </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
