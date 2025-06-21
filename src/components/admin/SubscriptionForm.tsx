@@ -110,6 +110,8 @@ const SubscriptionForm: React.FC<SubscriptionFormProps> = ({
     const subscriptionData: SubscriptionData = {
       ...values,
       featured: isFeatured,
+      headerColor: initialValues?.headerColor || "bg-blue-600", // Valor padrão para headerColor
+      priceColor: initialValues?.priceColor || "text-blue-600", // Valor padrão para priceColor
     };
 
     onSubmit(subscriptionData);

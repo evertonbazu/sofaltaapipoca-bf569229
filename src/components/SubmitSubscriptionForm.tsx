@@ -15,6 +15,7 @@ import { Loader2 } from "lucide-react";
 import { createSubscription } from '@/services/subscription-service';
 import { useNavigate } from 'react-router-dom';
 import { Combobox } from "@/components/ui/combobox";
+import { APP_VERSION } from '@/components/Version';
 
 /**
  * Componente de formulário para submissão de anúncios pelos usuários
@@ -73,6 +74,8 @@ const SubmitSubscriptionForm = () => {
       const subscriptionData = {
         ...data,
         price: priceValue,
+        headerColor: "bg-blue-600", // Valor padrão para headerColor
+        priceColor: "text-blue-600", // Valor padrão para priceColor
       };
       
       // Enviar os dados para o serviço de criação de assinatura
