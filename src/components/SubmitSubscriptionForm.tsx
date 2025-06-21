@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -12,180 +13,9 @@ import { Combobox } from "@/components/ui/combobox";
 import { useToast } from "@/components/ui/use-toast";
 import { Loader2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
-import { SubscriptionData } from '@/types/subscriptionTypes';
 import { getAllCategories } from '@/services/subscription-service';
-
-// Lista de títulos predefinidos atualizada com "Personalizado" no topo
-const PREDEFINED_TITLES = [
-  "Personalizado",
-  "1Password Famílias",
-  "12min - Resumo de Livros",
-  "AdGuard VPN Familiar",
-  "Adobe Creative Cloud",
-  "Adobe Stock",
-  "Alphaplay",
-  "Alura",
-  "Amazon Luna+",
-  "Amazon Music Unlimited",
-  "Apple Arcade Familiar",
-  "Apple Music Familiar",
-  "Apple One Familiar",
-  "Apple One Premium",
-  "Apple TV+",
-  "Avast Premium Security",
-  "Babbel",
-  "Boosteroid - Jogos",
-  "Brainly Plus",
-  "Brainstorm Academy Premium",
-  "Brasil Paralelo Premium",
-  "Canva para Educação",
-  "Canva Pro",
-  "CapCut Pro",
-  "ChatGPT Plus",
-  "Claude AI Pro",
-  "Claro TV+",
-  "Combate",
-  "Crunchyroll Mega Fan",
-  "Curso.dev",
-  "Cyber Ghost VPN",
-  "DAZN",
-  "Deezer Family",
-  "Deezer Premium",
-  "Discovery+",
-  "Disney+ Acesso Extra",
-  "Disney+ Cel/PC",
-  "Disney+ Com Anúncios",
-  "Doozy TV",
-  "DunaTV",
-  "Duolingo Family",
-  "Envato Elements Equipe",
-  "Eppi Cinema",
-  "Estratégia Concursos",
-  "ExpressVPN",
-  "F1 TV Premium",
-  "Filmicca",
-  "Finclass",
-  "Focus Concursos",
-  "Freepik Premium",
-  "Globoplay Padrão",
-  "Globoplay Padrão Com Anúncios",
-  "Globoplay Premium",
-  "Google One AI Premium",
-  "Google One Premium",
-  "Google Play Pass",
-  "GoRead Revistas",
-  "Gran Cursos Amigos",
-  "Gran Cursos Dupla",
-  "Gympass - Fitness",
-  "HotGo",
-  "iCloud+ 12TB",
-  "iCloud+ 200GB",
-  "iCloud+ 2TB",
-  "iCloud+ 6TB",
-  "iLovePDF Premium",
-  "iQIYI Premium",
-  "Iridium Academy",
-  "Jaleko Pro",
-  "Kaspersky Plus",
-  "Kaspersky Premium",
-  "Kaspersky Standard",
-  "Kaspersky VPN Secure",
-  "Kindle Unlimited",
-  "Kocowa+ Premium",
-  "Laravel Herd Pro",
-  "Leonard AI Apprentice",
-  "Leonard AI Artisan",
-  "Leonard AI Maestro",
-  "Looke",
-  "Max Básico Com Anúncio",
-  "Max Platinum",
-  "Max Standard",
-  "McAfee+ Premium",
-  "Mettzer",
-  "Microsoft 365 Enterprise",
-  "Microsoft 365 Family 1TB",
-  "Midjourney Básico",
-  "Midjourney Mega",
-  "Midjourney Padrão",
-  "Midjourney Pro",
-  "MUBI",
-  "My Family Cinema",
-  "Napster Família",
-  "NBA Básico Com Anúncios",
-  "NBA League Pass Premium",
-  "Netflix - Acesso Extra",
-  "Netflix - Cel/PC",
-  "Netflix - Com Anúncios",
-  "NordVPN Básico",
-  "NordVPN Completo",
-  "NordVPN Plus",
-  "Nova Concursos Premium",
-  "Oldflix",
-  "Origamid Curso Front-End",
-  "Paramount+ Padrão",
-  "Paramount+ Premium",
-  "Passei Direto Premium",
-  "Perplexity AI Pro",
-  "Photoroom Pro",
-  "Picsart Pro",
-  "PlayKids+",
-  "PlayPlus Premium",
-  "Premiere",
-  "Prime Video",
-  "Prime Video Com Anúncio",
-  "PrivateVPN",
-  "Proton Pass Family",
-  "Proton VPN Plus",
-  "Proton VPN Visionary",
-  "PureVPN",
-  "Qconcursos Básico",
-  "Qconcursos Ilimitado",
-  "Qconcursos Intermediário",
-  "Qobuz Studio Familiar",
-  "Queima Diária",
-  "Rakuten Viki Pass Plus",
-  "Reserva Imovision",
-  "Reservatório de Dopamina",
-  "Rocketseat",
-  "SanarFlix",
-  "Scribd",
-  "SeaArt AI Beginner",
-  "SeaArt AI Master",
-  "SeaArt AI Professional",
-  "SeaArt AI Standard",
-  "Sky+",
-  "Spotify Premium Duo",
-  "Spotify Premium Família",
-  "Suno AI Premium",
-  "Surfshark VPN One",
-  "Surfshark VPN Starter",
-  "TIDAL Familiar",
-  "TotalPass - Fitness",
-  "Truecaller Premium",
-  "Ubisoft+ Classics",
-  "Ubisoft+ Premium",
-  "UFC Fight Pass",
-  "UniTV",
-  "Univer Vídeo",
-  "Universal+ Premium",
-  "Universal+ Standard",
-  "Vivo Play",
-  "Watch TV Brasil",
-  "Wellhub - Fitness",
-  "Xbox Game Pass",
-  "YouCine",
-  "YOUKU",
-  "YouTube Premium",
-  "YouTube Premium Lite",
-  "Zapping Full",
-  "Zapping Lite+"
-];
-
-// Converter títulos para o formato do Combobox
-const titleOptions = PREDEFINED_TITLES.map(title => ({
-  value: title,
-  label: title
-}));
+import { titleOptions } from '@/data/predefinedTitles';
+import { handlePriceChange, handleWhatsAppChange, handleTelegramChange } from '@/utils/formatting';
 
 // Schema para validação do formulário
 const formSchema = z.object({
@@ -227,12 +57,12 @@ const formSchema = z.object({
     message: "A categoria é obrigatória"
   }).optional().or(z.literal(""))
 });
+
 type FormValues = z.infer<typeof formSchema>;
+
 const SubmitSubscriptionForm = () => {
   const navigate = useNavigate();
-  const {
-    toast
-  } = useToast();
+  const { toast } = useToast();
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<string>("");
   const [selectedAccess, setSelectedAccess] = useState<string>("");
@@ -243,15 +73,10 @@ const SubmitSubscriptionForm = () => {
   // Verificar se o usuário está logado
   React.useEffect(() => {
     const checkUser = async () => {
-      const {
-        data: {
-          session
-        }
-      } = await supabase.auth.getSession();
+      const { data: { session } } = await supabase.auth.getSession();
       if (session?.user) {
         setUserId(session.user.id);
       } else {
-        // Se não estiver logado, redirecionar para página de login
         toast({
           title: "Acesso restrito",
           description: "Você precisa estar logado para enviar um anúncio.",
@@ -262,7 +87,6 @@ const SubmitSubscriptionForm = () => {
     };
     checkUser();
 
-    // Carregar categorias disponíveis
     const loadCategories = async () => {
       try {
         const categoryList = await getAllCategories();
@@ -281,7 +105,7 @@ const SubmitSubscriptionForm = () => {
       fullName: "",
       title: "",
       customTitle: "",
-      price: "R$ ",
+      price: "R$ 0,00",
       paymentMethod: "PIX (Mensal)",
       customPaymentMethod: "",
       status: "Assinado",
@@ -293,6 +117,8 @@ const SubmitSubscriptionForm = () => {
       category: ""
     }
   });
+
+  // Manipular mudança de método de pagamento
   const handlePaymentMethodChange = (value: string) => {
     setSelectedPaymentMethod(value);
     form.setValue("paymentMethod", value);
@@ -319,45 +145,6 @@ const SubmitSubscriptionForm = () => {
     }
   };
 
-  // Formatação de preço em reais
-  const handlePriceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    let value = e.target.value;
-
-    // Garantir que sempre começa com R$ 
-    if (!value.startsWith("R$ ")) {
-      value = "R$ " + value.replace("R$ ", "");
-    }
-
-    // Remover qualquer caractere não numérico, exceto vírgula e ponto
-    const numericValue = value.substring(3).replace(/[^\d,\.]/g, "");
-
-    // Formatar o valor como moeda brasileira
-    let formattedValue = "R$ " + numericValue;
-    form.setValue("price", formattedValue);
-  };
-
-  // Manipular mudança no WhatsApp para manter o prefixo +55
-  const handleWhatsAppChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    let value = e.target.value;
-
-    // Garantir que sempre começa com +55
-    if (!value.startsWith("+55")) {
-      value = "+55" + value.replace("+55", "");
-    }
-    form.setValue("whatsappNumber", value);
-  };
-
-  // Manipular mudança no Telegram para manter o prefixo @
-  const handleTelegramChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    let value = e.target.value;
-
-    // Garantir que sempre começa com @
-    if (value && !value.startsWith("@")) {
-      value = "@" + value.replace("@", "");
-    }
-    form.setValue("telegramUsername", value);
-  };
-
   // Manipulador para envio do formulário
   const onSubmit = async (data: FormValues) => {
     setIsLoading(true);
@@ -372,19 +159,14 @@ const SubmitSubscriptionForm = () => {
       const finalAccess = data.access === "OUTRO" ? data.customAccess : data.access;
 
       // Gerar código único
-      const {
-        data: code,
-        error: codeError
-      } = await supabase.rpc('generate_subscription_code');
+      const { data: code, error: codeError } = await supabase.rpc('generate_subscription_code');
       if (codeError) throw codeError;
 
       // Adicionar asterisco ao título para anúncios de membros
       const titleWithAsterisk = `* ${finalTitle.toUpperCase()}`;
 
-      // Enviar para o banco de dados - Definir visible como false para novos anúncios
-      const {
-        error
-      } = await supabase.from('subscriptions').insert({
+      // Enviar para o banco de dados
+      const { error } = await supabase.from('subscriptions').insert({
         full_name: data.fullName,
         title: titleWithAsterisk,
         custom_title: data.title === "Personalizado" ? data.customTitle : null,
@@ -403,16 +185,15 @@ const SubmitSubscriptionForm = () => {
         featured: false,
         visible: false
       });
+
       if (error) throw error;
+
       toast({
         title: "Anúncio enviado",
         description: "Seu anúncio foi enviado com sucesso e será revisado pelo administrador."
       });
 
-      // Limpar formulário
       form.reset();
-
-      // Redirecionar para o perfil ou página inicial
       navigate('/');
     } catch (error) {
       console.error('Erro ao enviar anúncio:', error);
@@ -425,6 +206,7 @@ const SubmitSubscriptionForm = () => {
       setIsLoading(false);
     }
   };
+
   return (
     <Card>
       <CardHeader>
@@ -492,23 +274,34 @@ const SubmitSubscriptionForm = () => {
               )}
               
               {/* Preço */}
-              <FormField control={form.control} name="price" render={({
-              field
-            }) => <FormItem>
+              <FormField
+                control={form.control}
+                name="price"
+                render={({ field }) => (
+                  <FormItem>
                     <FormLabel>Preço</FormLabel>
                     <FormControl>
-                      <Input placeholder="R$ 19,90" {...field} onChange={e => {
-                  handlePriceChange(e);
-                  field.onChange(e);
-                }} />
+                      <Input 
+                        placeholder="R$ 15,00" 
+                        {...field} 
+                        onChange={(e) => {
+                          handlePriceChange(e, form.setValue);
+                          field.onChange(e);
+                        }}
+                      />
                     </FormControl>
                     <FormMessage />
-                  </FormItem>} />
+                  </FormItem>
+                )}
+              />
               
               {/* Categoria */}
-              {categories.length > 0 && <FormField control={form.control} name="category" render={({
-              field
-            }) => <FormItem>
+              {categories.length > 0 && (
+                <FormField
+                  control={form.control}
+                  name="category"
+                  render={({ field }) => (
+                    <FormItem>
                       <FormLabel>Categoria</FormLabel>
                       <Select onValueChange={field.onChange} defaultValue={field.value}>
                         <FormControl>
@@ -517,16 +310,23 @@ const SubmitSubscriptionForm = () => {
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          {categories.map(category => <SelectItem key={category} value={category}>{category}</SelectItem>)}
+                          {categories.map(category => (
+                            <SelectItem key={category} value={category}>{category}</SelectItem>
+                          ))}
                         </SelectContent>
                       </Select>
                       <FormMessage />
-                    </FormItem>} />}
+                    </FormItem>
+                  )}
+                />
+              )}
               
               {/* Método de Pagamento */}
-              <FormField control={form.control} name="paymentMethod" render={({
-              field
-            }) => <FormItem>
+              <FormField
+                control={form.control}
+                name="paymentMethod"
+                render={({ field }) => (
+                  <FormItem>
                     <FormLabel>Método de Pagamento</FormLabel>
                     <Select onValueChange={handlePaymentMethodChange} defaultValue={field.value}>
                       <FormControl>
@@ -541,34 +341,48 @@ const SubmitSubscriptionForm = () => {
                       </SelectContent>
                     </Select>
                     <FormMessage />
-                  </FormItem>} />
+                  </FormItem>
+                )}
+              />
               
               {/* Método de pagamento personalizado */}
-              {selectedPaymentMethod === "OUTRA FORMA" && <FormField control={form.control} name="customPaymentMethod" render={({
-              field
-            }) => <FormItem>
+              {selectedPaymentMethod === "OUTRA FORMA" && (
+                <FormField
+                  control={form.control}
+                  name="customPaymentMethod"
+                  render={({ field }) => (
+                    <FormItem>
                       <FormLabel>Método de Pagamento Personalizado</FormLabel>
                       <FormControl>
                         <Input placeholder="Insira um método de pagamento" {...field} />
                       </FormControl>
                       <FormMessage />
-                    </FormItem>} />}
+                    </FormItem>
+                  )}
+                />
+              )}
 
               {/* Chave PIX */}
-              <FormField control={form.control} name="pixKey" render={({
-              field
-            }) => <FormItem>
+              <FormField
+                control={form.control}
+                name="pixKey"
+                render={({ field }) => (
+                  <FormItem>
                     <FormLabel>Chave PIX</FormLabel>
                     <FormControl>
                       <Input placeholder="Sua chave PIX" {...field} />
                     </FormControl>
                     <FormMessage />
-                  </FormItem>} />
+                  </FormItem>
+                )}
+              />
               
               {/* Status */}
-              <FormField control={form.control} name="status" render={({
-              field
-            }) => <FormItem>
+              <FormField
+                control={form.control}
+                name="status"
+                render={({ field }) => (
+                  <FormItem>
                     <FormLabel>Status</FormLabel>
                     <Select onValueChange={field.onChange} defaultValue={field.value}>
                       <FormControl>
@@ -582,12 +396,16 @@ const SubmitSubscriptionForm = () => {
                       </SelectContent>
                     </Select>
                     <FormMessage />
-                  </FormItem>} />
+                  </FormItem>
+                )}
+              />
               
               {/* Acesso */}
-              <FormField control={form.control} name="access" render={({
-              field
-            }) => <FormItem>
+              <FormField
+                control={form.control}
+                name="access"
+                render={({ field }) => (
+                  <FormItem>
                     <FormLabel>Envio</FormLabel>
                     <Select onValueChange={handleAccessChange} defaultValue={field.value}>
                       <FormControl>
@@ -603,46 +421,70 @@ const SubmitSubscriptionForm = () => {
                       </SelectContent>
                     </Select>
                     <FormMessage />
-                  </FormItem>} />
+                  </FormItem>
+                )}
+              />
               
               {/* Acesso personalizado */}
-              {selectedAccess === "OUTRO" && <FormField control={form.control} name="customAccess" render={({
-              field
-            }) => <FormItem>
+              {selectedAccess === "OUTRO" && (
+                <FormField
+                  control={form.control}
+                  name="customAccess"
+                  render={({ field }) => (
+                    <FormItem>
                       <FormLabel>Tipo de Envio Personalizado</FormLabel>
                       <FormControl>
                         <Input placeholder="Especifique o tipo de envio" {...field} />
                       </FormControl>
                       <FormMessage />
-                    </FormItem>} />}
+                    </FormItem>
+                  )}
+                />
+              )}
               
               {/* WhatsApp */}
-              <FormField control={form.control} name="whatsappNumber" render={({
-              field
-            }) => <FormItem>
+              <FormField
+                control={form.control}
+                name="whatsappNumber"
+                render={({ field }) => (
+                  <FormItem>
                     <FormLabel>Número do WhatsApp</FormLabel>
                     <FormControl>
-                      <Input placeholder="+5511999999999" {...field} onChange={e => {
-                  handleWhatsAppChange(e);
-                  field.onChange(e);
-                }} />
+                      <Input 
+                        placeholder="+5511999999999" 
+                        {...field} 
+                        onChange={(e) => {
+                          handleWhatsAppChange(e, form.setValue);
+                          field.onChange(e);
+                        }}
+                      />
                     </FormControl>
                     <FormMessage />
-                  </FormItem>} />
+                  </FormItem>
+                )}
+              />
               
               {/* Telegram - Agora opcional */}
-              <FormField control={form.control} name="telegramUsername" render={({
-              field
-            }) => <FormItem>
+              <FormField
+                control={form.control}
+                name="telegramUsername"
+                render={({ field }) => (
+                  <FormItem>
                     <FormLabel>Usuário do Telegram (opcional)</FormLabel>
                     <FormControl>
-                      <Input placeholder="@usuariodotelegram" {...field} onChange={e => {
-                  handleTelegramChange(e);
-                  field.onChange(e);
-                }} />
+                      <Input 
+                        placeholder="@usuariodotelegram" 
+                        {...field} 
+                        onChange={(e) => {
+                          handleTelegramChange(e, form.setValue);
+                          field.onChange(e);
+                        }}
+                      />
                     </FormControl>
                     <FormMessage />
-                  </FormItem>} />
+                  </FormItem>
+                )}
+              />
             </div>
             
             {/* Botões */}
@@ -651,10 +493,14 @@ const SubmitSubscriptionForm = () => {
                 Cancelar
               </Button>
               <Button type="submit" disabled={isLoading}>
-                {isLoading ? <>
+                {isLoading ? (
+                  <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                     Enviando...
-                  </> : 'Enviar anúncio'}
+                  </>
+                ) : (
+                  'Enviar anúncio'
+                )}
               </Button>
             </div>
           </form>

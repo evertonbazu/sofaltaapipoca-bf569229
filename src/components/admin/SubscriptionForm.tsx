@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -15,178 +16,8 @@ import { Loader2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { SubscriptionData } from '@/types/subscriptionTypes';
 import { addSubscription, updateSubscription, logError, getAllSubscriptions, getAllCategories } from '@/services/subscription-service';
-
-// Lista de títulos predefinidos atualizada
-const PREDEFINED_TITLES = [
-  "Personalizado",
-  "1Password Famílias",
-  "12min - Resumo de Livros",
-  "AdGuard VPN Familiar",
-  "Adobe Creative Cloud",
-  "Adobe Stock",
-  "Alphaplay",
-  "Alura",
-  "Amazon Luna+",
-  "Amazon Music Unlimited",
-  "Apple Arcade Familiar",
-  "Apple Music Familiar",
-  "Apple One Familiar",
-  "Apple One Premium",
-  "Apple TV+",
-  "Avast Premium Security",
-  "Babbel",
-  "Boosteroid - Jogos",
-  "Brainly Plus",
-  "Brainstorm Academy Premium",
-  "Brasil Paralelo Premium",
-  "Canva para Educação",
-  "Canva Pro",
-  "CapCut Pro",
-  "ChatGPT Plus",
-  "Claude AI Pro",
-  "Claro TV+",
-  "Combate",
-  "Crunchyroll Mega Fan",
-  "Curso.dev",
-  "Cyber Ghost VPN",
-  "DAZN",
-  "Deezer Family",
-  "Deezer Premium",
-  "Discovery+",
-  "Disney+ Acesso Extra",
-  "Disney+ Cel/PC",
-  "Disney+ Com Anúncios",
-  "Doozy TV",
-  "DunaTV",
-  "Duolingo Family",
-  "Envato Elements Equipe",
-  "Eppi Cinema",
-  "Estratégia Concursos",
-  "ExpressVPN",
-  "F1 TV Premium",
-  "Filmicca",
-  "Finclass",
-  "Focus Concursos",
-  "Freepik Premium",
-  "Globoplay Padrão",
-  "Globoplay Padrão Com Anúncios",
-  "Globoplay Premium",
-  "Google One AI Premium",
-  "Google One Premium",
-  "Google Play Pass",
-  "GoRead Revistas",
-  "Gran Cursos Amigos",
-  "Gran Cursos Dupla",
-  "Gympass - Fitness",
-  "HotGo",
-  "iCloud+ 12TB",
-  "iCloud+ 200GB",
-  "iCloud+ 2TB",
-  "iCloud+ 6TB",
-  "iLovePDF Premium",
-  "iQIYI Premium",
-  "Iridium Academy",
-  "Jaleko Pro",
-  "Kaspersky Plus",
-  "Kaspersky Premium",
-  "Kaspersky Standard",
-  "Kaspersky VPN Secure",
-  "Kindle Unlimited",
-  "Kocowa+ Premium",
-  "Laravel Herd Pro",
-  "Leonard AI Apprentice",
-  "Leonard AI Artisan",
-  "Leonard AI Maestro",
-  "Looke",
-  "Max Básico Com Anúncio",
-  "Max Platinum",
-  "Max Standard",
-  "McAfee+ Premium",
-  "Mettzer",
-  "Microsoft 365 Enterprise",
-  "Microsoft 365 Family 1TB",
-  "Midjourney Básico",
-  "Midjourney Mega",
-  "Midjourney Padrão",
-  "Midjourney Pro",
-  "MUBI",
-  "My Family Cinema",
-  "Napster Família",
-  "NBA Básico Com Anúncios",
-  "NBA League Pass Premium",
-  "Netflix - Acesso Extra",
-  "Netflix - Cel/PC",
-  "Netflix - Com Anúncios",
-  "NordVPN Básico",
-  "NordVPN Completo",
-  "NordVPN Plus",
-  "Nova Concursos Premium",
-  "Oldflix",
-  "Origamid Curso Front-End",
-  "Paramount+ Padrão",
-  "Paramount+ Premium",
-  "Passei Direto Premium",
-  "Perplexity AI Pro",
-  "Photoroom Pro",
-  "Picsart Pro",
-  "PlayKids+",
-  "PlayPlus Premium",
-  "Premiere",
-  "Prime Video",
-  "Prime Video Com Anúncio",
-  "PrivateVPN",
-  "Proton Pass Family",
-  "Proton VPN Plus",
-  "Proton VPN Visionary",
-  "PureVPN",
-  "Qconcursos Básico",
-  "Qconcursos Ilimitado",
-  "Qconcursos Intermediário",
-  "Qobuz Studio Familiar",
-  "Queima Diária",
-  "Rakuten Viki Pass Plus",
-  "Reserva Imovision",
-  "Reservatório de Dopamina",
-  "Rocketseat",
-  "SanarFlix",
-  "Scribd",
-  "SeaArt AI Beginner",
-  "SeaArt AI Master",
-  "SeaArt AI Professional",
-  "SeaArt AI Standard",
-  "Sky+",
-  "Spotify Premium Duo",
-  "Spotify Premium Família",
-  "Suno AI Premium",
-  "Surfshark VPN One",
-  "Surfshark VPN Starter",
-  "TIDAL Familiar",
-  "TotalPass - Fitness",
-  "Truecaller Premium",
-  "Ubisoft+ Classics",
-  "Ubisoft+ Premium",
-  "UFC Fight Pass",
-  "UniTV",
-  "Univer Vídeo",
-  "Universal+ Premium",
-  "Universal+ Standard",
-  "Vivo Play",
-  "Watch TV Brasil",
-  "Wellhub - Fitness",
-  "Xbox Game Pass",
-  "YouCine",
-  "YOUKU",
-  "YouTube Premium",
-  "YouTube Premium Lite",
-  "Zapping Full",
-  "Zapping Lite+"
-];
-
-// Converter títulos para o formato do Combobox
-const titleOptions = PREDEFINED_TITLES.map(title => ({
-  value: title,
-  label: title
-}));
+import { titleOptions } from '@/data/predefinedTitles';
+import { handlePriceChange, handleWhatsAppChange, handleTelegramChange } from '@/utils/formatting';
 
 // Lista de tipos de acesso
 const ACCESS_TYPES = [
@@ -268,8 +99,7 @@ const SubscriptionForm: React.FC<SubscriptionFormProps> = ({ initialData, isMemb
         ]);
         
         const titles = [...new Set(subscriptions.map(sub => sub.title.toUpperCase()))];
-        const combinedTitles = [...new Set([...PREDEFINED_TITLES, ...titles])];
-        setExistingTitles(combinedTitles);
+        setExistingTitles(titles);
         setCategories(categoryList);
       } catch (error) {
         console.error('Erro ao buscar dados:', error);
@@ -286,7 +116,7 @@ const SubscriptionForm: React.FC<SubscriptionFormProps> = ({ initialData, isMemb
       fullName: "",
       title: "",
       customTitle: "",
-      price: "R$ ",
+      price: "R$ 0,00",
       paymentMethod: "PIX (Mensal)",
       customPaymentMethod: "",
       status: "Assinado",
@@ -313,7 +143,7 @@ const SubscriptionForm: React.FC<SubscriptionFormProps> = ({ initialData, isMemb
       
       // Check if title is in the list of predefined titles or existing titles
       const titleUppercase = initialData.title.toUpperCase();
-      const isTitleInList = [...PREDEFINED_TITLES, ...existingTitles].includes(titleUppercase);
+      const isTitleInList = titleOptions.some(option => option.value === titleUppercase);
       
       // Check if payment method is one of the predefined ones
       const paymentMethod = initialData.paymentMethod;
@@ -345,7 +175,7 @@ const SubscriptionForm: React.FC<SubscriptionFormProps> = ({ initialData, isMemb
       setSelectedPaymentMethod(isPreDefinedPayment ? initialData.paymentMethod : "OUTRA FORMA");
       setSelectedAccess(isAccessInList ? initialData.access : "OUTRO");
     }
-  }, [initialData, form, existingTitles]);
+  }, [initialData, form]);
 
   // Handle title change
   const handleTitleChange = (value: string) => {
@@ -375,48 +205,6 @@ const SubscriptionForm: React.FC<SubscriptionFormProps> = ({ initialData, isMemb
     if (value !== "OUTRO") {
       form.setValue("customAccess", "");
     }
-  };
-
-  // Formatação de preço em reais
-  const handlePriceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    let value = e.target.value;
-    
-    // Garantir que sempre começa com R$ 
-    if (!value.startsWith("R$ ")) {
-      value = "R$ " + value.replace("R$ ", "");
-    }
-    
-    // Remover qualquer caractere não numérico, exceto vírgula e ponto
-    const numericValue = value.substring(3).replace(/[^\d,\.]/g, "");
-    
-    // Formatar o valor como moeda brasileira
-    let formattedValue = "R$ " + numericValue;
-    
-    form.setValue("price", formattedValue);
-  };
-
-  // Manipular mudança no WhatsApp para manter o prefixo +55
-  const handleWhatsAppChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    let value = e.target.value;
-    
-    // Garantir que sempre começa com +55
-    if (!value.startsWith("+55")) {
-      value = "+55" + value.replace("+55", "");
-    }
-    
-    form.setValue("whatsappNumber", value);
-  };
-
-  // Manipular mudança no Telegram para manter o prefixo @
-  const handleTelegramChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    let value = e.target.value;
-    
-    // Garantir que sempre começa com @
-    if (value && !value.startsWith("@")) {
-      value = "@" + value.replace("@", "");
-    }
-    
-    form.setValue("telegramUsername", value);
   };
 
   // Form submission handler
@@ -584,10 +372,10 @@ const SubscriptionForm: React.FC<SubscriptionFormProps> = ({ initialData, isMemb
                     <FormLabel>Preço</FormLabel>
                     <FormControl>
                       <Input 
-                        placeholder="R$ 19,90" 
+                        placeholder="R$ 15,00" 
                         {...field} 
                         onChange={(e) => {
-                          handlePriceChange(e);
+                          handlePriceChange(e, form.setValue);
                           field.onChange(e);
                         }}
                       />
@@ -785,7 +573,7 @@ const SubscriptionForm: React.FC<SubscriptionFormProps> = ({ initialData, isMemb
                         placeholder="+5511999999999" 
                         {...field} 
                         onChange={(e) => {
-                          handleWhatsAppChange(e);
+                          handleWhatsAppChange(e, form.setValue);
                           field.onChange(e);
                         }}
                       />
@@ -807,7 +595,7 @@ const SubscriptionForm: React.FC<SubscriptionFormProps> = ({ initialData, isMemb
                         placeholder="@usuariotelegram" 
                         {...field} 
                         onChange={(e) => {
-                          handleTelegramChange(e);
+                          handleTelegramChange(e, form.setValue);
                           field.onChange(e);
                         }}
                       />
