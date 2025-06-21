@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -16,6 +15,11 @@ import { supabase } from '@/integrations/supabase/client';
 import { getAllCategories } from '@/services/subscription-service';
 import { titleOptions } from '@/data/predefinedTitles';
 import { handlePriceChange, handleWhatsAppChange, handleTelegramChange } from '@/utils/formatting';
+
+/**
+ * Componente de formulário para submissão de anúncios pelos usuários
+ * @version 3.7.0
+ */
 
 // Schema para validação do formulário
 const formSchema = z.object({

@@ -1,6 +1,10 @@
 
 import React from "react";
 
+/**
+ * Componente de rodapé da aplicação
+ * @version 3.7.0
+ */
 interface FooterProps {
   appVersion: string;
 }

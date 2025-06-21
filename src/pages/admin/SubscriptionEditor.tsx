@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import AdminLayout from '@/components/admin/AdminLayout';
@@ -10,7 +9,7 @@ import { useToast } from '@/components/ui/use-toast';
 
 /**
  * Página para editar assinaturas no painel administrativo
- * @version 3.5.0
+ * @version 3.7.0
  */
 const SubscriptionEditor = () => {
   const { id } = useParams<{ id?: string }>();

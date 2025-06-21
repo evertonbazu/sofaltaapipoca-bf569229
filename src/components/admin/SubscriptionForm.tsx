@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -18,6 +17,11 @@ import { SubscriptionData } from '@/types/subscriptionTypes';
 import { addSubscription, updateSubscription, logError, getAllSubscriptions, getAllCategories } from '@/services/subscription-service';
 import { titleOptions } from '@/data/predefinedTitles';
 import { handlePriceChange, handleWhatsAppChange, handleTelegramChange } from '@/utils/formatting';
+
+/**
+ * Componente de formulário para administração de assinaturas
+ * @version 3.7.0
+ */
 
 // Lista de tipos de acesso
 const ACCESS_TYPES = [
