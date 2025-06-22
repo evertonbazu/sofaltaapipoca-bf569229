@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -20,7 +21,7 @@ import { handlePriceChange, handleWhatsAppChange, handleTelegramChange } from '@
 
 /**
  * Componente de formulário para administração de assinaturas
- * @version 3.7.0
+ * @version 3.9.0
  */
 
 // Lista de tipos de acesso
@@ -508,17 +509,35 @@ const SubscriptionForm: React.FC<SubscriptionFormProps> = ({
                   {/* Cor do Cabeçalho */}
                   <FormField control={form.control} name="headerColor" render={({
                 field
-              }) => {}} />
+              }) => <FormItem>
+                        <FormLabel>Cor do Cabeçalho (admin)</FormLabel>
+                        <FormControl>
+                          <Input {...field} disabled={!isAdmin} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>} />
                   
                   {/* Cor do Preço */}
                   <FormField control={form.control} name="priceColor" render={({
                 field
-              }) => {}} />
+              }) => <FormItem>
+                        <FormLabel>Cor do Preço (admin)</FormLabel>
+                        <FormControl>
+                          <Input {...field} disabled={!isAdmin} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>} />
                   
                   {/* Ícone */}
                   <FormField control={form.control} name="icon" render={({
                 field
-              }) => {}} />
+              }) => <FormItem>
+                        <FormLabel>Ícone (admin)</FormLabel>
+                        <FormControl>
+                          <Input {...field} disabled={!isAdmin} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>} />
                   
                   {/* Destaque */}
                   <FormField control={form.control} name="featured" render={({

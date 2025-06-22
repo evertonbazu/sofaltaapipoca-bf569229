@@ -1,12 +1,16 @@
 
 import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
-import { Plus, RefreshCw } from 'lucide-react';
+import { Plus, RefreshCw, FileText } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import AdminLayout from '@/components/admin/AdminLayout';
 import SubscriptionList from '@/components/admin/SubscriptionList';
 import { useToast } from '@/components/ui/use-toast';
 
+/**
+ * Página de gerenciamento de assinaturas
+ * @version 3.9.0
+ */
 const Subscriptions = () => {
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState<string>('');
@@ -42,6 +46,14 @@ const Subscriptions = () => {
           >
             <RefreshCw className="h-4 w-4" />
             Atualizar
+          </Button>
+          <Button 
+            variant="outline"
+            onClick={() => navigate('/admin/reports')} 
+            className="flex items-center gap-1"
+          >
+            <FileText className="h-4 w-4" />
+            Relatórios
           </Button>
           <Button 
             onClick={() => navigate('/admin/subscriptions/new')} 
