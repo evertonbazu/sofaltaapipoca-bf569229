@@ -13,8 +13,15 @@ import { SubscriptionData } from '@/types/subscriptionTypes';
  */
 const SubscriptionReport: React.FC = () => {
   const [isGenerating, setIsGenerating] = useState<boolean>(false);
-  const [reportData, setReportData] = useState<string[]>([]);
+  const [reportData, setReportData] = useState<Array<{title: string, url: string}>>([]);
   const { toast } = useToast();
+
+  // Função simples para encurtar URLs (simulação de encurtador)
+  const shortenUrl = (fullUrl: string): string => {
+    // Extrai apenas o ID da URL e cria um formato mais curto
+    const id = fullUrl.split('/subscription/')[1];
+    return `https://tinyurl.com/sf-${id?.substring(0, 8)}`;
+  };
 
   // Gerar relatório ordenado alfabeticamente
   const generateReport = async () => {
@@ -29,13 +36,17 @@ const SubscriptionReport: React.FC = () => {
           a.title.toLowerCase().localeCompare(b.title.toLowerCase())
         );
 
-      // Extrair apenas os títulos
-      const titles = visibleSubscriptions.map((sub: SubscriptionData) => sub.title);
-      setReportData(titles);
+      // Extrair títulos e URLs
+      const reportItems = visibleSubscriptions.map((sub: SubscriptionData) => ({
+        title: sub.title,
+        url: shortenUrl(`https://sofaltaapipoca.lovable.app/subscription/${sub.id}`)
+      }));
+      
+      setReportData(reportItems);
 
       toast({
         title: "Relatório gerado",
-        description: `${titles.length} assinaturas encontradas e ordenadas alfabeticamente.`,
+        description: `${reportItems.length} assinaturas encontradas e ordenadas alfabeticamente.`,
       });
     } catch (error) {
       console.error('Erro ao gerar relatório:', error);
@@ -70,7 +81,9 @@ const SubscriptionReport: React.FC = () => {
       "TÍTULOS EM ORDEM ALFABÉTICA:",
       "-----------------------------",
       "",
-      ...reportData.map((title, index) => `${(index + 1).toString().padStart(3, '0')}. ${title}`),
+      ...reportData.map((item, index) => 
+        `${(index + 1).toString().padStart(3, '0')}. ${item.title} - ${item.url}`
+      ),
       "",
       "====================================",
       "Relatório gerado automaticamente pelo sistema Só Falta a Pipoca"
@@ -145,9 +158,9 @@ const SubscriptionReport: React.FC = () => {
             </h3>
             <div className="bg-gray-50 p-4 rounded-md max-h-60 overflow-y-auto">
               <ol className="list-decimal list-inside space-y-1 text-sm">
-                {reportData.slice(0, 10).map((title, index) => (
+                {reportData.slice(0, 10).map((item, index) => (
                   <li key={index} className="text-gray-700">
-                    {title}
+                    {item.title} - {item.url}
                   </li>
                 ))}
                 {reportData.length > 10 && (
