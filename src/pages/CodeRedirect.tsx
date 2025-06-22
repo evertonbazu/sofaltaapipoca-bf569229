@@ -7,7 +7,7 @@ import { Loader2 } from 'lucide-react';
 
 /**
  * Página de redirecionamento para códigos abreviados
- * @version 3.10.0
+ * @version 3.10.1
  */
 const CodeRedirect: React.FC = () => {
   const { code } = useParams<{ code: string }>();
@@ -16,9 +16,12 @@ const CodeRedirect: React.FC = () => {
   useEffect(() => {
     const findSubscriptionByCode = async () => {
       if (!code) {
+        console.error('Código não fornecido');
         navigate('/404');
         return;
       }
+
+      console.log('Buscando assinatura com código:', code);
 
       try {
         const { data, error } = await supabase
@@ -28,12 +31,20 @@ const CodeRedirect: React.FC = () => {
           .eq('visible', true)
           .single();
 
-        if (error || !data) {
+        if (error) {
+          console.error('Erro ao buscar assinatura:', error);
+          navigate('/404');
+          return;
+        }
+
+        if (!data) {
           console.error('Assinatura não encontrada para o código:', code);
           navigate('/404');
-        } else {
-          navigate(`/subscription/${data.id}`);
+          return;
         }
+
+        console.log('Assinatura encontrada, redirecionando para:', `/subscription/${data.id}`);
+        navigate(`/subscription/${data.id}`);
       } catch (err) {
         console.error('Erro ao buscar assinatura pelo código:', err);
         navigate('/404');
@@ -51,6 +62,7 @@ const CodeRedirect: React.FC = () => {
           <div className="text-center">
             <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto mb-4" />
             <p className="text-gray-600">Redirecionando para a assinatura...</p>
+            <p className="text-sm text-gray-500 mt-2">Código: {code}</p>
           </div>
         </div>
       </div>
