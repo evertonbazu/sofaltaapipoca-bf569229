@@ -24,7 +24,6 @@ interface SubscriptionCardProps {
   isMemberSubmission?: boolean;
   featured?: boolean;
   isAdminSubmission?: boolean;
-  code?: string;
 }
 
 const SubscriptionCard = ({
@@ -42,11 +41,10 @@ const SubscriptionCard = ({
   icon = 'monitor',
   isSearchResult = false,
   addedDate,
-  version = '3.10.0',
+  version = '2.3.0',
   isMemberSubmission = false,
   featured = false,
-  isAdminSubmission = false,
-  code
+  isAdminSubmission = false
 }: SubscriptionCardProps) => {
   // State to track if current user is admin
   const [isAdmin, setIsAdmin] = React.useState(false);
@@ -107,20 +105,12 @@ const SubscriptionCard = ({
   // Determine the price color class based on the priceColor prop
   const priceColorClass = priceColor || 'text-blue-600';
 
-  // Gerar link abreviado usando o código da assinatura
-  const getSubscriptionLink = () => {
-    if (code) {
-      return `/${code}`;
-    }
-    return id ? `/subscription/${id}` : '#';
-  };
-
   return (
     <div className={`card h-full bg-white rounded-xl overflow-hidden shadow-lg ${isSearchResult ? 'search-highlight' : ''}`}>
       <div className={`${bgColorClass} p-4 flex items-center justify-center h-20 relative`}>
-        {id || code ? (
+        {id ? (
           <Link 
-            to={getSubscriptionLink()}
+            to={`/subscription/${id}`}
             className="text-xl font-bold text-white flex items-center text-center uppercase hover:text-gray-200 transition-colors"
           >
             🖥 {title}
