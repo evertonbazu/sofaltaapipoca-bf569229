@@ -3,17 +3,18 @@ import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/components/ui/use-toast";
-import { Loader2, FileText, Download } from 'lucide-react';
+import { Loader2, FileText, Download, MessageCircle } from 'lucide-react';
 import { getAllSubscriptions } from '@/services/subscription-service';
 import { SubscriptionData } from '@/types/subscriptionTypes';
 
 /**
  * Componente de relatório de assinaturas
- * @version 3.9.0
+ * @version 3.9.1
  */
 const SubscriptionReport: React.FC = () => {
   const [isGenerating, setIsGenerating] = useState<boolean>(false);
   const [reportData, setReportData] = useState<string[]>([]);
+  const [whatsappReportData, setWhatsappReportData] = useState<string[]>([]);
   const { toast } = useToast();
 
   // Gerar relatório ordenado alfabeticamente
@@ -32,6 +33,12 @@ const SubscriptionReport: React.FC = () => {
       // Extrair apenas os títulos
       const titles = visibleSubscriptions.map((sub: SubscriptionData) => sub.title);
       setReportData(titles);
+
+      // Gerar dados para relatório do WhatsApp
+      const whatsappTitles = visibleSubscriptions.map((sub: SubscriptionData) => 
+        `${sub.title} - https://wa.me/${sub.whatsappNumber}`
+      );
+      setWhatsappReportData(whatsappTitles);
 
       toast({
         title: "Relatório gerado",
@@ -99,6 +106,56 @@ const SubscriptionReport: React.FC = () => {
     });
   };
 
+  // Salvar relatório do WhatsApp como arquivo .txt
+  const downloadWhatsAppReport = () => {
+    if (whatsappReportData.length === 0) {
+      toast({
+        title: "Nenhum dado para exportar",
+        description: "Gere o relatório primeiro antes de fazer o download.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const reportContent = [
+      "RELATÓRIO DE ASSINATURAS DISPONÍVEIS - WHATSAPP",
+      "===============================================",
+      "",
+      `Data de geração: ${new Date().toLocaleDateString('pt-BR')} às ${new Date().toLocaleTimeString('pt-BR')}`,
+      `Total de assinaturas: ${whatsappReportData.length}`,
+      "",
+      "TÍTULOS COM WHATSAPP EM ORDEM ALFABÉTICA:",
+      "-----------------------------------------",
+      "",
+      ...whatsappReportData.map((item, index) => `${(index + 1).toString().padStart(3, '0')}. ${item}`),
+      "",
+      "===============================================",
+      "Relatório gerado automaticamente pelo sistema Só Falta a Pipoca"
+    ].join('\n');
+
+    // Criar e baixar o arquivo
+    const blob = new Blob([reportContent], { type: 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `relatorio_assinaturas_whatsapp_${new Date().toISOString().split('T')[0]}.txt`;
+    
+    document.body.appendChild(link);
+    link.click();
+    
+    // Limpeza
+    setTimeout(() => {
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    }, 100);
+
+    toast({
+      title: "Relatório WhatsApp baixado",
+      description: "O arquivo foi salvo em sua pasta de downloads.",
+    });
+  };
+
   return (
     <Card className="w-full">
       <CardHeader>
@@ -135,6 +192,16 @@ const SubscriptionReport: React.FC = () => {
           >
             <Download className="h-4 w-4" />
             Baixar como TXT
+          </Button>
+
+          <Button 
+            variant="outline"
+            onClick={downloadWhatsAppReport} 
+            disabled={whatsappReportData.length === 0}
+            className="flex items-center gap-2"
+          >
+            <MessageCircle className="h-4 w-4" />
+            Baixar como TXT Whats
           </Button>
         </div>
 
