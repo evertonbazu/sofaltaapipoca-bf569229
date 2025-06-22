@@ -9,19 +9,12 @@ import { SubscriptionData } from '@/types/subscriptionTypes';
 
 /**
  * Componente de relatório de assinaturas
- * @version 3.9.0
+ * @version 3.10.0
  */
 const SubscriptionReport: React.FC = () => {
   const [isGenerating, setIsGenerating] = useState<boolean>(false);
   const [reportData, setReportData] = useState<Array<{title: string, url: string}>>([]);
   const { toast } = useToast();
-
-  // Função simples para encurtar URLs (simulação de encurtador)
-  const shortenUrl = (fullUrl: string): string => {
-    // Extrai apenas o ID da URL e cria um formato mais curto
-    const id = fullUrl.split('/subscription/')[1];
-    return `https://tinyurl.com/sf-${id?.substring(0, 8)}`;
-  };
 
   // Gerar relatório ordenado alfabeticamente
   const generateReport = async () => {
@@ -36,10 +29,12 @@ const SubscriptionReport: React.FC = () => {
           a.title.toLowerCase().localeCompare(b.title.toLowerCase())
         );
 
-      // Extrair títulos e URLs
+      // Extrair títulos e URLs usando o formato abreviado
       const reportItems = visibleSubscriptions.map((sub: SubscriptionData) => ({
         title: sub.title,
-        url: shortenUrl(`https://sofaltaapipoca.lovable.app/subscription/${sub.id}`)
+        url: sub.code 
+          ? `https://sofaltaapipoca.lovable.app/${sub.code}`
+          : `https://sofaltaapipoca.lovable.app/subscription/${sub.id}`
       }));
       
       setReportData(reportItems);

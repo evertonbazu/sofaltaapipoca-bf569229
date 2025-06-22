@@ -3,14 +3,14 @@ import React from "react";
 
 /**
  * Componente centralizado para exibição da versão do site
- * @version 3.9.0
+ * @version 3.10.0
  */
 interface VersionProps {
   className?: string;
   showPrefix?: boolean;
 }
 
-export const APP_VERSION = "3.9.0";
+export const APP_VERSION = "3.10.0";
 
 const Version: React.FC<VersionProps> = ({ 
   className = "text-xs text-gray-400", 

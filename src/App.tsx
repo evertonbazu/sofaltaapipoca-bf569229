@@ -22,9 +22,12 @@ import Messages from '@/pages/admin/Messages';
 import HeaderButtons from '@/pages/admin/HeaderButtons';
 import Settings from '@/pages/admin/Settings';
 
+// Nova página para redirecionamento de códigos
+import CodeRedirect from '@/pages/CodeRedirect';
+
 /**
  * Aplicação principal com roteamento
- * @version 3.9.0
+ * @version 3.10.0
  */
 function App() {
   return (
@@ -38,6 +41,9 @@ function App() {
             <Route path="/profile" element={<Profile />} />
             <Route path="/submit" element={<SubmitSubscription />} />
             <Route path="/subscription/:id" element={<SubscriptionDetails />} />
+            
+            {/* Nova rota para códigos abreviados */}
+            <Route path="/:code" element={<CodeRedirect />} />
             
             {/* Admin routes */}
             <Route path="/admin" element={<Dashboard />} />
