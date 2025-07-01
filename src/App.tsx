@@ -21,10 +21,11 @@ import Users from '@/pages/admin/Users';
 import Messages from '@/pages/admin/Messages';
 import HeaderButtons from '@/pages/admin/HeaderButtons';
 import Settings from '@/pages/admin/Settings';
+import Changes from '@/pages/admin/Changes';
 
 /**
  * Aplicação principal com roteamento
- * @version 3.9.3
+ * @version 3.9.4
  */
 function App() {
   return (
@@ -47,6 +48,7 @@ function App() {
             <Route path="/admin/subscriptions/edit/:id" element={<SubscriptionEditor />} />
             <Route path="/admin/subscriptions/chat/:id" element={<ChatSubscriptionEditor />} />
             <Route path="/admin/pending" element={<PendingSubscriptions />} />
+            <Route path="/admin/changes" element={<Changes />} />
             <Route path="/admin/users" element={<Users />} />
             <Route path="/admin/messages" element={<Messages />} />
             <Route path="/admin/header-buttons" element={<HeaderButtons />} />

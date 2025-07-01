@@ -402,6 +402,39 @@ export type Database = {
         }
         Relationships: []
       }
+      subscription_logs: {
+        Row: {
+          action_type: string
+          created_at: string
+          details: Json | null
+          id: string
+          subscription_id: string | null
+          subscription_title: string
+          user_id: string | null
+          user_name: string | null
+        }
+        Insert: {
+          action_type: string
+          created_at?: string
+          details?: Json | null
+          id?: string
+          subscription_id?: string | null
+          subscription_title: string
+          user_id?: string | null
+          user_name?: string | null
+        }
+        Update: {
+          action_type?: string
+          created_at?: string
+          details?: Json | null
+          id?: string
+          subscription_id?: string | null
+          subscription_title?: string
+          user_id?: string | null
+          user_name?: string | null
+        }
+        Relationships: []
+      }
       subscriptions: {
         Row: {
           access: string
