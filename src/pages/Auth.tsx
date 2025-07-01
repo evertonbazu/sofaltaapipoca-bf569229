@@ -238,7 +238,7 @@ const Auth: React.FC = () => {
                   <FormField control={signupForm.control} name="password" render={({
                   field
                 }) => <FormItem>
-                        <FormLabel>Senha * (Crie um senha com 6 caracteres ou números)</FormLabel>
+                        <FormLabel>Senha * (Crie uma senha com 6 caracteres ou números)</FormLabel>
                         <FormControl>
                           <Input type="password" placeholder="******" {...field} />
                         </FormControl>
