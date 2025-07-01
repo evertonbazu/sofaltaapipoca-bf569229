@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Tv, Youtube, Apple, Monitor, Banknote, HandHelping, Key, Pin, Edit, Star } from 'lucide-react';
 import { Badge } from "@/components/ui/badge";
@@ -51,7 +50,6 @@ const SubscriptionCard = ({
   // State to track if current user is admin
   const [isAdmin, setIsAdmin] = React.useState(false);
 
-  // Check if user is admin
   React.useEffect(() => {
     const checkIfAdmin = async () => {
       try {
@@ -76,13 +74,10 @@ const SubscriptionCard = ({
 
   // Helper function to create Telegram link
   const getTelegramLink = () => {
-    // Add a null check for telegramUsername
     if (!telegramUsername) {
       return '#';
     }
-
-    // Remove @ if present at the beginning of the username
-    const cleanUsername = telegramUsername.startsWith('@') ? telegramUsername.substring(1) : telegramUsername;
+    const cleanUsername = telegramUsername.startsWith('@') ? telegramUsername.substring(1) : telegramUsername.startsWith('@') ? telegramUsername.substring(1) : telegramUsername;
     return `https://telegram.me/${cleanUsername}`;
   };
 
@@ -101,10 +96,7 @@ const SubscriptionCard = ({
     }
   };
 
-  // Determine the background color class based on the headerColor prop
   const bgColorClass = headerColor || 'bg-blue-600';
-
-  // Determine the price color class based on the priceColor prop
   const priceColorClass = priceColor || 'text-blue-600';
 
   return (
@@ -123,35 +115,30 @@ const SubscriptionCard = ({
           </h2>
         )}
         
-        {/* Posicionar estrela no canto superior direito quando em destaque */}
         {featured && (
           <div className="absolute top-2 right-2">
             <span className="text-yellow-300 text-xl">⭐</span>
           </div>
         )}
         
-        {/* Badge para submissões de membros */}
         {isMemberSubmission && (
           <div className="absolute top-2 right-2">
             
           </div>
         )}
         
-        {/* Badge para submissões de administradores */}
         {isAdminSubmission && (
           <div className="absolute top-2 right-2">
             <Badge variant="secondary" className="text-xs bg-purple-600 text-white">Admin</Badge>
           </div>
         )}
 
-        {/* Se for destaque e submissão de membro, ajustar a posição da badge de membro */}
         {featured && isMemberSubmission && (
           <div className="absolute top-8 right-2">
             
           </div>
         )}
         
-        {/* Se for destaque e submissão de admin, ajustar a posição da badge de admin */}
         {featured && isAdminSubmission && (
           <div className="absolute top-8 right-2">
             <Badge variant="secondary" className="text-xs bg-purple-600 text-white">Admin</Badge>
@@ -182,7 +169,7 @@ const SubscriptionCard = ({
             <span className="mr-1">🏦</span> Valor: {price}
           </p>
           <p className="text-gray-900 font-medium uppercase flex items-center">
-            <span className="mr-1">🫱🏼‍🫲🏼</span> Forma de Pagamento: {paymentMethod}
+            <span className="mr-1">🫱🏼‍🫲🏼</span> Pagamento: {paymentMethod}
           </p>
           <p className="text-gray-900 font-medium uppercase flex items-center">
             <span className="mr-1">📌</span> Status: {status}

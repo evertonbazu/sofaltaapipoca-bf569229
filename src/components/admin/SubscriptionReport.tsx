@@ -102,7 +102,7 @@ const SubscriptionReport: React.FC = () => {
     });
   };
 
-  // Salvar relatório do WhatsApp como arquivo .txt com o novo modelo
+  // Salvar relatório do WhatsApp como arquivo .txt com o novo modelo solicitado
   const downloadWhatsAppReport = () => {
     if (whatsappReportData.length === 0) {
       toast({
@@ -124,7 +124,7 @@ const SubscriptionReport: React.FC = () => {
       "-----------------------------------------",
       "",
       ...whatsappReportData.map((sub) => [
-        `**🖥 ${sub.title}**`,
+        `**🖥 ${sub.title.toUpperCase()}**`,
         `🏦 ${sub.price}`,
         `☎️ https://wa.me/${sub.whatsappNumber}`,
         "---"
