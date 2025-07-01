@@ -15,7 +15,7 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children, title }) => {
   const menuItems = [
     { icon: Home, label: 'Dashboard', path: '/admin' },
     { icon: Package, label: 'Assinaturas', path: '/admin/subscriptions' },
-    { icon: ClipboardList, label: 'Pendentes', path: '/admin/subscriptions/pending' },
+    { icon: ClipboardList, label: 'Pendentes', path: '/admin/pending' },
     { icon: MessageSquare, label: 'Mensagens', path: '/admin/messages' },
     { icon: Users, label: 'Usuários', path: '/admin/users' },
     { icon: PlusCircle, label: 'Botões', path: '/admin/header-buttons' },
