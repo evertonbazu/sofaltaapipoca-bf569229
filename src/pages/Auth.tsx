@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -13,24 +12,39 @@ import { useAuth } from '@/contexts/AuthContext';
 
 // Schema para validação do formulário de login
 const loginSchema = z.object({
-  email: z.string().email({ message: "Email inválido" }),
-  password: z.string().min(6, { message: "A senha deve ter pelo menos 6 caracteres" }),
+  email: z.string().email({
+    message: "Email inválido"
+  }),
+  password: z.string().min(6, {
+    message: "A senha deve ter pelo menos 6 caracteres"
+  })
 });
 
 // Schema para validação do formulário de cadastro
 const signupSchema = z.object({
-  email: z.string().email({ message: "Email inválido" }),
-  password: z.string().min(6, { message: "A senha deve ter pelo menos 6 caracteres" }),
-  confirmPassword: z.string().min(6, { message: "A senha deve ter pelo menos 6 caracteres" }),
-  full_name: z.string().min(2, { message: "Nome completo é obrigatório" }),
-  username: z.string().min(3, { message: "Nome de usuário deve ter pelo menos 3 caracteres" }),
-  whatsapp: z.string().min(10, { message: "WhatsApp é obrigatório" }),
-  telegram_username: z.string().optional(),
-}).refine((data) => data.password === data.confirmPassword, {
+  email: z.string().email({
+    message: "Email inválido"
+  }),
+  password: z.string().min(6, {
+    message: "A senha deve ter pelo menos 6 caracteres"
+  }),
+  confirmPassword: z.string().min(6, {
+    message: "A senha deve ter pelo menos 6 caracteres"
+  }),
+  full_name: z.string().min(2, {
+    message: "Nome completo é obrigatório"
+  }),
+  username: z.string().min(3, {
+    message: "Nome de usuário deve ter pelo menos 3 caracteres"
+  }),
+  whatsapp: z.string().min(10, {
+    message: "WhatsApp é obrigatório"
+  }),
+  telegram_username: z.string().optional()
+}).refine(data => data.password === data.confirmPassword, {
   message: "As senhas não correspondem",
-  path: ["confirmPassword"],
+  path: ["confirmPassword"]
 });
-
 type LoginFormValues = z.infer<typeof loginSchema>;
 type SignupFormValues = z.infer<typeof signupSchema>;
 
@@ -41,18 +55,19 @@ type SignupFormValues = z.infer<typeof signupSchema>;
 const Auth: React.FC = () => {
   const [activeTab, setActiveTab] = useState<string>("login");
   const [isLoading, setIsLoading] = useState<boolean>(false);
-  const { signIn, authState } = useAuth();
+  const {
+    signIn,
+    authState
+  } = useAuth();
   const navigate = useNavigate();
   const [redirected, setRedirected] = useState(false);
-
   const loginForm = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
       email: "",
-      password: "",
-    },
+      password: ""
+    }
   });
-
   const signupForm = useForm<SignupFormValues>({
     resolver: zodResolver(signupSchema),
     defaultValues: {
@@ -62,8 +77,8 @@ const Auth: React.FC = () => {
       full_name: "",
       username: "",
       whatsapp: "",
-      telegram_username: "",
-    },
+      telegram_username: ""
+    }
   });
 
   // Redirecionar se já estiver autenticado
@@ -92,9 +107,12 @@ const Auth: React.FC = () => {
   const onSignupSubmit = async (data: SignupFormValues) => {
     setIsLoading(true);
     try {
-      const { supabase } = await import('@/integrations/supabase/client');
-      
-      const { error } = await supabase.auth.signUp({
+      const {
+        supabase
+      } = await import('@/integrations/supabase/client');
+      const {
+        error
+      } = await supabase.auth.signUp({
         email: data.email,
         password: data.password,
         options: {
@@ -102,15 +120,13 @@ const Auth: React.FC = () => {
             full_name: data.full_name,
             username: data.username,
             whatsapp: data.whatsapp,
-            telegram_username: data.telegram_username || null,
+            telegram_username: data.telegram_username || null
           }
         }
       });
-
       if (error) {
         throw error;
       }
-
       setActiveTab('login');
     } catch (error) {
       console.error('Erro no cadastro:', error);
@@ -118,17 +134,12 @@ const Auth: React.FC = () => {
       setIsLoading(false);
     }
   };
-
   if (authState.isLoading) {
-    return (
-      <div className="flex h-screen w-full items-center justify-center">
+    return <div className="flex h-screen w-full items-center justify-center">
         <p>Carregando...</p>
-      </div>
-    );
+      </div>;
   }
-
-  return (
-    <div className="flex min-h-screen bg-gray-100 items-center justify-center p-4">
+  return <div className="flex min-h-screen bg-gray-100 items-center justify-center p-4">
       <Card className="w-full max-w-md mx-auto">
         <CardHeader>
           <CardTitle className="text-2xl text-center">Só Falta a Pipoca</CardTitle>
@@ -146,32 +157,24 @@ const Auth: React.FC = () => {
             <TabsContent value="login">
               <Form {...loginForm}>
                 <form onSubmit={loginForm.handleSubmit(onLoginSubmit)} className="space-y-4 mt-4">
-                  <FormField
-                    control={loginForm.control}
-                    name="email"
-                    render={({ field }) => (
-                      <FormItem>
+                  <FormField control={loginForm.control} name="email" render={({
+                  field
+                }) => <FormItem>
                         <FormLabel>Email</FormLabel>
                         <FormControl>
                           <Input placeholder="nome@exemplo.com" {...field} />
                         </FormControl>
                         <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={loginForm.control}
-                    name="password"
-                    render={({ field }) => (
-                      <FormItem>
+                      </FormItem>} />
+                  <FormField control={loginForm.control} name="password" render={({
+                  field
+                }) => <FormItem>
                         <FormLabel>Senha</FormLabel>
                         <FormControl>
                           <Input type="password" placeholder="******" {...field} />
                         </FormControl>
                         <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                      </FormItem>} />
                   <Button type="submit" className="w-full" disabled={isLoading}>
                     {isLoading ? "Entrando..." : "Entrar"}
                   </Button>
@@ -182,102 +185,74 @@ const Auth: React.FC = () => {
             <TabsContent value="signup">
               <Form {...signupForm}>
                 <form onSubmit={signupForm.handleSubmit(onSignupSubmit)} className="space-y-4 mt-4">
-                  <FormField
-                    control={signupForm.control}
-                    name="email"
-                    render={({ field }) => (
-                      <FormItem>
+                  <FormField control={signupForm.control} name="email" render={({
+                  field
+                }) => <FormItem>
                         <FormLabel>Email *</FormLabel>
                         <FormControl>
                           <Input placeholder="nome@exemplo.com" {...field} />
                         </FormControl>
                         <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                      </FormItem>} />
                   
-                  <FormField
-                    control={signupForm.control}
-                    name="full_name"
-                    render={({ field }) => (
-                      <FormItem>
+                  <FormField control={signupForm.control} name="full_name" render={({
+                  field
+                }) => <FormItem>
                         <FormLabel>Nome Completo *</FormLabel>
                         <FormControl>
                           <Input placeholder="Seu nome completo" {...field} />
                         </FormControl>
                         <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                      </FormItem>} />
                   
-                  <FormField
-                    control={signupForm.control}
-                    name="username"
-                    render={({ field }) => (
-                      <FormItem>
+                  <FormField control={signupForm.control} name="username" render={({
+                  field
+                }) => <FormItem>
                         <FormLabel>Nome de Usuário *</FormLabel>
                         <FormControl>
                           <Input placeholder="usuario123" {...field} />
                         </FormControl>
                         <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                      </FormItem>} />
                   
-                  <FormField
-                    control={signupForm.control}
-                    name="whatsapp"
-                    render={({ field }) => (
-                      <FormItem>
+                  <FormField control={signupForm.control} name="whatsapp" render={({
+                  field
+                }) => <FormItem>
                         <FormLabel>WhatsApp *</FormLabel>
                         <FormControl>
                           <Input placeholder="(11) 99999-9999" {...field} />
                         </FormControl>
                         <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                      </FormItem>} />
                   
-                  <FormField
-                    control={signupForm.control}
-                    name="telegram_username"
-                    render={({ field }) => (
-                      <FormItem>
+                  <FormField control={signupForm.control} name="telegram_username" render={({
+                  field
+                }) => <FormItem>
                         <FormLabel>Telegram (Opcional)</FormLabel>
                         <FormControl>
                           <Input placeholder="@usuario" {...field} />
                         </FormControl>
                         <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                      </FormItem>} />
                   
-                  <FormField
-                    control={signupForm.control}
-                    name="password"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Senha *</FormLabel>
+                  <FormField control={signupForm.control} name="password" render={({
+                  field
+                }) => <FormItem>
+                        <FormLabel>Senha * (Crie um senha com 6 caracteres)</FormLabel>
                         <FormControl>
                           <Input type="password" placeholder="******" {...field} />
                         </FormControl>
                         <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={signupForm.control}
-                    name="confirmPassword"
-                    render={({ field }) => (
-                      <FormItem>
+                      </FormItem>} />
+                  <FormField control={signupForm.control} name="confirmPassword" render={({
+                  field
+                }) => <FormItem>
                         <FormLabel>Confirmar Senha *</FormLabel>
                         <FormControl>
                           <Input type="password" placeholder="******" {...field} />
                         </FormControl>
                         <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                      </FormItem>} />
                   
                   <div className="text-sm text-gray-500">
                     <span className="text-red-500">* Campos obrigatórios</span>
@@ -297,8 +272,6 @@ const Auth: React.FC = () => {
           </Button>
         </CardFooter>
       </Card>
-    </div>
-  );
+    </div>;
 };
-
 export default Auth;
