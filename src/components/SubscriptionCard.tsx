@@ -24,6 +24,7 @@ interface SubscriptionCardProps {
   isMemberSubmission?: boolean;
   featured?: boolean;
   isAdminSubmission?: boolean;
+  code?: string;
 }
 
 const SubscriptionCard = ({
@@ -44,7 +45,8 @@ const SubscriptionCard = ({
   version = '2.3.0',
   isMemberSubmission = false,
   featured = false,
-  isAdminSubmission = false
+  isAdminSubmission = false,
+  code
 }: SubscriptionCardProps) => {
   // State to track if current user is admin
   const [isAdmin, setIsAdmin] = React.useState(false);
@@ -171,6 +173,11 @@ const SubscriptionCard = ({
       
       <div className="p-5 space-y-3">
         <div className="space-y-2 text-left">
+          {code && (
+            <p className="text-gray-900 font-medium uppercase flex items-center">
+              <span className="mr-1">🔠</span> {code}
+            </p>
+          )}
           <p className={`${priceColorClass} font-medium uppercase flex items-center`}>
             <span className="mr-1">🏦</span> Valor: {price}
           </p>

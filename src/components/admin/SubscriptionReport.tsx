@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -9,12 +8,12 @@ import { SubscriptionData } from '@/types/subscriptionTypes';
 
 /**
  * Componente de relatório de assinaturas
- * @version 3.9.1
+ * @version 3.9.2
  */
 const SubscriptionReport: React.FC = () => {
   const [isGenerating, setIsGenerating] = useState<boolean>(false);
   const [reportData, setReportData] = useState<string[]>([]);
-  const [whatsappReportData, setWhatsappReportData] = useState<string[]>([]);
+  const [whatsappReportData, setWhatsappReportData] = useState<SubscriptionData[]>([]);
   const { toast } = useToast();
 
   // Gerar relatório ordenado alfabeticamente
@@ -34,11 +33,8 @@ const SubscriptionReport: React.FC = () => {
       const titles = visibleSubscriptions.map((sub: SubscriptionData) => sub.title);
       setReportData(titles);
 
-      // Gerar dados para relatório do WhatsApp
-      const whatsappTitles = visibleSubscriptions.map((sub: SubscriptionData) => 
-        `${sub.title} - https://wa.me/${sub.whatsappNumber}`
-      );
-      setWhatsappReportData(whatsappTitles);
+      // Gerar dados para relatório do WhatsApp (agora com dados completos)
+      setWhatsappReportData(visibleSubscriptions);
 
       toast({
         title: "Relatório gerado",
@@ -106,7 +102,7 @@ const SubscriptionReport: React.FC = () => {
     });
   };
 
-  // Salvar relatório do WhatsApp como arquivo .txt
+  // Salvar relatório do WhatsApp como arquivo .txt com o novo modelo
   const downloadWhatsAppReport = () => {
     if (whatsappReportData.length === 0) {
       toast({
@@ -118,16 +114,21 @@ const SubscriptionReport: React.FC = () => {
     }
 
     const reportContent = [
-      "RELATÓRIO DE ASSINATURAS DISPONÍVEIS - WHATSAPP",
+      "RELATÓRIO DE ASSINATURAS DISPONÍVEIS",
       "===============================================",
       "",
       `Data de geração: ${new Date().toLocaleDateString('pt-BR')} às ${new Date().toLocaleTimeString('pt-BR')}`,
       `Total de assinaturas: ${whatsappReportData.length}`,
       "",
-      "TÍTULOS COM WHATSAPP EM ORDEM ALFABÉTICA:",
+      "DIVISÕES DISPONÍVEIS",
       "-----------------------------------------",
       "",
-      ...whatsappReportData.map((item, index) => `${(index + 1).toString().padStart(3, '0')}. ${item}`),
+      ...whatsappReportData.map((sub) => [
+        `**🖥 ${sub.title}**`,
+        `🏦 ${sub.price}`,
+        `☎️ https://wa.me/${sub.whatsappNumber}`,
+        "---"
+      ].join('\n')),
       "",
       "===============================================",
       "Relatório gerado automaticamente pelo sistema Só Falta a Pipoca"

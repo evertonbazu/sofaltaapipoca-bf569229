@@ -24,7 +24,7 @@ import Settings from '@/pages/admin/Settings';
 
 /**
  * Aplicação principal com roteamento
- * @version 3.9.0
+ * @version 3.9.2
  */
 function App() {
   return (
@@ -47,6 +47,7 @@ function App() {
             <Route path="/admin/subscriptions/edit/:id" element={<SubscriptionEditor />} />
             <Route path="/admin/subscriptions/chat/:id" element={<ChatSubscriptionEditor />} />
             <Route path="/admin/pending" element={<PendingSubscriptions />} />
+            <Route path="/admin/pendentes" element={<PendingSubscriptions />} />
             <Route path="/admin/users" element={<Users />} />
             <Route path="/admin/messages" element={<Messages />} />
             <Route path="/admin/header-buttons" element={<HeaderButtons />} />
