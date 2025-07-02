@@ -114,7 +114,7 @@ const SubscriptionReport: React.FC = () => {
     }
 
     const reportContent = [
-      "RELATÓRIO DE ASSINATURAS DISPONÍVEIS",
+      "*RELATÓRIO DE ASSINATURAS DISPONÍVEIS*",
       "===============================================",
       "",
       `Data de geração: ${new Date().toLocaleDateString('pt-BR')} às ${new Date().toLocaleTimeString('pt-BR')}`,
@@ -124,14 +124,14 @@ const SubscriptionReport: React.FC = () => {
       "-----------------------------------------",
       "",
       ...whatsappReportData.map((sub) => [
-        `**🖥 ${sub.title.toUpperCase()}**`,
-        `🏦 ${sub.price}`,
+        `*🖥 ${sub.title.toUpperCase()}*`,
+        `🏦 ${sub.price} - ${sub.paymentMethod}`,
         `☎️ https://wa.me/${sub.whatsappNumber}`,
-        "---"
+        ""
       ].join('\n')),
-      "",
       "===============================================",
-      "Relatório gerado automaticamente pelo sistema Só Falta a Pipoca"
+      "Relatório gerado automaticamente pelo sistema Só Falta a Pipoca",
+      "https://sofaltaapipoca.lovable.app/"
     ].join('\n');
 
     // Criar e baixar o arquivo
