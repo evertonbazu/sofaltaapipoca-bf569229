@@ -10,7 +10,7 @@ interface VersionProps {
   showPrefix?: boolean;
 }
 
-export const APP_VERSION = "3.9.5";
+export const APP_VERSION = "3.9.6";
 
 const Version: React.FC<VersionProps> = ({ 
   className = "text-xs text-gray-400", 
