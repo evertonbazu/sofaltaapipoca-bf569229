@@ -505,21 +505,6 @@ const SubscriptionForm: React.FC<SubscriptionFormProps> = ({
               
               {/* Campos apenas para administradores */}
               {isAdmin && <>
-                  {/* Cor do Cabeçalho */}
-                  <FormField control={form.control} name="headerColor" render={({
-                field
-              }) => {}} />
-                  
-                  {/* Cor do Preço */}
-                  <FormField control={form.control} name="priceColor" render={({
-                field
-              }) => {}} />
-                  
-                  {/* Ícone */}
-                  <FormField control={form.control} name="icon" render={({
-                field
-              }) => {}} />
-                  
                   {/* Destaque */}
                   <FormField control={form.control} name="featured" render={({
                 field
