@@ -45,7 +45,6 @@ export const AdvancedSettings: React.FC = () => {
       setIsSaving(false);
     }
   };
-  const { toast } = useToast();
 
   const handleClearCache = () => {
     // Simular limpeza de cache

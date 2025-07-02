@@ -12,19 +12,30 @@ import { IntegrationsSettings } from '@/components/admin/settings/IntegrationsSe
 import { AdvancedSettings } from '@/components/admin/settings/AdvancedSettings';
 import { SecuritySettings } from '@/components/admin/settings/SecuritySettings';
 import { SystemSettings } from '@/components/admin/settings/SystemSettings';
+import { APP_VERSION } from '@/components/Version';
 
 const Settings = () => {
   return (
-    <AdminLayout title="Configurações">
-      <Tabs defaultValue="general" className="space-y-4">
-        <TabsList className="grid w-full max-w-2xl grid-cols-6">
-          <TabsTrigger value="general">Geral</TabsTrigger>
-          <TabsTrigger value="appearance">Aparência</TabsTrigger>
-          <TabsTrigger value="integrations">Integrações</TabsTrigger>
-          <TabsTrigger value="security">Segurança</TabsTrigger>
-          <TabsTrigger value="system">Sistema</TabsTrigger>
-          <TabsTrigger value="advanced">Avançado</TabsTrigger>
-        </TabsList>
+    <AdminLayout title={`Configurações - v${APP_VERSION}`}>
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold">Configurações do Sistema</h1>
+            <p className="text-muted-foreground">
+              Gerencie todas as configurações e preferências do sistema.
+            </p>
+          </div>
+        </div>
+
+        <Tabs defaultValue="general" className="space-y-6">
+          <TabsList className="grid w-full grid-cols-6 lg:w-fit">
+            <TabsTrigger value="general">Geral</TabsTrigger>
+            <TabsTrigger value="appearance">Aparência</TabsTrigger>
+            <TabsTrigger value="integrations">Integrações</TabsTrigger>
+            <TabsTrigger value="security">Segurança</TabsTrigger>
+            <TabsTrigger value="system">Sistema</TabsTrigger>
+            <TabsTrigger value="advanced">Avançado</TabsTrigger>
+          </TabsList>
         
         <TabsContent value="general">
           <GeneralSettings />
@@ -49,7 +60,9 @@ const Settings = () => {
         <TabsContent value="advanced">
           <AdvancedSettings />
         </TabsContent>
-      </Tabs>
+        
+        </Tabs>
+      </div>
     </AdminLayout>
   );
 };
