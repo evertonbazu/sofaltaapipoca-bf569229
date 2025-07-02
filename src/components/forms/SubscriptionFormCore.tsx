@@ -15,34 +15,28 @@ import { handlePriceChange, handleWhatsAppChange, handleTelegramChange } from '@
 import { Textarea } from "@/components/ui/textarea";
 
 // Schema para validação do formulário
-const formSchema = z.object({
-  fullName: z.string().min(1, {
+const createFormSchema = (mode: 'create' | 'edit') => z.object({
+  fullName: mode === 'create' ? z.string().min(1, {
     message: "O nome completo é obrigatório"
-  }).optional().or(z.literal("")),
+  }) : z.string().optional().or(z.literal("")),
   title: z.string().min(1, {
     message: "O título é obrigatório"
   }),
-  customTitle: z.string().min(1, {
-    message: "O título personalizado é obrigatório"
-  }).optional().or(z.literal("")),
+  customTitle: z.string().optional().or(z.literal("")),
   price: z.string().min(1, {
     message: "O preço é obrigatório"
   }),
   paymentMethod: z.string().min(1, {
     message: "O método de pagamento é obrigatório"
   }),
-  customPaymentMethod: z.string().min(1, {
-    message: "O método de pagamento personalizado é obrigatório"
-  }).optional().or(z.literal("")),
+  customPaymentMethod: z.string().optional().or(z.literal("")),
   status: z.string().min(1, {
     message: "O status é obrigatório"
   }),
   access: z.string().min(1, {
     message: "O acesso é obrigatório"
   }),
-  customAccess: z.string().min(1, {
-    message: "O tipo de acesso personalizado é obrigatório"
-  }).optional().or(z.literal("")),
+  customAccess: z.string().optional().or(z.literal("")),
   whatsappNumber: z.string().min(1, {
     message: "O número do WhatsApp é obrigatório"
   }),
@@ -50,13 +44,13 @@ const formSchema = z.object({
   pixKey: z.string().min(1, {
     message: "A chave PIX é obrigatória"
   }),
-  category: z.string().min(1, {
-    message: "A categoria é obrigatória"
-  }).optional().or(z.literal("")),
-  modificationReason: z.string().optional().or(z.literal(""))
+  category: z.string().optional().or(z.literal("")),
+  modificationReason: mode === 'edit' ? z.string().min(1, {
+    message: "O motivo da modificação é obrigatório"
+  }) : z.string().optional().or(z.literal(""))
 });
 
-type FormValues = z.infer<typeof formSchema>;
+type FormValues = z.infer<ReturnType<typeof createFormSchema>>;
 
 interface Props {
   mode: 'create' | 'edit';
@@ -85,7 +79,7 @@ const SubscriptionFormCore: React.FC<Props> = ({
 
   // Configurar formulário
   const form = useForm<FormValues>({
-    resolver: zodResolver(formSchema),
+    resolver: zodResolver(createFormSchema(mode)),
     defaultValues: {
       fullName: initialData?.fullName || "",
       title: initialData?.title || "",
