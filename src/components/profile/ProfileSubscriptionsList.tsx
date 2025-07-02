@@ -1,11 +1,9 @@
-
-import React, { useState } from "react";
+import React from "react";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Trash2, Edit3 } from "lucide-react";
+import { Loader2, Trash2 } from "lucide-react";
 import { SubscriptionData } from "@/types/subscriptionTypes";
-import SubscriptionEditDialog from "./SubscriptionEditDialog";
 
 interface Props {
   userSubscriptions: SubscriptionData[];
@@ -22,7 +20,6 @@ const ProfileSubscriptionsList: React.FC<Props> = ({
   navigate,
   onRefresh,
 }) => {
-  const [editingSubscription, setEditingSubscription] = useState<SubscriptionData | null>(null);
   return (
     <>
       <h2 className="text-xl font-medium mb-4">Minhas Assinaturas</h2>
@@ -89,15 +86,6 @@ const ProfileSubscriptionsList: React.FC<Props> = ({
               <CardFooter className="pt-3">
                 <div className="flex gap-2 w-full">
                   <Button
-                    variant="outline"
-                    className="flex-1"
-                    disabled={!!actionInProgress}
-                    onClick={() => setEditingSubscription(subscription)}
-                  >
-                    <Edit3 className="mr-2 h-4 w-4" />
-                    Modificar
-                  </Button>
-                  <Button
                     variant="destructive"
                     className="flex-1"
                     disabled={!!actionInProgress}
@@ -118,13 +106,6 @@ const ProfileSubscriptionsList: React.FC<Props> = ({
           ))}
         </div>
       )}
-      
-      <SubscriptionEditDialog
-        isOpen={!!editingSubscription}
-        onClose={() => setEditingSubscription(null)}
-        subscription={editingSubscription}
-        onSuccess={onRefresh}
-      />
     </>
   );
 };
