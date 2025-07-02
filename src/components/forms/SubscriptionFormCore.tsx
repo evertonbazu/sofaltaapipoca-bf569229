@@ -15,40 +15,36 @@ import { handlePriceChange, handleWhatsAppChange, handleTelegramChange } from '@
 import { Textarea } from "@/components/ui/textarea";
 
 // Schema para validação do formulário
-const createFormSchema = (mode: 'create' | 'edit') => z.object({
-  fullName: mode === 'create' ? z.string().min(1, {
-    message: "O nome completo é obrigatório"
-  }) : z.string().optional().or(z.literal("")),
-  title: z.string().min(1, {
-    message: "O título é obrigatório"
-  }),
-  customTitle: z.string().optional().or(z.literal("")),
-  price: z.string().min(1, {
-    message: "O preço é obrigatório"
-  }),
-  paymentMethod: z.string().min(1, {
-    message: "O método de pagamento é obrigatório"
-  }),
-  customPaymentMethod: z.string().optional().or(z.literal("")),
-  status: z.string().min(1, {
-    message: "O status é obrigatório"
-  }),
-  access: z.string().min(1, {
-    message: "O acesso é obrigatório"
-  }),
-  customAccess: z.string().optional().or(z.literal("")),
-  whatsappNumber: z.string().min(1, {
-    message: "O número do WhatsApp é obrigatório"
-  }),
-  telegramUsername: z.string().optional().or(z.literal("")),
-  pixKey: z.string().min(1, {
-    message: "A chave PIX é obrigatória"
-  }),
-  category: z.string().optional().or(z.literal("")),
-  modificationReason: mode === 'edit' ? z.string().min(1, {
-    message: "O motivo da modificação é obrigatório"
-  }) : z.string().optional().or(z.literal(""))
-});
+const createFormSchema = (mode: 'create' | 'edit') => {
+  const baseSchema = {
+    title: z.string().min(1, { message: "O título é obrigatório" }),
+    customTitle: z.string().optional().or(z.literal("")),
+    price: z.string().min(1, { message: "O preço é obrigatório" }),
+    paymentMethod: z.string().min(1, { message: "O método de pagamento é obrigatório" }),
+    customPaymentMethod: z.string().optional().or(z.literal("")),
+    status: z.string().min(1, { message: "O status é obrigatório" }),
+    access: z.string().min(1, { message: "O acesso é obrigatório" }),
+    customAccess: z.string().optional().or(z.literal("")),
+    whatsappNumber: z.string().min(1, { message: "O número do WhatsApp é obrigatório" }),
+    telegramUsername: z.string().optional().or(z.literal("")),
+    pixKey: z.string().min(1, { message: "A chave PIX é obrigatória" }),
+    category: z.string().optional().or(z.literal("")),
+  };
+
+  if (mode === 'create') {
+    return z.object({
+      ...baseSchema,
+      fullName: z.string().min(1, { message: "O nome completo é obrigatório" }),
+      modificationReason: z.string().optional().or(z.literal(""))
+    });
+  } else {
+    return z.object({
+      ...baseSchema,
+      fullName: z.string().optional().or(z.literal("")),
+      modificationReason: z.string().min(1, { message: "O motivo da modificação é obrigatório" })
+    });
+  }
+};
 
 type FormValues = z.infer<ReturnType<typeof createFormSchema>>;
 
@@ -460,7 +456,7 @@ const SubscriptionFormCore: React.FC<Props> = ({
         
         {/* Botão de envio */}
         <div className="flex justify-end">
-          <Button type="submit" disabled={isLoading}>
+          <Button type="submit" disabled={isLoading} className="min-w-[120px]">
             {isLoading ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />

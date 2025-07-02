@@ -25,7 +25,14 @@ const SubscriptionEditDialog: React.FC<Props> = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleSubmit = async (formData: any) => {
-    if (!subscription || !authState.user) return;
+    if (!subscription || !authState.user) {
+      toast({
+        title: "Erro",
+        description: "Dados de assinatura ou usuário não encontrados.",
+        variant: "destructive",
+      });
+      return;
+    }
 
     setIsSubmitting(true);
 
@@ -85,7 +92,7 @@ const SubscriptionEditDialog: React.FC<Props> = ({
     if (!subscription) return {};
     
     return {
-      title: subscription.title || '',
+      title: subscription.title?.replace(/^\*\s*/, '') || '', // Remove asterisco do início
       price: subscription.price || '',
       paymentMethod: subscription.paymentMethod || '',
       status: subscription.status || '',
