@@ -435,6 +435,92 @@ export type Database = {
         }
         Relationships: []
       }
+      subscription_modifications: {
+        Row: {
+          access: string
+          category: string | null
+          created_at: string | null
+          custom_title: string | null
+          header_color: string
+          icon: string | null
+          id: string
+          modification_reason: string | null
+          original_subscription_id: string
+          payment_method: string
+          pix_key: string | null
+          price: string
+          price_color: string
+          rejection_reason: string | null
+          reviewed_at: string | null
+          status: string
+          status_approval: string | null
+          submitted_at: string | null
+          telegram_username: string
+          title: string
+          updated_at: string | null
+          user_id: string
+          whatsapp_number: string
+        }
+        Insert: {
+          access: string
+          category?: string | null
+          created_at?: string | null
+          custom_title?: string | null
+          header_color: string
+          icon?: string | null
+          id?: string
+          modification_reason?: string | null
+          original_subscription_id: string
+          payment_method: string
+          pix_key?: string | null
+          price: string
+          price_color: string
+          rejection_reason?: string | null
+          reviewed_at?: string | null
+          status: string
+          status_approval?: string | null
+          submitted_at?: string | null
+          telegram_username: string
+          title: string
+          updated_at?: string | null
+          user_id: string
+          whatsapp_number: string
+        }
+        Update: {
+          access?: string
+          category?: string | null
+          created_at?: string | null
+          custom_title?: string | null
+          header_color?: string
+          icon?: string | null
+          id?: string
+          modification_reason?: string | null
+          original_subscription_id?: string
+          payment_method?: string
+          pix_key?: string | null
+          price?: string
+          price_color?: string
+          rejection_reason?: string | null
+          reviewed_at?: string | null
+          status?: string
+          status_approval?: string | null
+          submitted_at?: string | null
+          telegram_username?: string
+          title?: string
+          updated_at?: string | null
+          user_id?: string
+          whatsapp_number?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "subscription_modifications_original_subscription_id_fkey"
+            columns: ["original_subscription_id"]
+            isOneToOne: false
+            referencedRelation: "subscriptions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       subscriptions: {
         Row: {
           access: string

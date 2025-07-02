@@ -44,7 +44,7 @@ type PasswordFormValues = z.infer<typeof passwordFormSchema>;
 
 /**
  * Página de perfil do usuário
- * @version 7.1.0
+ * @version 7.2.0 - Adicionada funcionalidade de modificação de assinaturas
  */
 const Profile = () => {
   const navigate = useNavigate();
@@ -78,6 +78,27 @@ const Profile = () => {
       confirmPassword: "",
     },
   });
+
+  // Função para recarregar dados das assinaturas
+  const refreshUserData = async () => {
+    if (!authState.user) return;
+    
+    try {
+      // Buscar assinaturas aprovadas do usuário
+      const { data: subscriptions, error: subscriptionsError } = await supabase
+        .from('subscriptions')
+        .select('*')
+        .eq('user_id', authState.user.id);
+      
+      if (subscriptionsError) {
+        console.error('Erro ao buscar assinaturas do usuário:', subscriptionsError);
+      } else {
+        setUserSubscriptions(subscriptions || []);
+      }
+    } catch (error) {
+      console.error('Erro ao recarregar dados:', error);
+    }
+  };
 
   // Verificar se o usuário está logado e buscar dados
   useEffect(() => {
@@ -329,6 +350,7 @@ const Profile = () => {
               actionInProgress={actionInProgress}
               handleDeleteSubscription={handleDeleteSubscription}
               navigate={navigate}
+              onRefresh={refreshUserData}
             />
           </TabsContent>
 
