@@ -14,7 +14,6 @@ export interface AuthContextType {
   };
   signIn: (email: string, password: string) => Promise<void>;
   signUp: (email: string, password: string, userData?: any) => Promise<void>;
-  signInWithGoogle: () => Promise<void>;
   signOut: () => Promise<void>;
 }
 
@@ -177,31 +176,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  // Função para login com Google
-  const signInWithGoogle = async () => {
-    try {
-      const redirectUrl = `${window.location.origin}/`;
-      
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-          redirectTo: redirectUrl
-        }
-      });
-      
-      if (error) {
-        toast({
-          title: "Erro ao fazer login com Google",
-          description: error.message,
-          variant: "destructive",
-        });
-        throw error;
-      }
-    } catch (error: any) {
-      console.error('Erro ao fazer login com Google:', error);
-      throw error;
-    }
-  };
 
   // Função para fazer logout - Com tratamento adequado
   const signOut = async () => {
@@ -267,7 +241,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     authState,
     signIn,
     signUp,
-    signInWithGoogle,
     signOut
   };
 
