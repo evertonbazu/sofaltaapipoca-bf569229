@@ -14,7 +14,8 @@ import {
   MessageSquare,
   Eye,
   EyeOff,
-  Search
+  Search,
+  Filter
 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -23,6 +24,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -60,6 +62,10 @@ const SubscriptionList: React.FC<SubscriptionListProps> = ({
   const [isMultiDeleteDialogOpen, setIsMultiDeleteDialogOpen] = useState<boolean>(false);
   const [sortField, setSortField] = useState<SortField>('addedDate');
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
+  const [filterCategory, setFilterCategory] = useState<string>('');
+  const [filterFeatured, setFilterFeatured] = useState<string>('');
+  const [filterVisible, setFilterVisible] = useState<string>('');
+  const [filterPaymentMethod, setFilterPaymentMethod] = useState<string>('');
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -74,14 +80,15 @@ const SubscriptionList: React.FC<SubscriptionListProps> = ({
     fetchSubscriptions();
   }, []);
 
-  // Filtrar assinaturas com base no termo de busca
+  // Filtrar assinaturas com base no termo de busca e filtros
   useEffect(() => {
     console.log('Filtering subscriptions with search term:', localSearchTerm);
-    if (!localSearchTerm || localSearchTerm.trim() === '') {
-      setFilteredSubscriptions(subscriptions);
-    } else {
+    let filtered = subscriptions;
+
+    // Filtro por texto de busca
+    if (localSearchTerm && localSearchTerm.trim() !== '') {
       const lowercaseSearchTerm = localSearchTerm.toLowerCase();
-      const filtered = subscriptions.filter((subscription) => {
+      filtered = filtered.filter((subscription) => {
         return (
           subscription.title?.toLowerCase().includes(lowercaseSearchTerm) ||
           subscription.price?.toLowerCase().includes(lowercaseSearchTerm) ||
@@ -90,10 +97,35 @@ const SubscriptionList: React.FC<SubscriptionListProps> = ({
           subscription.addedDate?.toLowerCase().includes(lowercaseSearchTerm)
         );
       });
-      setFilteredSubscriptions(filtered);
-      console.log(`Filtered to ${filtered.length} subscriptions`);
     }
-  }, [localSearchTerm, subscriptions]);
+
+    // Filtro por categoria
+    if (filterCategory && filterCategory !== 'all') {
+      filtered = filtered.filter(subscription => subscription.category === filterCategory);
+    }
+
+    // Filtro por destaque
+    if (filterFeatured && filterFeatured !== 'all') {
+      const isFeatured = filterFeatured === 'featured';
+      filtered = filtered.filter(subscription => subscription.featured === isFeatured);
+    }
+
+    // Filtro por visibilidade
+    if (filterVisible && filterVisible !== 'all') {
+      const isVisible = filterVisible === 'visible';
+      filtered = filtered.filter(subscription => subscription.visible === isVisible);
+    }
+
+    // Filtro por método de pagamento
+    if (filterPaymentMethod && filterPaymentMethod !== 'all') {
+      filtered = filtered.filter(subscription => 
+        subscription.paymentMethod?.toLowerCase() === filterPaymentMethod.toLowerCase()
+      );
+    }
+
+    setFilteredSubscriptions(filtered);
+    console.log(`Filtered to ${filtered.length} subscriptions`);
+  }, [localSearchTerm, subscriptions, filterCategory, filterFeatured, filterVisible, filterPaymentMethod]);
 
   // Ordenar assinaturas quando o campo ou direção de ordenação mudar
   useEffect(() => {
@@ -400,28 +432,102 @@ const SubscriptionList: React.FC<SubscriptionListProps> = ({
 
   return (
     <div className="space-y-4">
-      {/* Barra de pesquisa e ações em lote */}
-      <div className="flex flex-col md:flex-row gap-4">
-        <div className="flex items-center border rounded-md bg-white p-2 flex-1">
-          <Search className="h-5 w-5 text-gray-400 mr-2" />
-          <Input
-            type="text"
-            placeholder="Buscar assinaturas..."
-            value={localSearchTerm}
-            onChange={handleSearchChange}
-            className="border-0 focus-visible:ring-0 focus-visible:ring-transparent"
-          />
+      {/* Barra de pesquisa e filtros */}
+      <div className="space-y-4">
+        <div className="flex flex-col md:flex-row gap-4">
+          <div className="flex items-center border rounded-md bg-white p-2 flex-1">
+            <Search className="h-5 w-5 text-gray-400 mr-2" />
+            <Input
+              type="text"
+              placeholder="Buscar assinaturas..."
+              value={localSearchTerm}
+              onChange={handleSearchChange}
+              className="border-0 focus-visible:ring-0 focus-visible:ring-transparent"
+            />
+          </div>
+          {selectedItems.size > 0 && (
+            <Button 
+              variant="destructive"
+              onClick={() => setIsMultiDeleteDialogOpen(true)}
+              className="whitespace-nowrap"
+            >
+              <Trash2 className="h-4 w-4 mr-2" />
+              Excluir {selectedItems.size} selecionados
+            </Button>
+          )}
         </div>
-        {selectedItems.size > 0 && (
-          <Button 
-            variant="destructive"
-            onClick={() => setIsMultiDeleteDialogOpen(true)}
-            className="whitespace-nowrap"
-          >
-            <Trash2 className="h-4 w-4 mr-2" />
-            Excluir {selectedItems.size} selecionados
-          </Button>
-        )}
+
+        {/* Filtros */}
+        <div className="flex flex-wrap gap-4">
+          <div className="flex items-center gap-2">
+            <Filter className="h-4 w-4 text-gray-500" />
+            <span className="text-sm font-medium text-gray-700">Filtros:</span>
+          </div>
+          
+          <Select value={filterCategory} onValueChange={setFilterCategory}>
+            <SelectTrigger className="w-[180px]">
+              <SelectValue placeholder="Categoria" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todas as categorias</SelectItem>
+              <SelectItem value="Streaming">Streaming</SelectItem>
+              <SelectItem value="Música">Música</SelectItem>
+              <SelectItem value="Educação">Educação</SelectItem>
+              <SelectItem value="YouTube">YouTube</SelectItem>
+              <SelectItem value="Produtividade">Produtividade</SelectItem>
+            </SelectContent>
+          </Select>
+
+          <Select value={filterFeatured} onValueChange={setFilterFeatured}>
+            <SelectTrigger className="w-[150px]">
+              <SelectValue placeholder="Destaque" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todos</SelectItem>
+              <SelectItem value="featured">Em destaque</SelectItem>
+              <SelectItem value="not-featured">Sem destaque</SelectItem>
+            </SelectContent>
+          </Select>
+
+          <Select value={filterVisible} onValueChange={setFilterVisible}>
+            <SelectTrigger className="w-[150px]">
+              <SelectValue placeholder="Visibilidade" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todos</SelectItem>
+              <SelectItem value="visible">Aprovados</SelectItem>
+              <SelectItem value="hidden">Ocultos</SelectItem>
+            </SelectContent>
+          </Select>
+
+          <Select value={filterPaymentMethod} onValueChange={setFilterPaymentMethod}>
+            <SelectTrigger className="w-[150px]">
+              <SelectValue placeholder="Pagamento" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todos</SelectItem>
+              <SelectItem value="pix">PIX</SelectItem>
+              <SelectItem value="cartao">Cartão</SelectItem>
+              <SelectItem value="boleto">Boleto</SelectItem>
+              <SelectItem value="dinheiro">Dinheiro</SelectItem>
+            </SelectContent>
+          </Select>
+
+          {(filterCategory !== '' || filterFeatured !== '' || filterVisible !== '' || filterPaymentMethod !== '') && (
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={() => {
+                setFilterCategory('');
+                setFilterFeatured('');
+                setFilterVisible('');
+                setFilterPaymentMethod('');
+              }}
+            >
+              Limpar filtros
+            </Button>
+          )}
+        </div>
       </div>
 
       {isLoading ? (

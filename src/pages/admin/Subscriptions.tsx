@@ -9,7 +9,8 @@ import { useToast } from '@/components/ui/use-toast';
 
 /**
  * Página de gerenciamento de assinaturas
- * @version 3.9.0
+ * @version 3.10.0
+ * - Adicionados filtros de busca por categoria, destaque, visibilidade e método de pagamento
  */
 const Subscriptions = () => {
   const navigate = useNavigate();
