@@ -65,7 +65,7 @@ export async function getSiteConfig(key: string): Promise<string | null> {
       .from('site_configurations')
       .select('value')
       .eq('key', key)
-      .single();
+      .maybeSingle();
     
     if (error) {
       console.error(`Erro ao obter configuração ${key}:`, error);
