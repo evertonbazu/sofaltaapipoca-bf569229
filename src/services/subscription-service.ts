@@ -1,13 +1,13 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { SubscriptionData } from '@/types/subscriptionTypes';
 import { toast } from '@/components/ui/use-toast';
 import { sendToTelegramGroup, deleteFromTelegramGroup, isAutoPostingEnabled } from '@/utils/shareUtils';
 
 /**
- * Version 3.1.0
- * - Adicionado suporte ao campo custom_title
- * - Corrigido problema de envio de assinaturas aprovadas para o Telegram
- * - Melhorado o fluxo de aprovação e envio automático
+ * Version 3.12.0
+ * - Notificações por e-mail: aprovadas e modificadas
+ * - Integração com Edge Function notify-subscription-event
  */
 
 // Função para mapear dados do banco de dados para o formato da aplicação
@@ -271,6 +271,16 @@ export async function updateSubscription(id: string, subscription: SubscriptionD
         console.error('Erro ao compartilhar no Telegram:', sharingError);
       }
     }
+
+    // Notificação por e-mail: modificado
+    try {
+      console.log('Disparando notificação de modificação por e-mail para assinatura:', id);
+      await supabase.functions.invoke('notify-subscription-event', {
+        body: { eventType: 'modified', subscriptionId: id }
+      });
+    } catch (emailError) {
+      console.error('Erro ao enviar notificação por e-mail (modificado):', emailError);
+    }
     
     return mapToSubscriptionData(data);
   } catch (error: any) {
@@ -358,6 +368,16 @@ export async function toggleVisibilityStatus(id: string, visible: boolean): Prom
         }
       } catch (sharingError) {
         console.error('Erro ao compartilhar no Telegram:', sharingError);
+      }
+
+      // Notificação por e-mail: aprovado
+      try {
+        console.log('Disparando notificação de aprovação por e-mail para assinatura:', id);
+        await supabase.functions.invoke('notify-subscription-event', {
+          body: { eventType: 'approved', subscriptionId: id }
+        });
+      } catch (emailError) {
+        console.error('Erro ao enviar notificação por e-mail (aprovado):', emailError);
       }
     } else if (visible === false) {
       try {

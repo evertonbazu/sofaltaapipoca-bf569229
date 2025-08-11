@@ -27,7 +27,7 @@ interface PendingSubscription {
 
 /**
  * Página para gerenciar assinaturas pendentes de aprovação
- * @version 3.2.0
+ * @version 3.12.0 - Envio de e-mail ao aprovar anúncio
  */
 const PendingSubscriptions = () => {
   const [pendingSubscriptions, setPendingSubscriptions] = useState<PendingSubscription[]>([]);
@@ -83,6 +83,16 @@ const PendingSubscriptions = () => {
         .eq('id', id);
 
       if (error) throw error;
+
+      // Enviar notificação por e-mail (aprovado)
+      try {
+        console.log('Disparando notificação de aprovação por e-mail (pendentes):', id);
+        await supabase.functions.invoke('notify-subscription-event', {
+          body: { eventType: 'approved', subscriptionId: id }
+        });
+      } catch (emailError) {
+        console.error('Erro ao enviar notificação por e-mail (pendentes/aprovado):', emailError);
+      }
 
       toast({
         title: "Assinatura aprovada",
