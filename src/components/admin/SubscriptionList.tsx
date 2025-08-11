@@ -40,6 +40,12 @@ import { deleteSubscription, getAllSubscriptions, toggleFeaturedStatus, toggleVi
 import { downloadSubscriptionAsTxt } from '@/utils/exportUtils';
 import { getWhatsAppShareLink, getTelegramShareLink } from '@/utils/shareUtils';
 
+/**
+ * Lista de Assinaturas (Admin)
+ * @version 3.11.0
+ * - Ordenação padronizada por "Adicionado em" (mais recente primeiro)
+ */
+
 type SortField = 'title' | 'price' | 'telegramUsername' | 'whatsappNumber' | 'featured' | 'addedDate' | 'visible';
 type SortDirection = 'asc' | 'desc';
 
@@ -80,52 +86,62 @@ const SubscriptionList: React.FC<SubscriptionListProps> = ({
     fetchSubscriptions();
   }, []);
 
-  // Filtrar assinaturas com base no termo de busca e filtros
-  useEffect(() => {
-    console.log('Filtering subscriptions with search term:', localSearchTerm);
-    let filtered = subscriptions;
+// Filtrar assinaturas com base no termo de busca e filtros
+useEffect(() => {
+  console.log('Filtering subscriptions with search term:', localSearchTerm);
+  let filtered = subscriptions;
 
-    // Filtro por texto de busca
-    if (localSearchTerm && localSearchTerm.trim() !== '') {
-      const lowercaseSearchTerm = localSearchTerm.toLowerCase();
-      filtered = filtered.filter((subscription) => {
-        return (
-          subscription.title?.toLowerCase().includes(lowercaseSearchTerm) ||
-          subscription.price?.toLowerCase().includes(lowercaseSearchTerm) ||
-          subscription.telegramUsername?.toLowerCase().includes(lowercaseSearchTerm) ||
-          subscription.whatsappNumber?.toLowerCase().includes(lowercaseSearchTerm) ||
-          subscription.addedDate?.toLowerCase().includes(lowercaseSearchTerm)
-        );
-      });
-    }
-
-    // Filtro por categoria
-    if (filterCategory && filterCategory !== 'all') {
-      filtered = filtered.filter(subscription => subscription.category === filterCategory);
-    }
-
-    // Filtro por destaque
-    if (filterFeatured && filterFeatured !== 'all') {
-      const isFeatured = filterFeatured === 'featured';
-      filtered = filtered.filter(subscription => subscription.featured === isFeatured);
-    }
-
-    // Filtro por visibilidade
-    if (filterVisible && filterVisible !== 'all') {
-      const isVisible = filterVisible === 'visible';
-      filtered = filtered.filter(subscription => subscription.visible === isVisible);
-    }
-
-    // Filtro por método de pagamento
-    if (filterPaymentMethod && filterPaymentMethod !== 'all') {
-      filtered = filtered.filter(subscription => 
-        subscription.paymentMethod?.toLowerCase() === filterPaymentMethod.toLowerCase()
+  // Filtro por texto de busca
+  if (localSearchTerm && localSearchTerm.trim() !== '') {
+    const lowercaseSearchTerm = localSearchTerm.toLowerCase();
+    filtered = filtered.filter((subscription) => {
+      return (
+        subscription.title?.toLowerCase().includes(lowercaseSearchTerm) ||
+        subscription.price?.toLowerCase().includes(lowercaseSearchTerm) ||
+        subscription.telegramUsername?.toLowerCase().includes(lowercaseSearchTerm) ||
+        subscription.whatsappNumber?.toLowerCase().includes(lowercaseSearchTerm) ||
+        subscription.addedDate?.toLowerCase().includes(lowercaseSearchTerm)
       );
-    }
+    });
+  }
 
-    setFilteredSubscriptions(filtered);
-    console.log(`Filtered to ${filtered.length} subscriptions`);
-  }, [localSearchTerm, subscriptions, filterCategory, filterFeatured, filterVisible, filterPaymentMethod]);
+  // Filtro por categoria
+  if (filterCategory && filterCategory !== 'all') {
+    filtered = filtered.filter(subscription => subscription.category === filterCategory);
+  }
+
+  // Filtro por destaque
+  if (filterFeatured && filterFeatured !== 'all') {
+    const isFeatured = filterFeatured === 'featured';
+    filtered = filtered.filter(subscription => subscription.featured === isFeatured);
+  }
+
+  // Filtro por visibilidade
+  if (filterVisible && filterVisible !== 'all') {
+    const isVisible = filterVisible === 'visible';
+    filtered = filtered.filter(subscription => subscription.visible === isVisible);
+  }
+
+  // Filtro por método de pagamento
+  if (filterPaymentMethod && filterPaymentMethod !== 'all') {
+    filtered = filtered.filter(subscription => 
+      subscription.paymentMethod?.toLowerCase() === filterPaymentMethod.toLowerCase()
+    );
+  }
+
+  // Ordenação FINAL por data (mais recente primeiro) conforme solicitado
+  filtered = [...filtered].sort((a, b) => {
+    const parse = (d?: string) => {
+      if (!d) return new Date(0);
+      const [day, month, year] = d.split('/');
+      return new Date(Number(year), Number(month) - 1, Number(day));
+    };
+    return parse(b.addedDate).getTime() - parse(a.addedDate).getTime();
+  });
+
+  setFilteredSubscriptions(filtered);
+  console.log(`Filtered to ${filtered.length} subscriptions`);
+}, [localSearchTerm, subscriptions, filterCategory, filterFeatured, filterVisible, filterPaymentMethod]);
 
   // Ordenar assinaturas quando o campo ou direção de ordenação mudar
   useEffect(() => {

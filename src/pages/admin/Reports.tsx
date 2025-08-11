@@ -5,7 +5,7 @@ import SubscriptionReport from '@/components/admin/SubscriptionReport';
 
 /**
  * Página de relatórios administrativos
- * @version 3.9.0
+ * @version 3.11.0
  */
 const Reports: React.FC = () => {
   return (

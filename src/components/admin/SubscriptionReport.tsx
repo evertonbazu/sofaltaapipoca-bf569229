@@ -8,7 +8,7 @@ import { SubscriptionData } from '@/types/subscriptionTypes';
 
 /**
  * Componente de relatório de assinaturas
- * @version 3.9.2
+ * @version 3.11.0
  */
 const SubscriptionReport: React.FC = () => {
   const [isGenerating, setIsGenerating] = useState<boolean>(false);
@@ -52,110 +52,96 @@ const SubscriptionReport: React.FC = () => {
     }
   };
 
-  // Salvar relatório como arquivo .txt
-  const downloadReport = () => {
-    if (reportData.length === 0) {
-      toast({
-        title: "Nenhum dado para exportar",
-        description: "Gere o relatório primeiro antes de fazer o download.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    const reportContent = [
-      "RELATÓRIO DE ASSINATURAS DISPONÍVEIS",
-      "====================================",
-      "",
-      `Data de geração: ${new Date().toLocaleDateString('pt-BR')} às ${new Date().toLocaleTimeString('pt-BR')}`,
-      `Total de assinaturas: ${reportData.length}`,
-      "",
-      "TÍTULOS EM ORDEM ALFABÉTICA:",
-      "-----------------------------",
-      "",
-      ...reportData.map((title, index) => `${(index + 1).toString().padStart(3, '0')}. ${title}`),
-      "",
-      "====================================",
-      "Relatório gerado automaticamente pelo sistema Só Falta a Pipoca"
-    ].join('\n');
-
-    // Criar e baixar o arquivo
-    const blob = new Blob([reportContent], { type: 'text/plain;charset=utf-8' });
-    const url = URL.createObjectURL(blob);
-    
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `relatorio_assinaturas_${new Date().toISOString().split('T')[0]}.txt`;
-    
-    document.body.appendChild(link);
-    link.click();
-    
-    // Limpeza
-    setTimeout(() => {
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
-    }, 100);
-
+// Copiar relatório como texto
+const downloadReport = async () => {
+  if (reportData.length === 0) {
     toast({
-      title: "Relatório baixado",
-      description: "O arquivo foi salvo em sua pasta de downloads.",
+      title: "Nenhum dado para copiar",
+      description: "Gere o relatório primeiro antes de copiar.",
+      variant: "destructive",
     });
-  };
+    return;
+  }
 
-  // Salvar relatório do WhatsApp como arquivo .txt com o novo modelo solicitado
-  const downloadWhatsAppReport = () => {
-    if (whatsappReportData.length === 0) {
-      toast({
-        title: "Nenhum dado para exportar",
-        description: "Gere o relatório primeiro antes de fazer o download.",
-        variant: "destructive",
-      });
-      return;
-    }
+  const reportContent = [
+    "RELATÓRIO DE ASSINATURAS DISPONÍVEIS",
+    "====================================",
+    "",
+    `Data de geração: ${new Date().toLocaleDateString('pt-BR')} às ${new Date().toLocaleTimeString('pt-BR')}`,
+    `Total de assinaturas: ${reportData.length}`,
+    "",
+    "TÍTULOS EM ORDEM ALFABÉTICA:",
+    "-----------------------------",
+    "",
+    ...reportData.map((title, index) => `${(index + 1).toString().padStart(3, '0')}. ${title}`),
+    "",
+    "====================================",
+    "Relatório gerado automaticamente pelo sistema Só Falta a Pipoca"
+  ].join('\n');
 
-    const reportContent = [
-      "*RELATÓRIO DE ASSINATURAS DISPONÍVEIS*",
-      "===============================================",
-      "",
-      `Data de geração: ${new Date().toLocaleDateString('pt-BR')} às ${new Date().toLocaleTimeString('pt-BR')}`,
-      `Total de assinaturas: ${whatsappReportData.length}`,
-      "",
-      "DIVISÕES DISPONÍVEIS",
-      "-----------------------------------------",
-      "",
-      ...whatsappReportData.map((sub) => [
-        `*🖥 ${sub.title.toUpperCase()}*`,
-        `🏦 ${sub.price} - ${sub.paymentMethod}`,
-        `☎️ https://wa.me/${sub.whatsappNumber}`,
-        ""
-      ].join('\n')),
-      "===============================================",
-      "Relatório gerado automaticamente pelo sistema Só Falta a Pipoca",
-      "https://sofaltaapipoca.lovable.app/"
-    ].join('\n');
-
-    // Criar e baixar o arquivo
-    const blob = new Blob([reportContent], { type: 'text/plain;charset=utf-8' });
-    const url = URL.createObjectURL(blob);
-    
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `relatorio_assinaturas_whatsapp_${new Date().toISOString().split('T')[0]}.txt`;
-    
-    document.body.appendChild(link);
-    link.click();
-    
-    // Limpeza
-    setTimeout(() => {
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
-    }, 100);
-
+  try {
+    await navigator.clipboard.writeText(reportContent);
     toast({
-      title: "Relatório WhatsApp baixado",
-      description: "O arquivo foi salvo em sua pasta de downloads.",
+      title: "Relatório copiado",
+      description: "Conteúdo copiado para a área de transferência.",
     });
-  };
+  } catch (err) {
+    console.error('Falha ao copiar para a área de transferência:', err);
+    toast({
+      title: "Falha ao copiar",
+      description: "Não foi possível copiar o relatório. Tente novamente.",
+      variant: "destructive",
+    });
+  }
+};
+
+// Copiar relatório do WhatsApp como texto
+const downloadWhatsAppReport = async () => {
+  if (whatsappReportData.length === 0) {
+    toast({
+      title: "Nenhum dado para copiar",
+      description: "Gere o relatório primeiro antes de copiar.",
+      variant: "destructive",
+    });
+    return;
+  }
+
+  const reportContent = [
+    "*RELATÓRIO DE ASSINATURAS DISPONÍVEIS*",
+    "===============================================",
+    "",
+    `Data de geração: ${new Date().toLocaleDateString('pt-BR')} às ${new Date().toLocaleTimeString('pt-BR')}`,
+    `Total de assinaturas: ${whatsappReportData.length}`,
+    "",
+    "DIVISÕES DISPONÍVEIS",
+    "-----------------------------------------",
+    "",
+    ...whatsappReportData.map((sub) => [
+      `*🖥 ${sub.title.toUpperCase()}*`,
+      `🏦 ${sub.price} - ${sub.paymentMethod}`,
+      `☎️ https://wa.me/${sub.whatsappNumber}`,
+      ""
+    ].join('\n')),
+    "===============================================",
+    "Relatório gerado automaticamente pelo sistema Só Falta a Pipoca",
+    "https://sofaltaapipoca.lovable.app/"
+  ].join('\n');
+
+  try {
+    await navigator.clipboard.writeText(reportContent);
+    toast({
+      title: "Relatório WhatsApp copiado",
+      description: "Conteúdo copiado para a área de transferência.",
+    });
+  } catch (err) {
+    console.error('Falha ao copiar para a área de transferência:', err);
+    toast({
+      title: "Falha ao copiar",
+      description: "Não foi possível copiar o relatório. Tente novamente.",
+      variant: "destructive",
+    });
+  }
+};
 
   return (
     <Card className="w-full">
