@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
-import { Home, Package, Settings, Users, MessageSquare, Plus, PlusCircle, ClipboardList, History } from 'lucide-react';
+import { Home, Package, Settings, Users, MessageSquare, Plus, PlusCircle, ClipboardList, History, Send } from 'lucide-react';
 
 interface AdminLayoutProps {
   children: React.ReactNode;
@@ -17,6 +17,7 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children, title }) => {
     { icon: ClipboardList, label: 'Pendentes', path: '/admin/pending' },
     { icon: History, label: 'Alterações', path: '/admin/changes' },
     { icon: MessageSquare, label: 'Mensagens', path: '/admin/messages' },
+    { icon: Send, label: 'Telegram', path: '/admin/telegram' },
     { icon: Users, label: 'Usuários', path: '/admin/users' },
     { icon: PlusCircle, label: 'Botões', path: '/admin/header-buttons' },
     { icon: Settings, label: 'Configurações', path: '/admin/settings' },

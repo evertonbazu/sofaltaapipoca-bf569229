@@ -1,5 +1,7 @@
 /**
- * Version 3.9.0
+ * Version 3.9.5
+ * - Implementado painel administrativo para gerenciar anúncios do Telegram
+ * - Adicionada funcionalidade para visualizar, editar e excluir mensagens do Telegram diretamente pelo site
  * - Implementado sistema de renovação diária dos anúncios no Telegram às 10h da manhã (horário do Brasil)
  * - Adicionada funcionalidade para deletar posts antigos e republicar anúncios visíveis automaticamente
  * 

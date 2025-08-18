@@ -22,10 +22,11 @@ import Messages from '@/pages/admin/Messages';
 import HeaderButtons from '@/pages/admin/HeaderButtons';
 import Settings from '@/pages/admin/Settings';
 import Changes from '@/pages/admin/Changes';
+import Telegram from '@/pages/admin/Telegram';
 
 /**
  * Aplicação principal com roteamento
- * @version 3.9.4
+ * @version 3.9.5
  */
 function App() {
   return (
@@ -51,6 +52,7 @@ function App() {
             <Route path="/admin/changes" element={<Changes />} />
             <Route path="/admin/users" element={<Users />} />
             <Route path="/admin/messages" element={<Messages />} />
+            <Route path="/admin/telegram" element={<Telegram />} />
             <Route path="/admin/header-buttons" element={<HeaderButtons />} />
             <Route path="/admin/settings" element={<Settings />} />
             

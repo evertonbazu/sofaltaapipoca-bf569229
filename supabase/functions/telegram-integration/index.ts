@@ -504,7 +504,7 @@ Deno.serve(async (req) => {
     // Garantir que as configurações padrão existem
     await ensureDefaultConfigurations();
     
-    const { action, botToken, groupId, subscriptionId, messageId } = await req.json();
+    const { action, botToken, groupId, subscriptionId, messageId, text } = await req.json();
     console.log(`Received request with action: ${action}, subscriptionId: ${subscriptionId}, messageId: ${messageId}`);
     
     // Nova ação: Renovação diária
@@ -606,6 +606,55 @@ Deno.serve(async (req) => {
         return new Response(JSON.stringify({ 
           success: false, 
           error: `Falha ao excluir mensagem: ${error instanceof Error ? error.message : String(error)}` 
+        }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 200
+        });
+      }
+    }
+
+    // Editar mensagem do Telegram
+    if (action === 'edit-message') {
+      console.log('Processing edit-message action for Message ID:', messageId);
+      
+      if (!messageId || !text) {
+        throw new Error('ID da mensagem e texto são obrigatórios');
+      }
+      
+      // Obter a configuração do Telegram
+      const config = await getTelegramConfig();
+      console.log('Retrieved Telegram config for editing:', {
+        botTokenPrefix: config.botToken.substring(0, 5) + '...',
+        groupId: config.groupId
+      });
+      
+      try {
+        const editResult = await fetch(`https://api.telegram.org/bot${config.botToken}/editMessageText`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            chat_id: formatChatId(config.groupId),
+            message_id: messageId,
+            text: text,
+            parse_mode: 'HTML'
+          })
+        });
+
+        if (editResult.ok) {
+          console.log('Successfully edited message in Telegram');
+          return new Response(JSON.stringify({ success: true }), {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          });
+        } else {
+          const errorData = await editResult.text();
+          console.error('Error editing message:', errorData);
+          throw new Error('Erro ao editar mensagem no Telegram');
+        }
+      } catch (editError) {
+        console.error('Error in edit message:', editError);
+        return new Response(JSON.stringify({ 
+          success: false, 
+          error: `Erro ao editar mensagem: ${editError instanceof Error ? editError.message : String(editError)}` 
         }), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
           status: 200
