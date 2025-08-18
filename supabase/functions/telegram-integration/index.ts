@@ -1,4 +1,3 @@
-
 // Follow this setup guide to integrate the Deno language server with your editor:
 // https://deno.land/manual/getting_started/setup_your_environment
 // This enables autocomplete, go to definition, etc.
@@ -7,29 +6,26 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.31.0';
 import { corsHeaders } from '../_shared/cors.ts';
 
 /**
+ * Version 3.1.0
+ * - Implementado sistema de renovação diária dos anúncios no Telegram
+ * - Adicionada funcionalidade para deletar posts antigos e republicar anúncios visíveis
+ * - Implementado rate limiting para evitar conflitos com a API do Telegram
+ * 
  * Version 3.0.0
  * - Corrigido problema de envio de assinaturas aprovadas para o Telegram
  * - Melhorada depuração e relatórios de erros
  * - Adicionada verificação mais detalhada para assinaturas
- * 
- * Version 2.9.0
- * - Corrigido problema de envio duplicado para o Telegram
- * - Adicionada criação automática da tabela telegram_messages se não existir
- * 
- * Version 2.8.0
- * - Adicionado suporte para botões inline no Telegram
- * - Implementada funcionalidade para excluir mensagens
- * - Melhorado o formato de mensagens enviadas
- * 
- * Version 2.7.0
- * - Fixed subscription sending functionality
- * - Improved error handling and reporting
- * - Enhanced configuration management
  */
 
 const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? '';
 const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY') ?? '';
+const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
+
+// Client regular (usado para operações básicas)
 const supabase = createClient(supabaseUrl, supabaseAnonKey);
+
+// Client com service role (usado para bypass RLS em operações de sistema)
+const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
 
 // Default values
 const DEFAULT_BOT_TOKEN = '5921988686:AAHXpA6Wyre4BIGACaFLOqB6YrhTavIdbQQ';
@@ -149,40 +145,6 @@ function createInlineButtons(subscription: any) {
   }
   
   return buttons.length > 0 ? buttons : null;
-}
-
-// Função para garantir que a tabela telegram_messages exista
-async function ensureTelegramMessagesTableExists() {
-  try {
-    // Verificar se a tabela existe
-    const { data: tableExists, error: checkError } = await supabase.rpc(
-      'check_table_exists',
-      { table_name: 'telegram_messages' }
-    );
-    
-    if (checkError || !tableExists) {
-      console.log('Tabela telegram_messages não existe, criando...');
-      
-      // Criar tabela
-      const { error: createError } = await supabase.rpc(
-        'execute_system_task', 
-        { 
-          task_type: 'create_telegram_messages_table',
-          task_params: {} 
-        }
-      );
-      
-      if (createError) {
-        console.error('Erro ao criar tabela telegram_messages:', createError);
-      } else {
-        console.log('Tabela telegram_messages criada com sucesso');
-      }
-    } else {
-      console.log('Tabela telegram_messages já existe');
-    }
-  } catch (error) {
-    console.error('Erro ao verificar ou criar tabela telegram_messages:', error);
-  }
 }
 
 // Função auxiliar para enviar mensagem para o Telegram
@@ -376,6 +338,161 @@ async function ensureDefaultConfigurations() {
   }
 }
 
+// Nova função para implementar delay entre chamadas
+function delay(ms: number): Promise<void> {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+// Nova função para renovação diária dos anúncios
+async function performDailyRefresh(): Promise<{ success: boolean; stats: any; error?: string }> {
+  console.log('=== INICIANDO RENOVAÇÃO DIÁRIA DO TELEGRAM ===');
+  
+  const stats = {
+    messagesDeleted: 0,
+    messagesDeleteFailed: 0,
+    subscriptionsResent: 0,
+    subscriptionsResentFailed: 0,
+    totalProcessed: 0
+  };
+
+  try {
+    // Obter configurações do Telegram
+    const config = await getTelegramConfig();
+    console.log('Configuração do Telegram obtida:', {
+      botTokenPrefix: config.botToken.substring(0, 5) + '...',
+      groupId: config.groupId
+    });
+
+    // ETAPA 1: Deletar mensagens antigas do Telegram e limpar registros
+    console.log('--- ETAPA 1: Deletando mensagens antigas ---');
+    
+    const { data: oldMessages, error: fetchError } = await supabaseAdmin
+      .from('telegram_messages')
+      .select('*')
+      .is('deleted_at', null);
+
+    if (fetchError) {
+      console.error('Erro ao buscar mensagens antigas:', fetchError);
+      throw new Error(`Erro ao buscar mensagens: ${fetchError.message}`);
+    }
+
+    console.log(`Encontradas ${oldMessages?.length || 0} mensagens para deletar`);
+
+    if (oldMessages && oldMessages.length > 0) {
+      for (const message of oldMessages) {
+        try {
+          console.log(`Tentando deletar mensagem ${message.message_id} da assinatura ${message.subscription_id}`);
+          
+          await deleteTelegramMessage(config.botToken, config.groupId, message.message_id);
+          
+          // Marcar como deletada na base de dados
+          await supabaseAdmin
+            .from('telegram_messages')
+            .update({ deleted_at: new Date().toISOString() })
+            .eq('id', message.id);
+          
+          stats.messagesDeleted++;
+          console.log(`✅ Mensagem ${message.message_id} deletada com sucesso`);
+          
+          // Pequeno delay para evitar rate limiting
+          await delay(100);
+          
+        } catch (deleteError) {
+          console.error(`❌ Erro ao deletar mensagem ${message.message_id}:`, deleteError);
+          stats.messagesDeleteFailed++;
+          // Continuar mesmo com erro - não queremos parar o processo
+        }
+      }
+    }
+
+    // ETAPA 2: Buscar assinaturas visíveis para reenvio
+    console.log('--- ETAPA 2: Buscando assinaturas para reenvio ---');
+    
+    const { data: visibleSubscriptions, error: subscriptionsError } = await supabaseAdmin
+      .from('subscriptions')
+      .select('*')
+      .eq('visible', true)
+      .order('featured', { ascending: false })
+      .order('created_at', { ascending: false });
+
+    if (subscriptionsError) {
+      console.error('Erro ao buscar assinaturas visíveis:', subscriptionsError);
+      throw new Error(`Erro ao buscar assinaturas: ${subscriptionsError.message}`);
+    }
+
+    console.log(`Encontradas ${visibleSubscriptions?.length || 0} assinaturas visíveis para reenvio`);
+    stats.totalProcessed = visibleSubscriptions?.length || 0;
+
+    // ETAPA 3: Reenviar assinaturas visíveis
+    console.log('--- ETAPA 3: Reenviando assinaturas ---');
+    
+    if (visibleSubscriptions && visibleSubscriptions.length > 0) {
+      for (const subscription of visibleSubscriptions) {
+        try {
+          console.log(`Reenviando assinatura: ${subscription.title} (ID: ${subscription.id})`);
+          
+          // Formatar mensagem e criar botões
+          const messageText = formatSubscriptionForTelegram(subscription);
+          const inlineButtons = createInlineButtons(subscription);
+          
+          // Enviar mensagem
+          const sendResult = await sendTelegramMessage(
+            config.botToken,
+            config.groupId,
+            messageText,
+            inlineButtons
+          );
+          
+          if (sendResult.success && sendResult.data?.result?.message_id) {
+            // Registrar nova mensagem na base de dados (remover registros antigos primeiro)
+            await supabaseAdmin
+              .from('telegram_messages')
+              .delete()
+              .eq('subscription_id', subscription.id);
+            
+            await supabaseAdmin
+              .from('telegram_messages')
+              .insert({
+                subscription_id: subscription.id,
+                message_id: sendResult.data.result.message_id,
+                sent_at: new Date().toISOString()
+              });
+            
+            stats.subscriptionsResent++;
+            console.log(`✅ Assinatura ${subscription.title} reenviada com sucesso (Nova mensagem ID: ${sendResult.data.result.message_id})`);
+          } else {
+            throw new Error('Falha ao obter ID da mensagem enviada');
+          }
+          
+          // Delay entre envios para evitar rate limiting
+          await delay(150);
+          
+        } catch (resendError) {
+          console.error(`❌ Erro ao reenviar assinatura ${subscription.title}:`, resendError);
+          stats.subscriptionsResentFailed++;
+          // Continuar mesmo com erro
+        }
+      }
+    }
+
+    console.log('=== RENOVAÇÃO DIÁRIA CONCLUÍDA ===');
+    console.log('Estatísticas finais:', stats);
+    
+    return {
+      success: true,
+      stats
+    };
+
+  } catch (error) {
+    console.error('Erro geral na renovação diária:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Erro desconhecido',
+      stats
+    };
+  }
+}
+
 // Endpoint para o serviço de integração com o Telegram
 Deno.serve(async (req) => {
   // Verificar se é uma requisição OPTIONS (CORS preflight)
@@ -387,12 +504,25 @@ Deno.serve(async (req) => {
     // Garantir que as configurações padrão existem
     await ensureDefaultConfigurations();
     
-    // Garantir que a tabela telegram_messages existe
-    await ensureTelegramMessagesTableExists();
-    
     const { action, botToken, groupId, subscriptionId, messageId } = await req.json();
     console.log(`Received request with action: ${action}, subscriptionId: ${subscriptionId}, messageId: ${messageId}`);
     
+    // Nova ação: Renovação diária
+    if (action === 'refresh-daily') {
+      console.log('Processing refresh-daily action - Starting daily Telegram refresh');
+      
+      const result = await performDailyRefresh();
+      
+      return new Response(JSON.stringify({
+        success: result.success,
+        message: result.success ? 'Renovação diária concluída com sucesso' : 'Renovação diária falhou',
+        stats: result.stats,
+        error: result.error
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+
     // Teste de envio - usa os parâmetros fornecidos diretamente
     if (action === 'send-telegram-test') {
       console.log('Processing send-telegram-test action');

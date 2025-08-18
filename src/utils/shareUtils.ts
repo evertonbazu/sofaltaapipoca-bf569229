@@ -1,4 +1,8 @@
 /**
+ * Version 3.9.0
+ * - Implementado sistema de renovação diária dos anúncios no Telegram às 10h da manhã (horário do Brasil)
+ * - Adicionada funcionalidade para deletar posts antigos e republicar anúncios visíveis automaticamente
+ * 
  * Version 3.8.0
  * - Implementado componente centralizado de versionamento
  * - Refatoração para usar versão centralizada
