@@ -662,6 +662,71 @@ Deno.serve(async (req) => {
       }
     }
     
+    // Editar mensagem do Telegram com formatação completa
+    if (action === 'edit-message-formatted') {
+      console.log('Processing edit-message-formatted action for Message ID:', messageId, 'Subscription ID:', subscriptionId);
+      console.log(`Processing edit-message-formatted action for Message ID: ${messageId}, Subscription ID: ${subscriptionId}`);
+      
+      if (!messageId || !subscriptionId) {
+        throw new Error('ID da mensagem e ID da assinatura são obrigatórios');
+      }
+
+      try {
+        // Buscar dados da assinatura
+        const { data: subscription, error: subscriptionError } = await supabaseAdmin
+          .from('subscriptions')
+          .select('*')
+          .eq('id', subscriptionId)
+          .single();
+
+        if (subscriptionError || !subscription) {
+          console.error('Error fetching subscription:', subscriptionError);
+          throw new Error('Assinatura não encontrada');
+        }
+
+        // Formatar mensagem usando a mesma função usada para posts originais
+        const formattedText = formatSubscriptionForTelegram(subscription);
+        const buttons = createInlineButtons(subscription);
+
+        const config = await getTelegramConfig();
+        const chatId = formatChatId(config.groupId);
+        
+        const telegramUrl = `https://api.telegram.org/bot${config.botToken}/editMessageText`;
+        const response = await fetch(telegramUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            chat_id: chatId,
+            message_id: parseInt(messageId),
+            text: formattedText,
+            parse_mode: 'HTML',
+            reply_markup: buttons.length > 0 ? { inline_keyboard: buttons } : undefined
+          })
+        });
+
+        const result = await response.json();
+        
+        if (!result.ok) {
+          console.error('Error editing formatted message:', result);
+          throw new Error('Erro ao editar mensagem formatada no Telegram');
+        }
+
+        console.log('Successfully edited formatted message in Telegram');
+        return new Response(JSON.stringify({ success: true, data: result }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      } catch (error) {
+        console.error('Error in edit formatted message:', error);
+        return new Response(JSON.stringify({ 
+          success: false, 
+          error: `Erro ao editar mensagem formatada: ${error instanceof Error ? error.message : String(error)}` 
+        }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 200
+        });
+      }
+    }
+
     // Envio de uma assinatura específica
     if (action === 'send-subscription') {
       console.log('Processing send-subscription action for ID:', subscriptionId);

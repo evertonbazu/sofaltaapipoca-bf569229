@@ -2,7 +2,7 @@ import { supabase } from '@/integrations/supabase/client';
 
 /**
  * Serviços para gerenciamento administrativo do Telegram
- * @version 3.9.5
+ * @version 3.9.6
  */
 
 export interface TelegramMessage {
@@ -98,6 +98,24 @@ export async function editTelegramMessage(messageId: number, newText: string): P
   if (error) {
     console.error('Erro ao editar mensagem do Telegram:', error);
     throw new Error('Erro ao editar mensagem do Telegram');
+  }
+}
+
+/**
+ * Edita uma mensagem do Telegram com formatação completa e botões
+ */
+export async function editTelegramMessageFormatted(messageId: number, subscriptionId: string): Promise<void> {
+  const { error } = await supabase.functions.invoke('telegram-integration', {
+    body: {
+      action: 'edit-message-formatted',
+      messageId: messageId,
+      subscriptionId: subscriptionId
+    }
+  });
+
+  if (error) {
+    console.error('Erro ao editar mensagem formatada do Telegram:', error);
+    throw new Error('Erro ao editar mensagem formatada do Telegram');
   }
 }
 

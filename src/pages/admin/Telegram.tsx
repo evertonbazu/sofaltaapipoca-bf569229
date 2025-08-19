@@ -8,7 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Search, ExternalLink, Trash2, RefreshCw, Edit, Eye } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import AdminLayout from '@/components/admin/AdminLayout';
-import { getTelegramMessages, deleteTelegramMessage, editTelegramMessage } from '@/services/telegram-admin';
+import { getTelegramMessages, deleteTelegramMessage, editTelegramMessage, editTelegramMessageFormatted } from '@/services/telegram-admin';
 
 interface TelegramMessage {
   id: string;
@@ -79,6 +79,30 @@ const Telegram: React.FC = () => {
   };
 
   const handleEdit = async () => {
+    if (!editingMessage) return;
+
+    try {
+      setEditLoading(true);
+      await editTelegramMessageFormatted(editingMessage.message_id, editingMessage.subscription_id);
+      toast({
+        title: "Sucesso",
+        description: "Mensagem atualizada no Telegram com formatação completa"
+      });
+      setEditingMessage(null);
+      setEditText('');
+      loadMessages();
+    } catch (error) {
+      toast({
+        title: "Erro",
+        description: "Erro ao editar mensagem",
+        variant: "destructive"
+      });
+    } finally {
+      setEditLoading(false);
+    }
+  };
+
+  const handleEditCustom = async () => {
     if (!editingMessage || !editText.trim()) return;
 
     try {
@@ -255,10 +279,17 @@ const Telegram: React.FC = () => {
                                     Cancelar
                                   </Button>
                                   <Button
+                                    variant="outline" 
+                                    onClick={handleEditCustom}
+                                    disabled={editLoading || !editText.trim()}
+                                  >
+                                    {editLoading ? 'Salvando...' : 'Editar Texto'}
+                                  </Button>
+                                  <Button
                                     onClick={handleEdit}
                                     disabled={editLoading}
                                   >
-                                    {editLoading ? 'Salvando...' : 'Salvar'}
+                                    {editLoading ? 'Salvando...' : 'Atualizar Formatado'}
                                   </Button>
                                 </div>
                               </div>
