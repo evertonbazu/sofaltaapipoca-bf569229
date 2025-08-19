@@ -1,14 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Textarea } from '@/components/ui/textarea';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
+import { Label } from '@/components/ui/label';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Search, ExternalLink, Trash2, RefreshCw, Edit, Eye } from 'lucide-react';
+import { Search, ExternalLink, Trash2, RefreshCw, Edit } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import AdminLayout from '@/components/admin/AdminLayout';
-import { getTelegramMessages, deleteTelegramMessage, editTelegramMessage, editTelegramMessageFormatted } from '@/services/telegram-admin';
+import { getTelegramMessages, deleteTelegramMessage, editTelegramMessageFormatted } from '@/services/telegram-admin';
 
 interface TelegramMessage {
   id: string;
@@ -28,14 +28,13 @@ interface TelegramMessage {
 
 /**
  * Página de gerenciamento do Telegram para administradores
- * @version 3.9.5
+ * @version 3.9.7
  */
 const Telegram: React.FC = () => {
   const [messages, setMessages] = useState<TelegramMessage[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [editingMessage, setEditingMessage] = useState<TelegramMessage | null>(null);
-  const [editText, setEditText] = useState('');
   const [editLoading, setEditLoading] = useState(false);
   const { toast } = useToast();
 
@@ -86,39 +85,14 @@ const Telegram: React.FC = () => {
       await editTelegramMessageFormatted(editingMessage.message_id, editingMessage.subscription_id);
       toast({
         title: "Sucesso",
-        description: "Mensagem atualizada no Telegram com formatação completa"
+        description: "Mensagem atualizada no Telegram com formatação completa e botões de contato"
       });
       setEditingMessage(null);
-      setEditText('');
       loadMessages();
     } catch (error) {
       toast({
         title: "Erro",
-        description: "Erro ao editar mensagem",
-        variant: "destructive"
-      });
-    } finally {
-      setEditLoading(false);
-    }
-  };
-
-  const handleEditCustom = async () => {
-    if (!editingMessage || !editText.trim()) return;
-
-    try {
-      setEditLoading(true);
-      await editTelegramMessage(editingMessage.message_id, editText);
-      toast({
-        title: "Sucesso",
-        description: "Mensagem editada no Telegram"
-      });
-      setEditingMessage(null);
-      setEditText('');
-      loadMessages();
-    } catch (error) {
-      toast({
-        title: "Erro",
-        description: "Erro ao editar mensagem",
+        description: "Erro ao atualizar mensagem",
         variant: "destructive"
       });
     } finally {
@@ -128,13 +102,6 @@ const Telegram: React.FC = () => {
 
   const openEditDialog = (message: TelegramMessage) => {
     setEditingMessage(message);
-    // Generate preview text for editing
-    const subscription = message.subscription;
-    if (subscription) {
-      const displayTitle = subscription.customTitle || subscription.title;
-      const previewText = `🍿 ${displayTitle}\n💰 ${subscription.price}\n📱 Status: ${subscription.status}\n🔸 Código: ${subscription.code}`;
-      setEditText(previewText);
-    }
   };
 
   const filteredMessages = messages.filter(message => {
@@ -250,51 +217,13 @@ const Telegram: React.FC = () => {
                             <ExternalLink className="h-4 w-4" />
                           </Button>
                           
-                          <Dialog>
-                            <DialogTrigger asChild>
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => openEditDialog(message)}
-                              >
-                                <Edit className="h-4 w-4" />
-                              </Button>
-                            </DialogTrigger>
-                            <DialogContent className="max-w-2xl">
-                              <DialogHeader>
-                                <DialogTitle>Editar Mensagem do Telegram</DialogTitle>
-                              </DialogHeader>
-                              <div className="space-y-4">
-                                <Textarea
-                                  value={editText}
-                                  onChange={(e) => setEditText(e.target.value)}
-                                  placeholder="Conteúdo da mensagem..."
-                                  rows={10}
-                                />
-                                <div className="flex justify-end space-x-2">
-                                  <Button
-                                    variant="outline"
-                                    onClick={() => setEditingMessage(null)}
-                                  >
-                                    Cancelar
-                                  </Button>
-                                  <Button
-                                    variant="outline" 
-                                    onClick={handleEditCustom}
-                                    disabled={editLoading || !editText.trim()}
-                                  >
-                                    {editLoading ? 'Salvando...' : 'Editar Texto'}
-                                  </Button>
-                                  <Button
-                                    onClick={handleEdit}
-                                    disabled={editLoading}
-                                  >
-                                    {editLoading ? 'Salvando...' : 'Atualizar Formatado'}
-                                  </Button>
-                                </div>
-                              </div>
-                            </DialogContent>
-                          </Dialog>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => openEditDialog(message)}
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Button>
 
                           {!message.deleted_at && (
                             <Button
@@ -314,6 +243,42 @@ const Telegram: React.FC = () => {
             </TableBody>
           </Table>
         </div>
+
+        {/* Edit Dialog */}
+        <Dialog open={!!editingMessage} onOpenChange={() => setEditingMessage(null)}>
+          <DialogContent className="sm:max-w-[500px]">
+            <DialogHeader>
+              <DialogTitle>Atualizar Anúncio no Telegram</DialogTitle>
+              <DialogDescription>
+                Clique em "Atualizar" para reformatar a mensagem com os dados atuais da assinatura e incluir os botões de contato.
+              </DialogDescription>
+            </DialogHeader>
+            
+            <div className="space-y-4">
+              {editingMessage?.subscription && (
+                <div className="p-4 bg-muted rounded-lg">
+                  <h4 className="font-medium mb-2">Prévia da formatação:</h4>
+                  <div className="text-sm text-muted-foreground space-y-1">
+                    <p><strong>Título:</strong> {editingMessage.subscription.customTitle || editingMessage.subscription.title}</p>
+                    <p><strong>Preço:</strong> {editingMessage.subscription.price}</p>
+                    <p><strong>Status:</strong> {editingMessage.subscription.status}</p>
+                    <p><strong>Código:</strong> {editingMessage.subscription.code}</p>
+                    <p className="text-xs mt-2 text-primary">+ Botões de contato (WhatsApp/Telegram)</p>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setEditingMessage(null)}>
+                Cancelar
+              </Button>
+              <Button onClick={handleEdit} disabled={editLoading}>
+                {editLoading ? "Atualizando..." : "Atualizar no Telegram"}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     </AdminLayout>
   );

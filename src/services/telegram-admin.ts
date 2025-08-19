@@ -2,7 +2,7 @@ import { supabase } from '@/integrations/supabase/client';
 
 /**
  * Serviços para gerenciamento administrativo do Telegram
- * @version 3.9.6
+ * @version 3.9.7
  */
 
 export interface TelegramMessage {
