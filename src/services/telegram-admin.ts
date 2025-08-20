@@ -1,8 +1,9 @@
+
 import { supabase } from '@/integrations/supabase/client';
 
 /**
  * Serviços para gerenciamento administrativo do Telegram
- * @version 3.9.7
+ * @version 3.9.8
  */
 
 export interface TelegramMessage {
@@ -103,12 +104,34 @@ export async function editTelegramMessage(messageId: number, newText: string): P
 
 /**
  * Edita uma mensagem do Telegram com formatação completa e botões
+ * Se messageId for 0, busca automaticamente a mensagem da assinatura
  */
 export async function editTelegramMessageFormatted(messageId: number, subscriptionId: string): Promise<void> {
+  let actualMessageId = messageId;
+  
+  // Se messageId for 0, busca o messageId da assinatura
+  if (messageId === 0) {
+    const { data: telegramMessage, error: fetchError } = await supabase
+      .from('telegram_messages')
+      .select('message_id')
+      .eq('subscription_id', subscriptionId)
+      .is('deleted_at', null)
+      .order('sent_at', { ascending: false })
+      .limit(1)
+      .single();
+
+    if (fetchError || !telegramMessage) {
+      console.log('Nenhuma mensagem ativa encontrada, tentando repostar...');
+      throw new Error('Nenhuma mensagem ativa encontrada para esta assinatura');
+    }
+
+    actualMessageId = telegramMessage.message_id;
+  }
+
   const { error } = await supabase.functions.invoke('telegram-integration', {
     body: {
       action: 'edit-message-formatted',
-      messageId: messageId,
+      messageId: actualMessageId,
       subscriptionId: subscriptionId
     }
   });

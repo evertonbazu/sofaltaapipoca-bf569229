@@ -1,13 +1,13 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2, Trash2, Edit, Save, X, Search } from 'lucide-react';
+import { Loader2, Trash2, Edit, Save, X, Search, FileText } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/components/ui/use-toast';
+import UserReportDialog from './UserReportDialog';
 
 interface User {
   id: string;
@@ -23,7 +23,7 @@ interface User {
 
 /**
  * Lista de usuários para o painel administrativo
- * @version 1.1.0
+ * @version 1.2.0
  */
 const UsersList = () => {
   const [users, setUsers] = useState<User[]>([]);
@@ -32,6 +32,11 @@ const UsersList = () => {
   const [editingUser, setEditingUser] = useState<string | null>(null);
   const [editForm, setEditForm] = useState<Partial<User>>({});
   const [deletingUser, setDeletingUser] = useState<string | null>(null);
+  const [reportDialog, setReportDialog] = useState<{isOpen: boolean, userId: string, userName: string}>({
+    isOpen: false,
+    userId: '',
+    userName: ''
+  });
   const { toast } = useToast();
 
   const fetchUsers = async () => {
@@ -169,6 +174,22 @@ const UsersList = () => {
     }
   };
 
+  const handleOpenReport = (user: User) => {
+    setReportDialog({
+      isOpen: true,
+      userId: user.id,
+      userName: user.full_name || user.username || user.email
+    });
+  };
+
+  const handleCloseReport = () => {
+    setReportDialog({
+      isOpen: false,
+      userId: '',
+      userName: ''
+    });
+  };
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -179,196 +200,214 @@ const UsersList = () => {
   }
 
   return (
-    <Card>
-      <CardContent className="p-6">
-        <div className="mb-4">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-            <Input
-              placeholder="Buscar por email, nome, usuário, WhatsApp ou Telegram..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10"
-            />
+    <>
+      <Card>
+        <CardContent className="p-6">
+          <div className="mb-4">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+              <Input
+                placeholder="Buscar por email, nome, usuário, WhatsApp ou Telegram..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10"
+              />
+            </div>
           </div>
-        </div>
 
-        <div className="overflow-x-auto">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Email</TableHead>
-                <TableHead>Nome de Usuário</TableHead>
-                <TableHead>Nome Completo *</TableHead>
-                <TableHead>Telefone</TableHead>
-                <TableHead>WhatsApp *</TableHead>
-                <TableHead>Telegram</TableHead>
-                <TableHead>Função</TableHead>
-                <TableHead>Data de Cadastro</TableHead>
-                <TableHead>Ações</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredUsers.length === 0 ? (
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
                 <TableRow>
-                  <TableCell colSpan={9} className="text-center py-8 text-gray-500">
-                    {searchTerm ? 'Nenhum usuário encontrado com esse termo de busca.' : 'Nenhum usuário encontrado.'}
-                  </TableCell>
+                  <TableHead>Email</TableHead>
+                  <TableHead>Nome de Usuário</TableHead>
+                  <TableHead>Nome Completo *</TableHead>
+                  <TableHead>Telefone</TableHead>
+                  <TableHead>WhatsApp *</TableHead>
+                  <TableHead>Telegram</TableHead>
+                  <TableHead>Função</TableHead>
+                  <TableHead>Data de Cadastro</TableHead>
+                  <TableHead>Ações</TableHead>
                 </TableRow>
-              ) : (
-                filteredUsers.map((user) => (
-                  <TableRow key={user.id}>
-                    <TableCell>{user.email}</TableCell>
-                    <TableCell>
-                      {editingUser === user.id ? (
-                        <Input
-                          value={editForm.username || ''}
-                          onChange={(e) => setEditForm({ ...editForm, username: e.target.value })}
-                          className="w-32"
-                        />
-                      ) : (
-                        user.username || '-'
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      {editingUser === user.id ? (
-                        <Input
-                          value={editForm.full_name || ''}
-                          onChange={(e) => setEditForm({ ...editForm, full_name: e.target.value })}
-                          className="w-40"
-                          required
-                        />
-                      ) : (
-                        <span className={!user.full_name ? 'text-red-500' : ''}>
-                          {user.full_name || 'Não informado'}
-                        </span>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      {editingUser === user.id ? (
-                        <Input
-                          value={editForm.phone || ''}
-                          onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })}
-                          className="w-32"
-                        />
-                      ) : (
-                        user.phone || '-'
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      {editingUser === user.id ? (
-                        <Input
-                          value={editForm.whatsapp || ''}
-                          onChange={(e) => setEditForm({ ...editForm, whatsapp: e.target.value })}
-                          className="w-32"
-                          required
-                        />
-                      ) : (
-                        <span className={!user.whatsapp ? 'text-red-500' : ''}>
-                          {user.whatsapp || 'Não informado'}
-                        </span>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      {editingUser === user.id ? (
-                        <Input
-                          value={editForm.telegram_username || ''}
-                          onChange={(e) => setEditForm({ ...editForm, telegram_username: e.target.value })}
-                          className="w-32"
-                          placeholder="@usuario"
-                        />
-                      ) : (
-                        user.telegram_username || '-'
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      {editingUser === user.id ? (
-                        <Select
-                          value={editForm.role || 'user'}
-                          onValueChange={(value) => setEditForm({ ...editForm, role: value })}
-                        >
-                          <SelectTrigger className="w-24">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="user">Usuário</SelectItem>
-                            <SelectItem value="admin">Admin</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      ) : (
-                        <span className={`px-2 py-1 rounded text-xs ${
-                          user.role === 'admin' 
-                            ? 'bg-purple-100 text-purple-800' 
-                            : 'bg-blue-100 text-blue-800'
-                        }`}>
-                          {user.role === 'admin' ? 'Admin' : 'Usuário'}
-                        </span>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      {new Date(user.created_at).toLocaleDateString('pt-BR')}
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex gap-2">
-                        {editingUser === user.id ? (
-                          <>
-                            <Button
-                              size="sm"
-                              onClick={handleSaveEdit}
-                              className="h-8 w-8 p-0"
-                            >
-                              <Save className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={handleCancelEdit}
-                              className="h-8 w-8 p-0"
-                            >
-                              <X className="h-4 w-4" />
-                            </Button>
-                          </>
-                        ) : (
-                          <>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => handleEdit(user)}
-                              className="h-8 w-8 p-0"
-                            >
-                              <Edit className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="destructive"
-                              onClick={() => handleDelete(user.id)}
-                              disabled={deletingUser === user.id}
-                              className="h-8 w-8 p-0"
-                            >
-                              {deletingUser === user.id ? (
-                                <Loader2 className="h-4 w-4 animate-spin" />
-                              ) : (
-                                <Trash2 className="h-4 w-4" />
-                              )}
-                            </Button>
-                          </>
-                        )}
-                      </div>
+              </TableHeader>
+              <TableBody>
+                {filteredUsers.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={9} className="text-center py-8 text-gray-500">
+                      {searchTerm ? 'Nenhum usuário encontrado com esse termo de busca.' : 'Nenhum usuário encontrado.'}
                     </TableCell>
                   </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
-        </div>
+                ) : (
+                  filteredUsers.map((user) => (
+                    <TableRow key={user.id}>
+                      <TableCell>{user.email}</TableCell>
+                      <TableCell>
+                        {editingUser === user.id ? (
+                          <Input
+                            value={editForm.username || ''}
+                            onChange={(e) => setEditForm({ ...editForm, username: e.target.value })}
+                            className="w-32"
+                          />
+                        ) : (
+                          user.username || '-'
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        {editingUser === user.id ? (
+                          <Input
+                            value={editForm.full_name || ''}
+                            onChange={(e) => setEditForm({ ...editForm, full_name: e.target.value })}
+                            className="w-40"
+                            required
+                          />
+                        ) : (
+                          <span className={!user.full_name ? 'text-red-500' : ''}>
+                            {user.full_name || 'Não informado'}
+                          </span>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        {editingUser === user.id ? (
+                          <Input
+                            value={editForm.phone || ''}
+                            onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })}
+                            className="w-32"
+                          />
+                        ) : (
+                          user.phone || '-'
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        {editingUser === user.id ? (
+                          <Input
+                            value={editForm.whatsapp || ''}
+                            onChange={(e) => setEditForm({ ...editForm, whatsapp: e.target.value })}
+                            className="w-32"
+                            required
+                          />
+                        ) : (
+                          <span className={!user.whatsapp ? 'text-red-500' : ''}>
+                            {user.whatsapp || 'Não informado'}
+                          </span>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        {editingUser === user.id ? (
+                          <Input
+                            value={editForm.telegram_username || ''}
+                            onChange={(e) => setEditForm({ ...editForm, telegram_username: e.target.value })}
+                            className="w-32"
+                            placeholder="@usuario"
+                          />
+                        ) : (
+                          user.telegram_username || '-'
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        {editingUser === user.id ? (
+                          <Select
+                            value={editForm.role || 'user'}
+                            onValueChange={(value) => setEditForm({ ...editForm, role: value })}
+                          >
+                            <SelectTrigger className="w-24">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="user">Usuário</SelectItem>
+                              <SelectItem value="admin">Admin</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        ) : (
+                          <span className={`px-2 py-1 rounded text-xs ${
+                            user.role === 'admin' 
+                              ? 'bg-purple-100 text-purple-800' 
+                              : 'bg-blue-100 text-blue-800'
+                          }`}>
+                            {user.role === 'admin' ? 'Admin' : 'Usuário'}
+                          </span>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        {new Date(user.created_at).toLocaleDateString('pt-BR')}
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex gap-2">
+                          {editingUser === user.id ? (
+                            <>
+                              <Button
+                                size="sm"
+                                onClick={handleSaveEdit}
+                                className="h-8 w-8 p-0"
+                              >
+                                <Save className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={handleCancelEdit}
+                                className="h-8 w-8 p-0"
+                              >
+                                <X className="h-4 w-4" />
+                              </Button>
+                            </>
+                          ) : (
+                            <>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => handleOpenReport(user)}
+                                className="h-8 w-8 p-0"
+                                title="Relatório"
+                              >
+                                <FileText className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => handleEdit(user)}
+                                className="h-8 w-8 p-0"
+                              >
+                                <Edit className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="destructive"
+                                onClick={() => handleDelete(user.id)}
+                                disabled={deletingUser === user.id}
+                                className="h-8 w-8 p-0"
+                              >
+                                {deletingUser === user.id ? (
+                                  <Loader2 className="h-4 w-4 animate-spin" />
+                                ) : (
+                                  <Trash2 className="h-4 w-4" />
+                                )}
+                              </Button>
+                            </>
+                          )}
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </div>
 
-        <div className="mt-4 text-sm text-gray-500">
-          Total: {filteredUsers.length} usuário(s)
-          <br />
-          <span className="text-red-500">* Campos obrigatórios</span>
-        </div>
-      </CardContent>
-    </Card>
+          <div className="mt-4 text-sm text-gray-500">
+            Total: {filteredUsers.length} usuário(s)
+            <br />
+            <span className="text-red-500">* Campos obrigatórios</span>
+          </div>
+        </CardContent>
+      </Card>
+
+      <UserReportDialog
+        isOpen={reportDialog.isOpen}
+        onClose={handleCloseReport}
+        userId={reportDialog.userId}
+        userName={reportDialog.userName}
+      />
+    </>
   );
 };
 
