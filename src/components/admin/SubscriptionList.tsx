@@ -368,12 +368,35 @@ const SubscriptionList: React.FC<SubscriptionListProps> = ({ searchTerm = '', on
                   <TableRow key={subscription.id}>
                     <TableCell className="font-medium">
                       <div>
-                        <div>{subscription.customTitle || subscription.title}</div>
-                        {subscription.isMemberSubmission && (
-                          <Badge variant="secondary" className="text-xs mt-1">
-                            Enviado por membro
+                        <div className="mb-1">{subscription.customTitle || subscription.title}</div>
+                        <div className="flex flex-wrap gap-1">
+                          {subscription.isMemberSubmission && (
+                            <Badge variant="secondary" className="text-xs">
+                              Enviado por membro
+                            </Badge>
+                          )}
+                          <Badge variant="outline" className="text-xs bg-blue-50">
+                            {subscription.paymentMethod}
                           </Badge>
-                        )}
+                          <Badge variant="outline" className="text-xs bg-green-50">
+                            {subscription.access}
+                          </Badge>
+                          {subscription.whatsappNumber && (
+                            <Badge variant="outline" className="text-xs bg-emerald-50">
+                              WhatsApp
+                            </Badge>
+                          )}
+                          {subscription.telegramUsername && (
+                            <Badge variant="outline" className="text-xs bg-sky-50">
+                              Telegram
+                            </Badge>
+                          )}
+                          {subscription.pixKey && (
+                            <Badge variant="outline" className="text-xs bg-purple-50">
+                              PIX
+                            </Badge>
+                          )}
+                        </div>
                       </div>
                     </TableCell>
                     <TableCell>{subscription.price}</TableCell>

@@ -14,6 +14,19 @@ interface UserReportDialogProps {
   userName: string;
 }
 
+interface UserProfile {
+  id: string;
+  email: string;
+  username: string;
+  full_name: string;
+  phone: string;
+  whatsapp: string;
+  telegram_username: string;
+  role: string;
+  created_at: string;
+  updated_at: string;
+}
+
 interface SubscriptionReport {
   id: string;
   title: string;
@@ -40,12 +53,23 @@ const UserReportDialog: React.FC<UserReportDialogProps> = ({
 }) => {
   const [subscriptions, setSubscriptions] = useState<SubscriptionReport[]>([]);
   const [logs, setLogs] = useState<any[]>([]);
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
 
   const fetchUserReport = async () => {
     try {
       setIsLoading(true);
+
+      // Buscar dados do usuário
+      const { data: profileData, error: profileError } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .single();
+
+      if (profileError) throw profileError;
+      setUserProfile(profileData);
 
       // Buscar assinaturas ativas
       const { data: activeSubscriptions, error: activeError } = await supabase
@@ -139,6 +163,58 @@ const UserReportDialog: React.FC<UserReportDialogProps> = ({
             <FileText className="h-5 w-5" />
             Relatório de {userName}
           </DialogTitle>
+          {userProfile && (
+            <div className="mt-4 p-4 bg-gray-50 rounded-lg">
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 text-sm">
+                <div>
+                  <span className="font-medium text-gray-600">ID:</span>
+                  <div className="text-xs font-mono bg-white px-2 py-1 rounded mt-1">
+                    {userProfile.id}
+                  </div>
+                </div>
+                <div>
+                  <span className="font-medium text-gray-600">Email:</span>
+                  <div className="mt-1">{userProfile.email || '-'}</div>
+                </div>
+                <div>
+                  <span className="font-medium text-gray-600">Username:</span>
+                  <div className="mt-1">{userProfile.username || '-'}</div>
+                </div>
+                <div>
+                  <span className="font-medium text-gray-600">Nome Completo:</span>
+                  <div className="mt-1">{userProfile.full_name || '-'}</div>
+                </div>
+                <div>
+                  <span className="font-medium text-gray-600">Função:</span>
+                  <div className="mt-1">
+                    <Badge variant={userProfile.role === 'admin' ? 'default' : 'secondary'}>
+                      {userProfile.role === 'admin' ? 'Admin' : 'Usuário'}
+                    </Badge>
+                  </div>
+                </div>
+                <div>
+                  <span className="font-medium text-gray-600">WhatsApp:</span>
+                  <div className="mt-1">{userProfile.whatsapp || '-'}</div>
+                </div>
+                <div>
+                  <span className="font-medium text-gray-600">Telegram:</span>
+                  <div className="mt-1">{userProfile.telegram_username || '-'}</div>
+                </div>
+                <div>
+                  <span className="font-medium text-gray-600">Telefone:</span>
+                  <div className="mt-1">{userProfile.phone || '-'}</div>
+                </div>
+                <div>
+                  <span className="font-medium text-gray-600">Criado em:</span>
+                  <div className="mt-1">{new Date(userProfile.created_at).toLocaleDateString('pt-BR')}</div>
+                </div>
+                <div>
+                  <span className="font-medium text-gray-600">Atualizado em:</span>
+                  <div className="mt-1">{new Date(userProfile.updated_at).toLocaleDateString('pt-BR')}</div>
+                </div>
+              </div>
+            </div>
+          )}
         </DialogHeader>
 
         {isLoading ? (
