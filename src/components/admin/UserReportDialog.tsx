@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -23,7 +22,7 @@ interface SubscriptionReport {
   status: string;
   created_at: string;
   updated_at: string;
-  visible: boolean;
+  visible?: boolean;
   source: 'active' | 'expired';
   expired_at?: string;
   expiry_reason?: string;
@@ -31,7 +30,7 @@ interface SubscriptionReport {
 
 /**
  * Diálogo de relatório detalhado de usuário
- * @version 1.0.0
+ * @version 1.1.0
  */
 const UserReportDialog: React.FC<UserReportDialogProps> = ({
   isOpen,
