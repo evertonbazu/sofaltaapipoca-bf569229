@@ -83,7 +83,7 @@ const UserReportDialog: React.FC<UserReportDialogProps> = ({
       // Buscar assinaturas expiradas
       const { data: expiredSubscriptions, error: expiredError } = await supabase
         .from('expired_subscriptions')
-        .select('id, title, custom_title, price, status, created_at, expired_at, expiry_reason')
+        .select('id, title, price, status, created_at, expired_at, expiry_reason')
         .eq('user_id', userId)
         .order('expired_at', { ascending: false });
 
