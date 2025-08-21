@@ -39,10 +39,10 @@ const SubscriptionList: React.FC<SubscriptionListProps> = ({ searchTerm = '', on
   
   // Estados dos filtros e ordenação
   const [localSearchTerm, setLocalSearchTerm] = useState(searchTerm);
-  const [filterCategory, setFilterCategory] = useState<string>('');
-  const [filterFeatured, setFilterFeatured] = useState<string>('');
-  const [filterVisible, setFilterVisible] = useState<string>('');
-  const [filterPaymentMethod, setFilterPaymentMethod] = useState<string>('');
+  const [filterCategory, setFilterCategory] = useState<string>('all');
+  const [filterFeatured, setFilterFeatured] = useState<string>('all');
+  const [filterVisible, setFilterVisible] = useState<string>('all');
+  const [filterPaymentMethod, setFilterPaymentMethod] = useState<string>('all');
   const [sortBy, setSortBy] = useState<string>('date');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
 
@@ -153,10 +153,10 @@ const SubscriptionList: React.FC<SubscriptionListProps> = ({ searchTerm = '', on
     const whatsappMatch = subscription.whatsappNumber.toLowerCase().includes(searchTermLower);
     const telegramMatch = subscription.telegramUsername.toLowerCase().includes(searchTermLower);
 
-    const categoryMatch = filterCategory ? subscription.category === filterCategory : true;
-    const featuredMatch = filterFeatured ? String(subscription.featured) === filterFeatured : true;
-    const visibleMatch = filterVisible ? String(subscription.visible) === filterVisible : true;
-    const paymentMethodMatch = filterPaymentMethod ? subscription.paymentMethod === filterPaymentMethod : true;
+      const categoryMatch = filterCategory === 'all' || filterCategory === '' ? true : subscription.category === filterCategory;
+      const featuredMatch = filterFeatured === 'all' || filterFeatured === '' ? true : String(subscription.featured) === filterFeatured;
+      const visibleMatch = filterVisible === 'all' || filterVisible === '' ? true : String(subscription.visible) === filterVisible;
+      const paymentMethodMatch = filterPaymentMethod === 'all' || filterPaymentMethod === '' ? true : subscription.paymentMethod === filterPaymentMethod;
 
     return (
       (titleMatch || codeMatch || priceMatch || whatsappMatch || telegramMatch) &&
@@ -272,10 +272,10 @@ const SubscriptionList: React.FC<SubscriptionListProps> = ({ searchTerm = '', on
   };
 
   const clearFilters = () => {
-    setFilterCategory('');
-    setFilterFeatured('');
-    setFilterVisible('');
-    setFilterPaymentMethod('');
+    setFilterCategory('all');
+    setFilterFeatured('all');
+    setFilterVisible('all');
+    setFilterPaymentMethod('all');
   };
 
   if (isLoading) {
@@ -344,7 +344,7 @@ const SubscriptionList: React.FC<SubscriptionListProps> = ({ searchTerm = '', on
                 <SelectValue placeholder="Todas as categorias" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Todas as categorias</SelectItem>
+                <SelectItem value="all">Todas as categorias</SelectItem>
                 {categories.map((category) => (
                   <SelectItem key={category} value={category}>
                     {category}
@@ -360,7 +360,7 @@ const SubscriptionList: React.FC<SubscriptionListProps> = ({ searchTerm = '', on
                 <SelectValue placeholder="Destaque" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Todos</SelectItem>
+                <SelectItem value="all">Todos</SelectItem>
                 <SelectItem value="true">Em destaque</SelectItem>
                 <SelectItem value="false">Não destacados</SelectItem>
               </SelectContent>
@@ -373,7 +373,7 @@ const SubscriptionList: React.FC<SubscriptionListProps> = ({ searchTerm = '', on
                 <SelectValue placeholder="Visibilidade" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Todos</SelectItem>
+                <SelectItem value="all">Todos</SelectItem>
                 <SelectItem value="true">Visíveis</SelectItem>
                 <SelectItem value="false">Ocultos</SelectItem>
               </SelectContent>
@@ -386,7 +386,7 @@ const SubscriptionList: React.FC<SubscriptionListProps> = ({ searchTerm = '', on
                 <SelectValue placeholder="Método de pagamento" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Todos</SelectItem>
+                <SelectItem value="all">Todos</SelectItem>
                 <SelectItem value="PIX">PIX</SelectItem>
                 <SelectItem value="Cartão">Cartão</SelectItem>
                 <SelectItem value="Dinheiro">Dinheiro</SelectItem>
@@ -415,10 +415,10 @@ const SubscriptionList: React.FC<SubscriptionListProps> = ({ searchTerm = '', on
               {filteredAndSortedSubscriptions.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={9} className="text-center py-8 text-gray-500">
-                    {localSearchTerm || filterCategory || filterFeatured || filterVisible || filterPaymentMethod
-                      ? 'Nenhuma assinatura encontrada com os filtros aplicados.'
-                      : 'Nenhuma assinatura encontrada.'
-                    }
+                  {localSearchTerm || (filterCategory !== 'all' && filterCategory !== '') || (filterFeatured !== 'all' && filterFeatured !== '') || (filterVisible !== 'all' && filterVisible !== '') || (filterPaymentMethod !== 'all' && filterPaymentMethod !== '')
+                    ? 'Nenhuma assinatura encontrada com os filtros aplicados.'
+                    : 'Nenhuma assinatura encontrada.'
+                  }
                   </TableCell>
                 </TableRow>
               ) : (
