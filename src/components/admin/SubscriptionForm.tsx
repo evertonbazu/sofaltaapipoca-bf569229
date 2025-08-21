@@ -468,9 +468,13 @@ const SubscriptionForm: React.FC<SubscriptionFormProps> = ({
               <FormField control={form.control} name="addedDate" render={({
               field
             }) => <FormItem>
-                    <FormLabel>Data de Adição (não editável)</FormLabel>
+                    <FormLabel>Data de Adição {!isAdmin && '(não editável)'}</FormLabel>
                     <FormControl>
-                      <Input disabled {...field} />
+                      <Input 
+                        disabled={!isAdmin} 
+                        placeholder="DD/MM/AAAA"
+                        {...field} 
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>} />

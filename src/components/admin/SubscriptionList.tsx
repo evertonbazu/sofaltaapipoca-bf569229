@@ -37,13 +37,14 @@ const SubscriptionList: React.FC<SubscriptionListProps> = ({ searchTerm = '', on
   const [togglingId, setTogglingId] = useState<string | null>(null);
   const [updatingTelegramId, setUpdatingTelegramId] = useState<string | null>(null);
   
-  // Estados dos filtros
+  // Estados dos filtros e ordenação
   const [localSearchTerm, setLocalSearchTerm] = useState(searchTerm);
   const [filterCategory, setFilterCategory] = useState<string>('');
   const [filterFeatured, setFilterFeatured] = useState<string>('');
   const [filterVisible, setFilterVisible] = useState<string>('');
   const [filterPaymentMethod, setFilterPaymentMethod] = useState<string>('');
-  const [showFilters, setShowFilters] = useState(false);
+  const [sortBy, setSortBy] = useState<string>('date');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
 
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -89,7 +90,61 @@ const SubscriptionList: React.FC<SubscriptionListProps> = ({ searchTerm = '', on
     setLocalSearchTerm(searchTerm);
   }, [searchTerm]);
 
-  const filteredSubscriptions = subscriptions.filter(subscription => {
+  // Função para ordenar assinaturas
+  const sortSubscriptions = (subs: SubscriptionData[]) => {
+    return [...subs].sort((a, b) => {
+      let aValue: any, bValue: any;
+      
+      switch (sortBy) {
+        case 'title':
+          aValue = (a.customTitle || a.title).toLowerCase();
+          bValue = (b.customTitle || b.title).toLowerCase();
+          break;
+        case 'price':
+          aValue = parseFloat(a.price.replace(/[^\d,]/g, '').replace(',', '.')) || 0;
+          bValue = parseFloat(b.price.replace(/[^\d,]/g, '').replace(',', '.')) || 0;
+          break;
+        case 'status':
+          aValue = a.status.toLowerCase();
+          bValue = b.status.toLowerCase();
+          break;
+        case 'category':
+          aValue = (a.category || '').toLowerCase();
+          bValue = (b.category || '').toLowerCase();
+          break;
+        case 'featured':
+          aValue = a.featured ? 1 : 0;
+          bValue = b.featured ? 1 : 0;
+          break;
+        case 'visible':
+          aValue = a.visible ? 1 : 0;
+          bValue = b.visible ? 1 : 0;
+          break;
+        case 'code':
+          aValue = a.code.toLowerCase();
+          bValue = b.code.toLowerCase();
+          break;
+        case 'date':
+        default:
+          // Parse date format DD/MM/YYYY
+          const parseDate = (dateStr: string) => {
+            if (!dateStr) return new Date(0);
+            const [day, month, year] = dateStr.split('/').map(Number);
+            return new Date(year, month - 1, day);
+          };
+          aValue = parseDate(a.addedDate || '');
+          bValue = parseDate(b.addedDate || '');
+          break;
+      }
+      
+      if (aValue < bValue) return sortOrder === 'asc' ? -1 : 1;
+      if (aValue > bValue) return sortOrder === 'asc' ? 1 : -1;
+      return 0;
+    });
+  };
+
+  const filteredAndSortedSubscriptions = sortSubscriptions(
+    subscriptions.filter(subscription => {
     const searchTermLower = localSearchTerm.toLowerCase();
     const titleMatch = subscription.title.toLowerCase().includes(searchTermLower) ||
                        (subscription.customTitle && subscription.customTitle.toLowerCase().includes(searchTermLower));
@@ -110,7 +165,8 @@ const SubscriptionList: React.FC<SubscriptionListProps> = ({ searchTerm = '', on
       visibleMatch &&
       paymentMethodMatch
     );
-  });
+    })
+  );
 
   const handleDelete = async (id: string) => {
     if (!confirm('Tem certeza que deseja excluir esta assinatura? Esta ação não pode ser desfeita.')) {
@@ -235,15 +291,31 @@ const SubscriptionList: React.FC<SubscriptionListProps> = ({ searchTerm = '', on
     <Card>
       <CardHeader>
         <div className="flex justify-between items-center">
-          <CardTitle>Assinaturas ({filteredSubscriptions.length})</CardTitle>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setShowFilters(!showFilters)}
-          >
-            <Filter className="h-4 w-4 mr-2" />
-            {showFilters ? 'Ocultar Filtros' : 'Mostrar Filtros'}
-          </Button>
+          <CardTitle>Assinaturas ({filteredAndSortedSubscriptions.length})</CardTitle>
+          <div className="flex gap-2">
+            <Select value={sortBy} onValueChange={setSortBy}>
+              <SelectTrigger className="w-40">
+                <SelectValue placeholder="Ordenar por" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="date">Data</SelectItem>
+                <SelectItem value="title">Título</SelectItem>
+                <SelectItem value="price">Preço</SelectItem>
+                <SelectItem value="status">Status</SelectItem>
+                <SelectItem value="category">Categoria</SelectItem>
+                <SelectItem value="featured">Destaque</SelectItem>
+                <SelectItem value="visible">Visibilidade</SelectItem>
+                <SelectItem value="code">Código</SelectItem>
+              </SelectContent>
+            </Select>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
+            >
+              {sortOrder === 'asc' ? '↑' : '↓'}
+            </Button>
+          </div>
         </div>
       </CardHeader>
 
@@ -264,80 +336,65 @@ const SubscriptionList: React.FC<SubscriptionListProps> = ({ searchTerm = '', on
           </div>
         </div>
 
-        {/* Filtros expandidos */}
-        {showFilters && (
-          <div className="mb-4 p-4 border rounded-lg bg-gray-50 space-y-3">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
-              <div>
-                <label className="block text-sm font-medium mb-1">Categoria</label>
-                <Select value={filterCategory} onValueChange={setFilterCategory}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Todas as categorias" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="">Todas as categorias</SelectItem>
-                    {categories.map((category) => (
-                      <SelectItem key={category} value={category}>
-                        {category}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium mb-1">Em Destaque</label>
-                <Select value={filterFeatured} onValueChange={setFilterFeatured}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Todos" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="">Todos</SelectItem>
-                    <SelectItem value="true">Em destaque</SelectItem>
-                    <SelectItem value="false">Não destacados</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium mb-1">Visibilidade</label>
-                <Select value={filterVisible} onValueChange={setFilterVisible}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Todos" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="">Todos</SelectItem>
-                    <SelectItem value="true">Visíveis</SelectItem>
-                    <SelectItem value="false">Ocultos</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium mb-1">Método de Pagamento</label>
-                <Select value={filterPaymentMethod} onValueChange={setFilterPaymentMethod}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Todos" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="">Todos</SelectItem>
-                    <SelectItem value="PIX">PIX</SelectItem>
-                    <SelectItem value="Cartão">Cartão</SelectItem>
-                    <SelectItem value="Dinheiro">Dinheiro</SelectItem>
-                    <SelectItem value="Outros">Outros</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-
-            <div className="flex justify-end">
-              <Button variant="outline" size="sm" onClick={clearFilters}>
-                <X className="h-4 w-4 mr-2" />
-                Limpar Filtros
-              </Button>
-            </div>
+        {/* Filtros compactos */}
+        <div className="mb-4 grid grid-cols-1 md:grid-cols-4 gap-3">
+          <div>
+            <Select value={filterCategory} onValueChange={setFilterCategory}>
+              <SelectTrigger>
+                <SelectValue placeholder="Todas as categorias" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="">Todas as categorias</SelectItem>
+                {categories.map((category) => (
+                  <SelectItem key={category} value={category}>
+                    {category}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
-        )}
+
+          <div>
+            <Select value={filterFeatured} onValueChange={setFilterFeatured}>
+              <SelectTrigger>
+                <SelectValue placeholder="Destaque" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="">Todos</SelectItem>
+                <SelectItem value="true">Em destaque</SelectItem>
+                <SelectItem value="false">Não destacados</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div>
+            <Select value={filterVisible} onValueChange={setFilterVisible}>
+              <SelectTrigger>
+                <SelectValue placeholder="Visibilidade" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="">Todos</SelectItem>
+                <SelectItem value="true">Visíveis</SelectItem>
+                <SelectItem value="false">Ocultos</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div>
+            <Select value={filterPaymentMethod} onValueChange={setFilterPaymentMethod}>
+              <SelectTrigger>
+                <SelectValue placeholder="Método de pagamento" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="">Todos</SelectItem>
+                <SelectItem value="PIX">PIX</SelectItem>
+                <SelectItem value="Cartão">Cartão</SelectItem>
+                <SelectItem value="Dinheiro">Dinheiro</SelectItem>
+                <SelectItem value="Outros">Outros</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
 
         <div className="overflow-x-auto">
           <Table>
@@ -347,6 +404,7 @@ const SubscriptionList: React.FC<SubscriptionListProps> = ({ searchTerm = '', on
                 <TableHead>Preço</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Categoria</TableHead>
+                <TableHead>Data</TableHead>
                 <TableHead>Destaque</TableHead>
                 <TableHead>Visibilidade</TableHead>
                 <TableHead>Código</TableHead>
@@ -354,9 +412,9 @@ const SubscriptionList: React.FC<SubscriptionListProps> = ({ searchTerm = '', on
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredSubscriptions.length === 0 ? (
+              {filteredAndSortedSubscriptions.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={8} className="text-center py-8 text-gray-500">
+                  <TableCell colSpan={9} className="text-center py-8 text-gray-500">
                     {localSearchTerm || filterCategory || filterFeatured || filterVisible || filterPaymentMethod
                       ? 'Nenhuma assinatura encontrada com os filtros aplicados.'
                       : 'Nenhuma assinatura encontrada.'
@@ -364,7 +422,7 @@ const SubscriptionList: React.FC<SubscriptionListProps> = ({ searchTerm = '', on
                   </TableCell>
                 </TableRow>
               ) : (
-                filteredSubscriptions.map((subscription) => (
+                filteredAndSortedSubscriptions.map((subscription) => (
                   <TableRow key={subscription.id}>
                     <TableCell className="font-medium">
                       <div>
@@ -404,6 +462,9 @@ const SubscriptionList: React.FC<SubscriptionListProps> = ({ searchTerm = '', on
                       <Badge variant="outline">{subscription.status}</Badge>
                     </TableCell>
                     <TableCell>{subscription.category || '-'}</TableCell>
+                    <TableCell className="text-sm text-muted-foreground">
+                      {subscription.addedDate || '-'}
+                    </TableCell>
                     <TableCell>
                       <Button
                         size="sm"
