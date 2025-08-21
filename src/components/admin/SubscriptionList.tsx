@@ -345,7 +345,7 @@ const SubscriptionList: React.FC<SubscriptionListProps> = ({ searchTerm = '', on
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Todas as categorias</SelectItem>
-                {categories.map((category) => (
+                {categories.filter(category => category && category.trim() !== '').map((category) => (
                   <SelectItem key={category} value={category}>
                     {category}
                   </SelectItem>

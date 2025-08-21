@@ -257,7 +257,7 @@ const SubscriptionFormCore: React.FC<Props> = ({
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      {categories.map(category => (
+                      {categories.filter(category => category && category.trim() !== '').map(category => (
                         <SelectItem key={category} value={category}>{category}</SelectItem>
                       ))}
                     </SelectContent>

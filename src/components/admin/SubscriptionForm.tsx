@@ -368,7 +368,9 @@ const SubscriptionForm: React.FC<SubscriptionFormProps> = ({
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          {categories.map(category => <SelectItem key={category} value={category}>{category}</SelectItem>)}
+                          {categories.filter(category => category && category.trim() !== '').map(category => (
+                            <SelectItem key={category} value={category}>{category}</SelectItem>
+                          ))}
                         </SelectContent>
                       </Select>
                       <FormMessage />
@@ -447,7 +449,9 @@ const SubscriptionForm: React.FC<SubscriptionFormProps> = ({
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        {ACCESS_TYPES.map(accessType => <SelectItem key={accessType} value={accessType}>{accessType}</SelectItem>)}
+                        {ACCESS_TYPES.filter(accessType => accessType && accessType.trim() !== '').map(accessType => (
+                          <SelectItem key={accessType} value={accessType}>{accessType}</SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                     <FormMessage />
