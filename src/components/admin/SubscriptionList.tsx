@@ -108,9 +108,9 @@ const SubscriptionList: React.FC<SubscriptionListProps> = ({ searchTerm = '', on
           aValue = a.status.toLowerCase();
           bValue = b.status.toLowerCase();
           break;
-        case 'category':
-          aValue = (a.category || '').toLowerCase();
-          bValue = (b.category || '').toLowerCase();
+        case 'user':
+          aValue = (a.fullName || '').toLowerCase();
+          bValue = (b.fullName || '').toLowerCase();
           break;
         case 'featured':
           aValue = a.featured ? 1 : 0;
@@ -302,7 +302,7 @@ const SubscriptionList: React.FC<SubscriptionListProps> = ({ searchTerm = '', on
                 <SelectItem value="title">Título</SelectItem>
                 <SelectItem value="price">Preço</SelectItem>
                 <SelectItem value="status">Status</SelectItem>
-                <SelectItem value="category">Categoria</SelectItem>
+                <SelectItem value="user">Usuário</SelectItem>
                 <SelectItem value="featured">Destaque</SelectItem>
                 <SelectItem value="visible">Visibilidade</SelectItem>
                 <SelectItem value="code">Código</SelectItem>
@@ -403,10 +403,8 @@ const SubscriptionList: React.FC<SubscriptionListProps> = ({ searchTerm = '', on
                 <TableHead>Título</TableHead>
                 <TableHead>Preço</TableHead>
                 <TableHead>Status</TableHead>
-                <TableHead>Categoria</TableHead>
+                <TableHead>Usuário</TableHead>
                 <TableHead>Data</TableHead>
-                <TableHead>Destaque</TableHead>
-                <TableHead>Visibilidade</TableHead>
                 <TableHead>Código</TableHead>
                 <TableHead>Ações</TableHead>
               </TableRow>
@@ -414,7 +412,7 @@ const SubscriptionList: React.FC<SubscriptionListProps> = ({ searchTerm = '', on
             <TableBody>
               {filteredAndSortedSubscriptions.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={9} className="text-center py-8 text-gray-500">
+                  <TableCell colSpan={7} className="text-center py-8 text-gray-500">
                   {localSearchTerm || (filterCategory !== 'all' && filterCategory !== '') || (filterFeatured !== 'all' && filterFeatured !== '') || (filterVisible !== 'all' && filterVisible !== '') || (filterPaymentMethod !== 'all' && filterPaymentMethod !== '')
                     ? 'Nenhuma assinatura encontrada com os filtros aplicados.'
                     : 'Nenhuma assinatura encontrada.'
@@ -425,79 +423,17 @@ const SubscriptionList: React.FC<SubscriptionListProps> = ({ searchTerm = '', on
                 filteredAndSortedSubscriptions.map((subscription) => (
                   <TableRow key={subscription.id}>
                     <TableCell className="font-medium">
-                      <div>
-                        <div className="mb-1">{subscription.customTitle || subscription.title}</div>
-                        <div className="flex flex-wrap gap-1">
-                          {subscription.isMemberSubmission && (
-                            <Badge variant="secondary" className="text-xs">
-                              Enviado por membro
-                            </Badge>
-                          )}
-                          <Badge variant="outline" className="text-xs bg-blue-50">
-                            {subscription.paymentMethod}
-                          </Badge>
-                          <Badge variant="outline" className="text-xs bg-green-50">
-                            {subscription.access}
-                          </Badge>
-                          {subscription.whatsappNumber && (
-                            <Badge variant="outline" className="text-xs bg-emerald-50">
-                              WhatsApp
-                            </Badge>
-                          )}
-                          {subscription.telegramUsername && (
-                            <Badge variant="outline" className="text-xs bg-sky-50">
-                              Telegram
-                            </Badge>
-                          )}
-                          {subscription.pixKey && (
-                            <Badge variant="outline" className="text-xs bg-purple-50">
-                              PIX
-                            </Badge>
-                          )}
-                        </div>
-                      </div>
+                      <div className="mb-1">{subscription.customTitle || subscription.title}</div>
                     </TableCell>
                     <TableCell>{subscription.price}</TableCell>
                     <TableCell>
                       <Badge variant="outline">{subscription.status}</Badge>
                     </TableCell>
-                    <TableCell>{subscription.category || '-'}</TableCell>
+                    <TableCell className="text-sm">
+                      {subscription.fullName || '-'}
+                    </TableCell>
                     <TableCell className="text-sm text-muted-foreground">
                       {subscription.addedDate || '-'}
-                    </TableCell>
-                    <TableCell>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => handleToggleFeatured(subscription.id!, !subscription.featured)}
-                        disabled={togglingId === subscription.id}
-                        className="h-8 w-8 p-0"
-                      >
-                        {togglingId === subscription.id ? (
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                        ) : subscription.featured ? (
-                          <Star className="h-4 w-4 text-yellow-500" />
-                        ) : (
-                          <StarOff className="h-4 w-4" />
-                        )}
-                      </Button>
-                    </TableCell>
-                    <TableCell>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => handleToggleVisibility(subscription.id!, !subscription.visible)}
-                        disabled={togglingId === subscription.id}
-                        className="h-8 w-8 p-0"
-                      >
-                        {togglingId === subscription.id ? (
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                        ) : subscription.visible ? (
-                          <Eye className="h-4 w-4 text-green-500" />
-                        ) : (
-                          <EyeOff className="h-4 w-4 text-red-500" />
-                        )}
-                      </Button>
                     </TableCell>
                     <TableCell>
                       <code className="text-xs bg-gray-100 px-2 py-1 rounded">
@@ -505,19 +441,58 @@ const SubscriptionList: React.FC<SubscriptionListProps> = ({ searchTerm = '', on
                       </code>
                     </TableCell>
                     <TableCell>
-                      <div className="flex gap-2">
+                      <div className="flex items-center gap-1">
+                        {/* Botão de Destaque */}
                         <Button
                           size="sm"
-                          variant="outline"
-                          onClick={() => navigate(`/admin/subscriptions/edit/${subscription.id}`)}
+                          variant="ghost"
+                          onClick={() => handleToggleFeatured(subscription.id!, !subscription.featured)}
+                          disabled={togglingId === subscription.id}
                           className="h-8 w-8 p-0"
+                          title={subscription.featured ? "Remover destaque" : "Destacar"}
+                        >
+                          {togglingId === subscription.id ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : subscription.featured ? (
+                            <Star className="h-4 w-4 text-yellow-500" />
+                          ) : (
+                            <StarOff className="h-4 w-4" />
+                          )}
+                        </Button>
+
+                        {/* Botão de Visibilidade */}
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => handleToggleVisibility(subscription.id!, !subscription.visible)}
+                          disabled={togglingId === subscription.id}
+                          className="h-8 w-8 p-0"
+                          title={subscription.visible ? "Ocultar" : "Tornar visível"}
+                        >
+                          {togglingId === subscription.id ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : subscription.visible ? (
+                            <Eye className="h-4 w-4 text-green-500" />
+                          ) : (
+                            <EyeOff className="h-4 w-4 text-red-500" />
+                          )}
+                        </Button>
+
+                        {/* Botão de Editar */}
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => navigate(`/admin/subscriptions/${subscription.id}/edit`)}
+                          className="h-8 w-8 p-0"
+                          title="Editar"
                         >
                           <Edit className="h-4 w-4" />
                         </Button>
-                        
+
+                        {/* Botão de Atualizar Telegram */}
                         <Button
                           size="sm"
-                          variant="secondary"
+                          variant="ghost"
                           onClick={() => handleUpdateTelegram(subscription.id!)}
                           disabled={updatingTelegramId === subscription.id}
                           className="h-8 w-8 p-0"
@@ -530,12 +505,14 @@ const SubscriptionList: React.FC<SubscriptionListProps> = ({ searchTerm = '', on
                           )}
                         </Button>
 
+                        {/* Botão de Excluir */}
                         <Button
                           size="sm"
-                          variant="destructive"
+                          variant="ghost"
                           onClick={() => handleDelete(subscription.id!)}
                           disabled={deletingId === subscription.id}
-                          className="h-8 w-8 p-0"
+                          className="h-8 w-8 p-0 text-red-600 hover:text-red-700"
+                          title="Excluir"
                         >
                           {deletingId === subscription.id ? (
                             <Loader2 className="h-4 w-4 animate-spin" />
